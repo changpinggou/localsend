@@ -130,30 +130,30 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  connectivity_plus: 4adf20a405e25b42b9c9f87feff8f4b6fde18a4e
+  connectivity_plus: 0a976dfd033b59192912fa3c6c7b54aab5093802
   Defaults: d785e56c0fb8890dc40351603f05c8e1df1bdd45
-  desktop_drop: 10a3e6a7fa9dbe350541f2574092fecfa345a07b
-  device_info_plus: 4fb280989f669696856f8b129e4a5e3cd6c48f76
-  dynamic_color: cb7c2a300ee67ed3bd96c3e852df3af0300bf610
-  file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
-  file_selector_macos: 9e9e068e90ebee155097d00e89ae91edb2374db7
+  desktop_drop: 1eeeb9484299585770b6461e4f3d60950e99efa2
+  device_info_plus: 1b14eed9bf95428983aed283a8d51cce3d8c4215
+  dynamic_color: 5fdff3953fb3457311091863f72914fc76ea3209
+  file_picker: e716a70a9fe5fd9e09ebc922d7541464289443af
+  file_selector_macos: 3e56eaea051180007b900eacb006686fd54da150
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  gal: baecd024ebfd13c441269ca7404792a7152fde89
-  in_app_purchase_storekit: 22cca7d08eebca9babdf4d07d0baccb73325d3c8
-  network_info_plus: 21d1cd6a015ccb2fdff06a1fbfa88d54b4e92f61
-  open_file_mac: 76f06c8597551249bdb5e8fd8827a98eae0f4585
-  package_info_plus: f0052d280d17aa382b932f399edf32507174e870
-  pasteboard: 278d8100149f940fb795d6b3a74f0720c890ecb7
-  photo_manager: c303e4476f6c220274119f0212a7753e45edd4a2
-  rust_lib_localsend_app: 293779a82668308386129c9669c081d201d3e278
-  screen_retriever_macos: c5508cc3c66ff0d4db650480cf0ab691e220d933
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  tray_manager: 19c369010e59c073f13b82354d78a35f7972d609
-  uri_content: 6c7c098bcc83078659b4d274f42db92691eb9123
-  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
-  video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
-  wakelock_plus: 917609be14d812ddd9e9528876538b2263aaa03b
-  window_manager: b729e31d38fb04905235df9ea896128991cad99e
+  gal: 6a522c75909f1244732d4596d11d6a2f86ff37a5
+  in_app_purchase_storekit: 2342c0a5da86593124d08dd13d920f39a52b273a
+  network_info_plus: 2cb02d8435635eae13b3b79279681985121cf30c
+  open_file_mac: 4de820e1d27310e4d947a59f6d7f9b876af405fb
+  package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
+  pasteboard: 9b69dba6fedbb04866be632205d532fe2f6b1d99
+  photo_manager: 3d7c9d321e7bfeb8630ddcbf02cd3f0ff82deaaf
+  rust_lib_localsend_app: 010c50eaffd412d4d4e30436f2e5d8698de811f3
+  screen_retriever_macos: 038d3f7b34a779b06f536842003e41e8ec1fb4b7
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
+  tray_manager: c2a678ee19e2a094f0c2d03660ee2c3e81cea8ab
+  uri_content: 891fa09c9dda47b6e3c77d79fcf4449fd6301ba9
+  url_launcher_macos: 175a54c831f4375a6cf895875f716ee5af3888ce
+  video_player_avfoundation: e54d03b3b19f64f2c557354f72ce538387541ba6
+  wakelock_plus: 9d63063ffb7af1c215209769067c57103bde719d
+  window_manager: e25faf20d88283a0d46e7b1a759d07261ca27575
 
 PODFILE CHECKSUM: 5c6550f5101fcba381ddb97e2135e4cacca4f31f
 
