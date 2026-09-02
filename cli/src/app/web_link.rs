@@ -211,12 +211,18 @@ impl App {
                 pin: None,
                 verify_checksums: true,
                 event_tx: self.server_tx.clone(),
+                // T-005: same reasoning as the main CLI server — the web-link
+                // surface only forwards downloads, it does not serve the fs
+                // namespace.
+                enable_fs: false,
             }),
             WebConfig {
                 mode: web_mode,
                 ..WebConfig::default()
             },
             stop_rx,
+            // T-005: no FsConfig — web-link is download-only.
+            None,
         )
         .await?;
         self.server = Arc::new(server);

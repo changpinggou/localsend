@@ -42,7 +42,7 @@ pub use config::FsConfig;
 pub use events::FsEvent;
 pub use mount::{FsMount, FsRoot, MountTable};
 pub use path::{FsError, FsPath, PathDeniedReason, PathGuard};
-pub use rest::{handle_request, FsState, FS_PREFIX};
+pub use rest::{handle_request, register, FsState, FS_PREFIX};
 
 #[cfg(test)]
 mod tests {

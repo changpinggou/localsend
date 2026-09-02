@@ -46,6 +46,27 @@ pub struct ServerConfigV2 {
 
     /// Channel on which the server emits events that must be handled by the application.
     pub event_tx: mpsc::Sender<ServerEventV2>,
+
+    /// Whether the `fs` namespace (`/api/localsend/v2/fs/*`) is
+    /// allowed on this server. Defaults to `true`; can be
+    /// flipped to `false` to disable the namespace at startup
+    /// (the server still runs, just without the routes).
+    /// T-005.
+    ///
+    /// The namespace is also implicitly disabled when TLS is
+    /// off — LocalU requires mTLS for the file-system
+    /// endpoints, so a plain-HTTP server is *never* allowed to
+    /// expose them. See `http::server::start_with_port`.
+    ///
+    /// The field is *not* feature-gated: callers that build
+    /// without the `fs` feature still need to set it (it is
+    /// a no-op there because the `register` / dispatcher path
+    /// is compiled out). Putting the field behind
+    /// `#[cfg(feature = "fs")]` would break any caller that
+    /// constructs `ServerConfigV2` without enabling `fs`
+    /// (e.g. the existing `tests/v2_*.rs` integration
+    /// tests).
+    pub enable_fs: bool,
 }
 
 /// Runtime state of the v2 protocol endpoints.
@@ -85,6 +106,13 @@ pub struct AppState {
 
     /// State of the v2 protocol endpoints. `None` disables the v2 routes.
     v2: Option<Arc<V2State>>,
+
+    /// State of the read-only `fs` endpoints under
+    /// `/api/localsend/v2/fs/*` (T-003). `None` means the routes
+    /// are not registered. Only compiled when the `fs` feature
+    /// is enabled.
+    #[cfg(feature = "fs")]
+    fs: Option<Arc<crate::fs::FsState>>,
 }
 
 impl AppState {
@@ -93,6 +121,7 @@ impl AppState {
         internal_config: Option<InternalConfig>,
         v2_config: Option<ServerConfigV2>,
         web_config: WebConfig,
+        #[cfg(feature = "fs")] fs_config: Option<crate::fs::FsConfig>,
     ) -> Self {
         let v2 = v2_config.map(|config| {
             Arc::new(V2State {
@@ -106,6 +135,23 @@ impl AppState {
 
         let internal = internal_config.map(|config| Arc::new(InternalState::new(config)));
 
+        // The `fs` block is gated so the rest of the crate can
+        // still build with only the `http` feature. Construction
+        // mirrors how the v2 / internal / web states are built:
+        // an `Option<Config>` becomes an `Option<Arc<State>>`.
+        #[cfg(feature = "fs")]
+        let fs = fs_config.map(|config| {
+            // The whitelist we keep in the live state is the
+            // *authoritative* one — callers can mutate it later
+            // through the FsConfig::update_whitelist path. The
+            // MountTable is built from a snapshot of the same
+            // list; on every write the caller has to rebuild the
+            // MountTable (T-019 will tighten this with a single
+            // shared Arc<MountTable>).
+            let mounts = crate::fs::MountTable::from_config(config.whitelist.clone());
+            Arc::new(crate::fs::FsState::new(config, mounts))
+        });
+
         Self {
             info,
             web: Arc::new(WebState::from(web_config)),
@@ -117,6 +163,8 @@ impl AppState {
                 NonZeroUsize::new(200).unwrap(),
             ))),
             v2,
+            #[cfg(feature = "fs")]
+            fs,
         }
     }
 }
@@ -208,6 +256,13 @@ impl ServerHandle {
 }
 
 /// Binds the server to the specified port on both IPv4 and IPv6 addresses.
+///
+/// `fs_config` is the trailing parameter (rather than positional
+/// next to `web_config`) so that existing callers — which all
+/// use positional arguments — keep compiling when the `fs`
+/// feature is off. When `fs` is enabled, callers that want the
+/// read-only `/api/localsend/v2/fs/*` routes pass a
+/// `Some(FsConfig { .. })`; everyone else passes `None`.
 pub async fn start_with_port(
     port: u16,
     tls_config: Option<TlsConfig>,
@@ -216,14 +271,34 @@ pub async fn start_with_port(
     v2_config: Option<ServerConfigV2>,
     web_config: WebConfig,
     stop_rx: oneshot::Receiver<()>,
+    #[cfg(feature = "fs")] fs_config: Option<crate::fs::FsConfig>,
 ) -> anyhow::Result<ServerHandle> {
     // Installed before returning, so that a client built right after (which
     // skips the install when a provider exists) does not race the accept task.
     let _ = rustls::crypto::ring::default_provider().install_default();
 
+    // T-005: the `fs` namespace is only mounted when the server runs
+    // on TLS *and* the v2 config allows it. The decision (and the
+    // audit log line) is delegated to `fs::rest::register` so the
+    // policy lives in one place and the rest of the crate can just
+    // build the `AppState` from the resulting config.
+    #[cfg(feature = "fs")]
+    let fs_config = crate::fs::register(
+        fs_config,
+        tls_config.is_some(),
+        v2_config.as_ref().map(|c| c.enable_fs).unwrap_or(true),
+    );
+
     let ipv4_socket_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), port);
     let info = Arc::new(Mutex::new(info));
-    let state = AppState::new(info.clone(), internal_config, v2_config, web_config);
+    let state = AppState::new(
+        info.clone(),
+        internal_config,
+        v2_config,
+        web_config,
+        #[cfg(feature = "fs")]
+        fs_config,
+    );
 
     let ipv4_listener = tokio::net::TcpListener::bind(ipv4_socket_addr).await?;
     // With port 0, the IPv6 listener must reuse the port the IPv4 listener got.
@@ -541,7 +616,7 @@ impl RequestClientInfo {
     /// The SHA-256 fingerprint (uppercase hex) of the client certificate
     /// verified during the mTLS handshake.
     /// `None` when the server runs without TLS.
-    fn cert_fingerprint(&self) -> Option<String> {
+    pub(crate) fn cert_fingerprint(&self) -> Option<String> {
         self.cert.as_deref().map(fingerprint_from_cert_der)
     }
 
@@ -640,6 +715,24 @@ async fn handle_request_inner(mut req: Request<Incoming>) -> Result<Response<Box
             Ok(v3::register(req.into_body(), state, client_info)
                 .await?
                 .into_response())
+        }
+        // `fs` read-only endpoints. Any URI under
+        // `/api/localsend/v2/fs/*` is delegated to the fs
+        // module's own dispatcher, which knows the three exact
+        // sub-routes (`/roots`, `/list`, `/download`) and
+        // returns 400 for anything else.
+        #[cfg(feature = "fs")]
+        (&Method::GET, path) if path.starts_with(crate::fs::FS_PREFIX) => {
+            let Some(fs) = state.fs.clone() else {
+                // The fs module is feature-compiled but the
+                // user didn't pass an `fs_config` — the routes
+                // simply do not exist on this server. 404 is
+                // the right answer: it matches the rest of
+                // the route table's "not configured" behaviour.
+                return Err(AppError::Status(StatusCode::NOT_FOUND));
+            };
+            let fingerprint = client_info.cert_fingerprint();
+            Ok(crate::fs::handle_request(fs, req, fingerprint).await?)
         }
         _ => {
             let mut res = Response::new(response::empty_body());

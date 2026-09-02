@@ -50,6 +50,7 @@ async fn start_test_server(internal_enabled: bool) -> TestServer {
         None,
         WebConfig::default(),
         stop_rx,
+        None,
     )
     .await
     .expect("Failed to start server");

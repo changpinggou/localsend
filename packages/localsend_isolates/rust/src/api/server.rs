@@ -268,9 +268,17 @@ pub async fn start_server(
             pin,
             verify_checksums,
             event_tx,
+            // T-005: the Flutter app disables the fs namespace by default
+            // (the fs namespace is opt-in, configured separately on the
+            // settings page and only mounted on a separate TLS listener).
+            enable_fs: false,
         }),
         web_config,
         stop_rx,
+        // T-005: no FsConfig here either. The Flutter app constructs an
+        // FsConfig and starts a second `start_with_port` when the user
+        // explicitly enables fs sharing.
+        None,
     )
     .await?;
 

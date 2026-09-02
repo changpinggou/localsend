@@ -143,9 +143,12 @@ async fn start_test_server(
             pin: None,
             verify_checksums: true,
             event_tx: v2_event_tx,
+            enable_fs: true,
         }),
         web_config,
         stop_rx,
+        // T-005: fs namespace not exercised here.
+        None,
     )
     .await
     .expect("Failed to start server");
@@ -313,12 +316,15 @@ async fn test_upload_page() {
             pin: None,
             verify_checksums: true,
             event_tx: v2_event_tx,
+            enable_fs: true,
         }),
         WebConfig {
             mode: WebMode::Upload,
             ..WebConfig::default()
         },
         stop_rx,
+        // T-005: fs namespace not exercised here.
+        None,
     )
     .await
     .expect("Failed to start server");
@@ -368,6 +374,7 @@ async fn test_custom_web_pages() {
             pin: None,
             verify_checksums: true,
             event_tx: v2_event_tx,
+            enable_fs: true,
         }),
         WebConfig {
             mode: WebMode::Upload,
@@ -379,6 +386,8 @@ async fn test_custom_web_pages() {
             ..WebConfig::default()
         },
         stop_rx,
+        // T-005: fs namespace not exercised here.
+        None,
     )
     .await
     .expect("Failed to start server");

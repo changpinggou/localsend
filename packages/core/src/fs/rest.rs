@@ -48,6 +48,46 @@ use crate::http::server::common::query::parse_query;
 use crate::http::server::common::response::{full_body, BoxedBody};
 
 // =====================================================================
+// T-005: namespace gating
+// =====================================================================
+
+/// Mount-point for the T-005 TLS-gating decision.
+///
+/// `http::server::start_with_port` calls this with the user-supplied
+/// `fs_config`, a flag indicating whether the server is running TLS,
+/// and the `enable_fs` flag from [`ServerConfigV2`](
+/// crate::http::server::ServerConfigV2). The function returns the
+/// `FsConfig` that the dispatcher should use, or `None` to skip
+/// the namespace entirely.
+///
+/// The decision is logged at `error` level when TLS is missing
+/// (a security event — the user asked for fs and we said no) and
+/// at `info` when `enable_fs = false` (a deliberate
+/// configuration choice).
+pub fn register(
+    fs_config: Option<FsConfig>,
+    tls_enabled: bool,
+    enable_fs: bool,
+) -> Option<FsConfig> {
+    let cfg = fs_config?;
+    if !tls_enabled {
+        // N-SEC-3: the fs namespace MUST NOT be exposed over
+        // plain HTTP. The error log is the audit-trail seed
+        // (T-025 will persist it). We deliberately do *not*
+        // panic: the rest of the server (file transfers,
+        // discovery, web download) is still useful even
+        // without fs.
+        tracing::error!("fs namespace requires TLS; skipping registration");
+        return None;
+    }
+    if !enable_fs {
+        tracing::info!("fs namespace disabled by config");
+        return None;
+    }
+    Some(cfg)
+}
+
+// =====================================================================
 // State
 // =====================================================================
 

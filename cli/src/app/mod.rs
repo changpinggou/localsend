@@ -126,9 +126,15 @@ async fn start_network(identity: &Arc<storage::Identity>) -> anyhow::Result<Netw
             pin: None,
             verify_checksums: true,
             event_tx: server_tx.clone(),
+            // T-005: CLI is intentionally a sender, not a receiver. The CLI
+            // never exposes the fs namespace over v2 — set `enable_fs: false`
+            // so the route table never shows fs endpoints to a remote peer.
+            enable_fs: false,
         }),
         WebConfig::default(),
         server_stop_rx,
+        // T-005: no FsConfig either — CLI does not own a host mount table.
+        None,
     )
     .await?;
 

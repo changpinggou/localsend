@@ -141,9 +141,13 @@ async fn start_test_server_with_verification(
             pin,
             verify_checksums,
             event_tx,
+            enable_fs: true,
         }),
         WebConfig::default(),
         stop_rx,
+        // T-005: this binary does not exercise the fs namespace, so no
+        // FsConfig is supplied. `enable_fs: true` above is a no-op without it.
+        None,
     )
     .await
     .expect("Failed to start server");
@@ -974,9 +978,12 @@ async fn test_prepare_upload_aborted_by_sender_disconnect() {
             pin: None,
             verify_checksums: true,
             event_tx,
+            enable_fs: true,
         }),
         WebConfig::default(),
         stop_rx,
+        // T-005: this binary does not exercise the fs namespace.
+        None,
     )
     .await
     .expect("Failed to start server");
@@ -1076,9 +1083,12 @@ async fn test_prepare_upload_cancelled_by_session_less_cancel() {
             pin: None,
             verify_checksums: true,
             event_tx,
+            enable_fs: true,
         }),
         WebConfig::default(),
         stop_rx,
+        // T-005: this binary does not exercise the fs namespace.
+        None,
     )
     .await
     .expect("Failed to start server");
@@ -1211,9 +1221,12 @@ async fn test_prepare_upload_aborted_by_sender_disconnect_tls() {
             pin: None,
             verify_checksums: true,
             event_tx,
+            enable_fs: true,
         }),
         WebConfig::default(),
         stop_rx,
+        // T-005: this binary does not exercise the fs namespace.
+        None,
     )
     .await
     .expect("Failed to start server");

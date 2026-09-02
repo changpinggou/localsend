@@ -74,9 +74,12 @@ async fn start_register_server(
             pin: None,
             verify_checksums: true,
             event_tx,
+            enable_fs: true,
         }),
         WebConfig::default(),
         stop_rx,
+        // T-005: fs namespace not exercised here.
+        None,
     )
     .await
     .expect("Failed to start server");

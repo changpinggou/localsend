@@ -124,9 +124,12 @@ async fn start_tls_server_with_web(identity: &Identity, web: WebConfig) -> TestS
             pin: None,
             verify_checksums: true,
             event_tx,
+            enable_fs: true,
         }),
         web,
         stop_rx,
+        // T-005: fs namespace not exercised here.
+        None,
     )
     .await
     .expect("Failed to start server");
