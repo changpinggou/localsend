@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/server.dart' show WebParams;
 import 'package:localsend_isolates/src/isolate/child/discovery_isolate.dart';
+import 'package:localsend_isolates/src/isolate/child/fs_download_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/fs_list_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/server_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/upload_isolate.dart';
@@ -564,6 +565,35 @@ class IsolateFsListAction extends ReduxActionWithResult<IsolateController, Paren
     return (
       state,
       connection.sendWrappedTaskAndListenStream(task: task),
+    );
+  }
+}
+
+/// T-009: one filesystem download routed through the `fsDownload`
+/// isolate. The returned stream emits one or more
+/// [FsDownloadResult]s (Started / Chunk / Finished / Cancelled / Failed)
+/// and completes when the FRB sink ends.
+///
+/// `sessionId` lets the caller keep multiple concurrent downloads
+/// distinct; the cancel token inside the isolate is keyed by it, so
+/// cancelling one session does not affect others.
+class IsolateFsDownloadAction extends ReduxActionWithResult<IsolateController, ParentIsolateState, Stream<FsDownloadResult>> {
+  final FsDownloadRequest request;
+  final String sessionId;
+
+  IsolateFsDownloadAction({required this.request, required this.sessionId});
+
+  @override
+  (ParentIsolateState, Stream<FsDownloadResult>) reduce() {
+    final connection = state.fsDownload;
+    if (connection == null) {
+      throw StateError('fsDownload is not initialized');
+    }
+    return (
+      state,
+      connection.sendWrappedTaskAndListenStream(
+        task: FsDownloadStartTask(request, sessionId),
+      ),
     );
   }
 }

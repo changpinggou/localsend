@@ -50,6 +50,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$receiveTab$en receiveTab = Translations$receiveTab$en.internal(_root);
   late final Translations$sendTab$en sendTab = Translations$sendTab$en.internal(_root);
   late final Translations$remoteBrowser$en remoteBrowser = Translations$remoteBrowser$en.internal(_root);
+  late final Translations$fsDownload$en fsDownload = Translations$fsDownload$en.internal(_root);
   late final Translations$settingsTab$en settingsTab = Translations$settingsTab$en.internal(_root);
   late final Translations$troubleshootPage$en troubleshootPage = Translations$troubleshootPage$en.internal(_root);
   late final Translations$networkInterfacesPage$en networkInterfacesPage = Translations$networkInterfacesPage$en.internal(_root);
@@ -322,6 +323,51 @@ class Translations$remoteBrowser$en {
 
   /// en: 'Load more'
   String get loadMore => 'Load more';
+}
+
+// Path: fsDownload
+class Translations$fsDownload$en {
+  Translations$fsDownload$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Save to Photos'
+  String get saveToGallery => 'Save to Photos';
+
+  /// en: 'Save to Files'
+  String get saveToFiles => 'Save to Files';
+
+  /// en: 'Preview'
+  String get preview => 'Preview';
+
+  /// en: 'Downloading…'
+  String get downloading => 'Downloading…';
+
+  /// en: 'Saving…'
+  String get saving => 'Saving…';
+
+  /// en: 'Cancelled'
+  String get cancelled => 'Cancelled';
+
+  /// en: 'Download failed'
+  String get failedTitle => 'Download failed';
+
+  /// en: 'Gallery permission denied'
+  String get galleryDenied => 'Gallery permission denied';
+
+  /// en: 'Download complete'
+  String get complete => 'Download complete';
+
+  /// en: 'Saved to Photos'
+  String get savedToGallery => 'Saved to Photos';
+
+  /// en: 'Saved to {path}'
+  String savedToFiles({required Object path}) => 'Saved to ${path}';
+
+  /// en: 'Loading preview…'
+  String get previewLoading => 'Loading preview…';
 }
 
 // Path: settingsTab

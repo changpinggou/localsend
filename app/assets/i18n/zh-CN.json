@@ -104,6 +104,20 @@
     "viewGrid": "网格视图",
     "loadMore": "加载更多"
   },
+  "fsDownload": {
+    "saveToGallery": "保存到相册",
+    "saveToFiles": "保存到文件",
+    "preview": "预览",
+    "downloading": "正在下载…",
+    "saving": "正在保存…",
+    "cancelled": "已取消",
+    "failedTitle": "下载失败",
+    "galleryDenied": "未授权访问相册",
+    "complete": "下载完成",
+    "savedToGallery": "已保存到相册",
+    "savedToFiles": "已保存到 {path}",
+    "previewLoading": "正在加载预览…"
+  },
   "settingsTab": {
     "title": "设置",
     "general": {

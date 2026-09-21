@@ -104,6 +104,20 @@
     "viewGrid": "Grid view",
     "loadMore": "Load more"
   },
+  "fsDownload": {
+    "saveToGallery": "Save to Photos",
+    "saveToFiles": "Save to Files",
+    "preview": "Preview",
+    "downloading": "Downloading…",
+    "saving": "Saving…",
+    "cancelled": "Cancelled",
+    "failedTitle": "Download failed",
+    "galleryDenied": "Gallery permission denied",
+    "complete": "Download complete",
+    "savedToGallery": "Saved to Photos",
+    "savedToFiles": "Saved to {path}",
+    "previewLoading": "Loading preview…"
+  },
   "settingsTab": {
     "title": "Settings",
     "general": {

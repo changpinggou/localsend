@@ -50,6 +50,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   @override
   late final Translations$remoteBrowser$zh_CN remoteBrowser = Translations$remoteBrowser$zh_CN.internal(_root);
   @override
+  late final Translations$fsDownload$zh_CN fsDownload = Translations$fsDownload$zh_CN.internal(_root);
+  @override
   late final Translations$settingsTab$zh_CN settingsTab = Translations$settingsTab$zh_CN.internal(_root);
   @override
   late final Translations$troubleshootPage$zh_CN troubleshootPage = Translations$troubleshootPage$zh_CN.internal(_root);
@@ -279,6 +281,39 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   String get viewGrid => '网格视图';
   @override
   String get loadMore => '加载更多';
+}
+
+// Path: fsDownload
+class Translations$fsDownload$zh_CN extends Translations$fsDownload$en {
+  Translations$fsDownload$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get saveToGallery => '保存到相册';
+  @override
+  String get saveToFiles => '保存到文件';
+  @override
+  String get preview => '预览';
+  @override
+  String get downloading => '正在下载…';
+  @override
+  String get saving => '正在保存…';
+  @override
+  String get cancelled => '已取消';
+  @override
+  String get failedTitle => '下载失败';
+  @override
+  String get galleryDenied => '未授权访问相册';
+  @override
+  String get complete => '下载完成';
+  @override
+  String get savedToGallery => '已保存到相册';
+  @override
+  String savedToFiles({required Object path}) => '已保存到 ${path}';
+  @override
+  String get previewLoading => '正在加载预览…';
 }
 
 // Path: settingsTab

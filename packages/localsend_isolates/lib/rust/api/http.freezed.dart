@@ -12,6 +12,459 @@ part of 'http.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
+mixin _$RsFsDownloadEvent {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsDownloadEvent);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'RsFsDownloadEvent()';
+}
+
+
+}
+
+/// @nodoc
+class $RsFsDownloadEventCopyWith<$Res>  {
+$RsFsDownloadEventCopyWith(RsFsDownloadEvent _, $Res Function(RsFsDownloadEvent) __);
+}
+
+
+/// Adds pattern-matching-related methods to [RsFsDownloadEvent].
+extension RsFsDownloadEventPatterns on RsFsDownloadEvent {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( RsFsDownloadEvent_Started value)?  started,TResult Function( RsFsDownloadEvent_Chunk value)?  chunk,TResult Function( RsFsDownloadEvent_Finished value)?  finished,TResult Function( RsFsDownloadEvent_Cancelled value)?  cancelled,TResult Function( RsFsDownloadEvent_Failed value)?  failed,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case RsFsDownloadEvent_Started() when started != null:
+return started(_that);case RsFsDownloadEvent_Chunk() when chunk != null:
+return chunk(_that);case RsFsDownloadEvent_Finished() when finished != null:
+return finished(_that);case RsFsDownloadEvent_Cancelled() when cancelled != null:
+return cancelled(_that);case RsFsDownloadEvent_Failed() when failed != null:
+return failed(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( RsFsDownloadEvent_Started value)  started,required TResult Function( RsFsDownloadEvent_Chunk value)  chunk,required TResult Function( RsFsDownloadEvent_Finished value)  finished,required TResult Function( RsFsDownloadEvent_Cancelled value)  cancelled,required TResult Function( RsFsDownloadEvent_Failed value)  failed,}){
+final _that = this;
+switch (_that) {
+case RsFsDownloadEvent_Started():
+return started(_that);case RsFsDownloadEvent_Chunk():
+return chunk(_that);case RsFsDownloadEvent_Finished():
+return finished(_that);case RsFsDownloadEvent_Cancelled():
+return cancelled(_that);case RsFsDownloadEvent_Failed():
+return failed(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( RsFsDownloadEvent_Started value)?  started,TResult? Function( RsFsDownloadEvent_Chunk value)?  chunk,TResult? Function( RsFsDownloadEvent_Finished value)?  finished,TResult? Function( RsFsDownloadEvent_Cancelled value)?  cancelled,TResult? Function( RsFsDownloadEvent_Failed value)?  failed,}){
+final _that = this;
+switch (_that) {
+case RsFsDownloadEvent_Started() when started != null:
+return started(_that);case RsFsDownloadEvent_Chunk() when chunk != null:
+return chunk(_that);case RsFsDownloadEvent_Finished() when finished != null:
+return finished(_that);case RsFsDownloadEvent_Cancelled() when cancelled != null:
+return cancelled(_that);case RsFsDownloadEvent_Failed() when failed != null:
+return failed(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( BigInt totalSize,  int status)?  started,TResult Function( Uint8List bytes,  BigInt transferred)?  chunk,TResult Function()?  finished,TResult Function()?  cancelled,TResult Function( RsHttpClientError error)?  failed,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case RsFsDownloadEvent_Started() when started != null:
+return started(_that.totalSize,_that.status);case RsFsDownloadEvent_Chunk() when chunk != null:
+return chunk(_that.bytes,_that.transferred);case RsFsDownloadEvent_Finished() when finished != null:
+return finished();case RsFsDownloadEvent_Cancelled() when cancelled != null:
+return cancelled();case RsFsDownloadEvent_Failed() when failed != null:
+return failed(_that.error);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( BigInt totalSize,  int status)  started,required TResult Function( Uint8List bytes,  BigInt transferred)  chunk,required TResult Function()  finished,required TResult Function()  cancelled,required TResult Function( RsHttpClientError error)  failed,}) {final _that = this;
+switch (_that) {
+case RsFsDownloadEvent_Started():
+return started(_that.totalSize,_that.status);case RsFsDownloadEvent_Chunk():
+return chunk(_that.bytes,_that.transferred);case RsFsDownloadEvent_Finished():
+return finished();case RsFsDownloadEvent_Cancelled():
+return cancelled();case RsFsDownloadEvent_Failed():
+return failed(_that.error);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( BigInt totalSize,  int status)?  started,TResult? Function( Uint8List bytes,  BigInt transferred)?  chunk,TResult? Function()?  finished,TResult? Function()?  cancelled,TResult? Function( RsHttpClientError error)?  failed,}) {final _that = this;
+switch (_that) {
+case RsFsDownloadEvent_Started() when started != null:
+return started(_that.totalSize,_that.status);case RsFsDownloadEvent_Chunk() when chunk != null:
+return chunk(_that.bytes,_that.transferred);case RsFsDownloadEvent_Finished() when finished != null:
+return finished();case RsFsDownloadEvent_Cancelled() when cancelled != null:
+return cancelled();case RsFsDownloadEvent_Failed() when failed != null:
+return failed(_that.error);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class RsFsDownloadEvent_Started extends RsFsDownloadEvent {
+  const RsFsDownloadEvent_Started({required this.totalSize, required this.status}): super._();
+  
+
+ final  BigInt totalSize;
+ final  int status;
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsDownloadEvent_StartedCopyWith<RsFsDownloadEvent_Started> get copyWith => _$RsFsDownloadEvent_StartedCopyWithImpl<RsFsDownloadEvent_Started>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsDownloadEvent_Started&&(identical(other.totalSize, totalSize) || other.totalSize == totalSize)&&(identical(other.status, status) || other.status == status));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,totalSize,status);
+
+@override
+String toString() {
+  return 'RsFsDownloadEvent.started(totalSize: $totalSize, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsDownloadEvent_StartedCopyWith<$Res> implements $RsFsDownloadEventCopyWith<$Res> {
+  factory $RsFsDownloadEvent_StartedCopyWith(RsFsDownloadEvent_Started value, $Res Function(RsFsDownloadEvent_Started) _then) = _$RsFsDownloadEvent_StartedCopyWithImpl;
+@useResult
+$Res call({
+ BigInt totalSize, int status
+});
+
+
+
+
+}
+/// @nodoc
+class _$RsFsDownloadEvent_StartedCopyWithImpl<$Res>
+    implements $RsFsDownloadEvent_StartedCopyWith<$Res> {
+  _$RsFsDownloadEvent_StartedCopyWithImpl(this._self, this._then);
+
+  final RsFsDownloadEvent_Started _self;
+  final $Res Function(RsFsDownloadEvent_Started) _then;
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? totalSize = null,Object? status = null,}) {
+  return _then(RsFsDownloadEvent_Started(
+totalSize: null == totalSize ? _self.totalSize : totalSize // ignore: cast_nullable_to_non_nullable
+as BigInt,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class RsFsDownloadEvent_Chunk extends RsFsDownloadEvent {
+  const RsFsDownloadEvent_Chunk({required this.bytes, required this.transferred}): super._();
+  
+
+ final  Uint8List bytes;
+ final  BigInt transferred;
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsDownloadEvent_ChunkCopyWith<RsFsDownloadEvent_Chunk> get copyWith => _$RsFsDownloadEvent_ChunkCopyWithImpl<RsFsDownloadEvent_Chunk>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsDownloadEvent_Chunk&&const DeepCollectionEquality().equals(other.bytes, bytes)&&(identical(other.transferred, transferred) || other.transferred == transferred));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(bytes),transferred);
+
+@override
+String toString() {
+  return 'RsFsDownloadEvent.chunk(bytes: $bytes, transferred: $transferred)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsDownloadEvent_ChunkCopyWith<$Res> implements $RsFsDownloadEventCopyWith<$Res> {
+  factory $RsFsDownloadEvent_ChunkCopyWith(RsFsDownloadEvent_Chunk value, $Res Function(RsFsDownloadEvent_Chunk) _then) = _$RsFsDownloadEvent_ChunkCopyWithImpl;
+@useResult
+$Res call({
+ Uint8List bytes, BigInt transferred
+});
+
+
+
+
+}
+/// @nodoc
+class _$RsFsDownloadEvent_ChunkCopyWithImpl<$Res>
+    implements $RsFsDownloadEvent_ChunkCopyWith<$Res> {
+  _$RsFsDownloadEvent_ChunkCopyWithImpl(this._self, this._then);
+
+  final RsFsDownloadEvent_Chunk _self;
+  final $Res Function(RsFsDownloadEvent_Chunk) _then;
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? bytes = null,Object? transferred = null,}) {
+  return _then(RsFsDownloadEvent_Chunk(
+bytes: null == bytes ? _self.bytes : bytes // ignore: cast_nullable_to_non_nullable
+as Uint8List,transferred: null == transferred ? _self.transferred : transferred // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class RsFsDownloadEvent_Finished extends RsFsDownloadEvent {
+  const RsFsDownloadEvent_Finished(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsDownloadEvent_Finished);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'RsFsDownloadEvent.finished()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class RsFsDownloadEvent_Cancelled extends RsFsDownloadEvent {
+  const RsFsDownloadEvent_Cancelled(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsDownloadEvent_Cancelled);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'RsFsDownloadEvent.cancelled()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class RsFsDownloadEvent_Failed extends RsFsDownloadEvent {
+  const RsFsDownloadEvent_Failed({required this.error}): super._();
+  
+
+ final  RsHttpClientError error;
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsDownloadEvent_FailedCopyWith<RsFsDownloadEvent_Failed> get copyWith => _$RsFsDownloadEvent_FailedCopyWithImpl<RsFsDownloadEvent_Failed>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsDownloadEvent_Failed&&(identical(other.error, error) || other.error == error));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,error);
+
+@override
+String toString() {
+  return 'RsFsDownloadEvent.failed(error: $error)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsDownloadEvent_FailedCopyWith<$Res> implements $RsFsDownloadEventCopyWith<$Res> {
+  factory $RsFsDownloadEvent_FailedCopyWith(RsFsDownloadEvent_Failed value, $Res Function(RsFsDownloadEvent_Failed) _then) = _$RsFsDownloadEvent_FailedCopyWithImpl;
+@useResult
+$Res call({
+ RsHttpClientError error
+});
+
+
+$RsHttpClientErrorCopyWith<$Res> get error;
+
+}
+/// @nodoc
+class _$RsFsDownloadEvent_FailedCopyWithImpl<$Res>
+    implements $RsFsDownloadEvent_FailedCopyWith<$Res> {
+  _$RsFsDownloadEvent_FailedCopyWithImpl(this._self, this._then);
+
+  final RsFsDownloadEvent_Failed _self;
+  final $Res Function(RsFsDownloadEvent_Failed) _then;
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+  return _then(RsFsDownloadEvent_Failed(
+error: null == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as RsHttpClientError,
+  ));
+}
+
+/// Create a copy of RsFsDownloadEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RsHttpClientErrorCopyWith<$Res> get error {
+  
+  return $RsHttpClientErrorCopyWith<$Res>(_self.error, (value) {
+    return _then(_self.copyWith(error: value));
+  });
+}
+}
+
+/// @nodoc
 mixin _$RsHttpClientError {
 
 

@@ -343,6 +343,80 @@ impl LsHttpClientV2 {
         Ok(body)
     }
 
+    /// `GET /api/localsend/v2/fs/roots` — fetch the peer's whitelisted mount
+    /// points. The fs namespace is gated by [`crate::fs::register`] on the
+    /// server side, so an empty list is the expected response when the peer
+    /// has not exposed anything (or the namespace was disabled because TLS
+    /// is off).
+    #[cfg(feature = "fs")]
+    pub async fn list_roots(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+    ) -> Result<crate::fs::RootsResponse, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/api/localsend/v2/fs/roots",
+            params: &[],
+        }
+        .to_string();
+
+        let res = self.client.get(&url).send().await?;
+
+        if res.status() != StatusCode::OK {
+            return res.into_error().await;
+        }
+
+        let body = res.json::<crate::fs::RootsResponse>().await?;
+        Ok(body)
+    }
+
+    /// `GET /api/localsend/v2/fs/list` — paginated directory listing under a
+    /// whitelisted root. `path` uses `/` as the separator and is relative to
+    /// the mount-point root; an empty `path` lists the root contents.
+    /// `page` and `size` are clamped server-side to the configured ceiling.
+    #[cfg(feature = "fs")]
+    pub async fn list_dir(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+        page: usize,
+        size: usize,
+        sort: &str,
+    ) -> Result<crate::fs::ListResponse, ClientError> {
+        let page_str = page.to_string();
+        let size_str = size.to_string();
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/api/localsend/v2/fs/list",
+            params: &[
+                ("path", path),
+                ("page", &page_str),
+                ("size", &size_str),
+                ("sort", sort),
+            ],
+        }
+        .to_string();
+
+        let res = self.client.get(&url).send().await?;
+
+        if res.status() != StatusCode::OK {
+            return res.into_error().await;
+        }
+
+        let body = res.json::<crate::fs::ListResponse>().await?;
+        Ok(body)
+    }
+
     /// Prepares to download files from a sender (Download API).
     ///
     /// POST /api/localsend/v2/prepare-download
@@ -480,5 +554,44 @@ impl LsHttpClientV2 {
         writer.flush().await?;
 
         Ok(total_bytes)
+    }
+
+    /// `GET /api/localsend/v2/fs/download?path=...` — stream a file
+    /// from a whitelisted mount point. T-009: returns the raw
+    /// `reqwest::Response` so callers can pipe the body into a stream
+    /// (FRB `StreamSink`) or buffer it to disk / memory.
+    ///
+    /// `range` is `(start, Some(end))` for closed ranges or
+    /// `(start, None)` for "from start to EOF". `None` means "no
+    /// Range header", i.e. download the whole file.
+    #[cfg(feature = "fs")]
+    pub async fn fs_download(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+        range: Option<(u64, Option<u64>)>,
+    ) -> Result<reqwest::Response, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/api/localsend/v2/fs/download",
+            params: &[("path", path)],
+        }
+        .to_string();
+
+        let mut req = self.client.get(&url);
+        if let Some((start, end)) = range {
+            let end_str = end.map(|e| e.to_string()).unwrap_or_default();
+            req = req.header(reqwest::header::RANGE, format!("bytes={start}-{end_str}"));
+        }
+        let res = req.send().await?;
+        if !res.status().is_success() && res.status() != reqwest::StatusCode::PARTIAL_CONTENT {
+            return res.into_error().await;
+        }
+        Ok(res)
     }
 }

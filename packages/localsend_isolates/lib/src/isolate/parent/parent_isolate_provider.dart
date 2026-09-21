@@ -1,5 +1,6 @@
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:localsend_isolates/src/isolate/child/discovery_isolate.dart';
+import 'package:localsend_isolates/src/isolate/child/fs_download_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/fs_list_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/main.dart';
 import 'package:localsend_isolates/src/isolate/child/server_isolate.dart';
@@ -22,6 +23,7 @@ class ParentIsolateState with ParentIsolateStateMappable {
   final IsolateConnector<IsolateTaskStreamResult<HttpUploadEvent>, SendToIsolateData<IsolateTask<BaseHttpUploadTask>>>? httpUpload;
   final IsolateConnector<IsolateTaskStreamResult<HttpServerEvent>, SendToIsolateData<IsolateTask<BaseHttpServerTask>>>? httpServer;
   final IsolateConnector<IsolateTaskStreamResult<FsListResult>, SendToIsolateData<IsolateTask<FsListTask>>>? fsList;
+  final IsolateConnector<IsolateTaskStreamResult<FsDownloadResult>, SendToIsolateData<IsolateTask<FsDownloadTask>>>? fsDownload;
 
   ParentIsolateState({
     required this.syncState,
@@ -29,6 +31,7 @@ class ParentIsolateState with ParentIsolateStateMappable {
     required this.httpUpload,
     required this.httpServer,
     required this.fsList,
+    required this.fsDownload,
   });
 
   static ParentIsolateState initial(SyncState syncState) => ParentIsolateState(
@@ -37,6 +40,7 @@ class ParentIsolateState with ParentIsolateStateMappable {
     httpUpload: null,
     httpServer: null,
     fsList: null,
+    fsDownload: null,
   );
 
   @override
@@ -101,11 +105,21 @@ class IsolateSetupAction extends AsyncReduxAction<IsolateController, ParentIsola
           ),
         );
 
+    final fsDownload =
+        await TypedIsolates.startIsolate<IsolateTaskStreamResult<FsDownloadResult>, SendToIsolateData<IsolateTask<FsDownloadTask>>, InitialData>(
+          task: setupFsDownloadIsolate,
+          param: InitialData(
+            syncState: state.syncState,
+            logLevel: Logger.root.level,
+          ),
+        );
+
     return state.copyWith(
       discovery: discovery,
       httpUpload: httpUpload,
       httpServer: httpServer,
       fsList: fsList,
+      fsDownload: fsDownload,
     );
   }
 }
@@ -117,6 +131,7 @@ class IsolateDisposeAction extends ReduxAction<IsolateController, ParentIsolateS
     state.httpUpload?.isolate.kill();
     state.httpServer?.isolate.kill();
     state.fsList?.isolate.kill();
+    state.fsDownload?.isolate.kill();
     return state;
   }
 }

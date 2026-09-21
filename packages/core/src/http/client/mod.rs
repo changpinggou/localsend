@@ -171,6 +171,70 @@ impl LsHttpClient {
             LsHttpClient::V3(client) => client.cancel(protocol, ip, port, session_id).await,
         }
     }
+
+    /// `GET /api/localsend/v2/fs/roots` — fetch the peer's whitelisted
+    /// mount points. The fs namespace is V2-only.
+    #[cfg(feature = "fs")]
+    pub async fn list_roots(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+    ) -> Result<crate::fs::RootsResponse, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.list_roots(protocol, ip, port).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `GET /api/localsend/v2/fs/list` — list a directory under one of the
+    /// peer's whitelisted roots.
+    #[cfg(feature = "fs")]
+    pub async fn list_dir(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+        page: usize,
+        size: usize,
+        sort: &str,
+    ) -> Result<crate::fs::ListResponse, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => {
+                client.list_dir(protocol, ip, port, path, page, size, sort).await
+            }
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `GET /api/localsend/v2/fs/download?path=...` — stream a single
+    /// file from a whitelisted root. The response is the raw `reqwest::Response`
+    /// (NOT a typed body) so callers can either `.bytes().await` for small
+    /// files or wire it through a streaming sink for large ones (T-009).
+    ///
+    /// `range` is an optional `(start, end)` byte range, in HTTP `Range:` header
+    /// form. `None` means "fetch the whole file".
+    #[cfg(feature = "fs")]
+    pub async fn fs_download(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+        range: Option<(u64, Option<u64>)>,
+    ) -> Result<reqwest::Response, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_download(protocol, ip, port, path, range).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
 }
 
 /// Builds a streaming request body from the file content, invoking `progress`

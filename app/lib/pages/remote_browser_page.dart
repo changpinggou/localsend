@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
+import 'package:localsend_app/pages/media_preview/image_preview_page.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/breadcrumb.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/empty_state.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/file_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/grid_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/list_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart';
+import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
@@ -194,20 +197,77 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       onLoadMore: () => ref.notifier(fsListProvider).loadMore(device),
     );
   }
+  // ignore: discarded_futures
 
+  /// Dispatches the entry tap. Folder taps are synchronous; file
+  /// taps run an async download-and-save flow whose outcome is
+  /// reported via a snackbar inside [_handleFileTap].
+  // The async path is fire-and-forget — errors surface as a snackbar.
+  // ignore: discarded_futures
   void _onTapEntry(Device device, rust.FsEntry entry) {
     if (entry.isDir) {
       final base = ref.read(fsListProvider).currentPath;
       final next = base.isEmpty ? entry.name : '$base/${entry.name}';
       ref.notifier(fsListProvider).enterPath(device: device, path: next);
     } else {
-      // T-009 entry point: file action sheet is wired in T-009. For P1
-      // the page is read-only; we surface a no-op toast so the user
-      // gets feedback rather than a silent dead tap.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(entry.name),
-          duration: const Duration(seconds: 1),
+      // Async file action sheet + download + save flow. Outcome is
+      // surfaced via a snackbar from inside `_handleFileTap`.
+      _handleFileTap(device, entry);
+    }
+  }
+
+  /// T-009: show the file action sheet, run the picked action, and
+  /// surface the outcome as a snackbar. `progress` events come from
+  /// the provider via the existing [ref.watch] above, so the page
+  /// already rebuilds as bytes stream in.
+  Future<void> _handleFileTap(Device device, rust.FsEntry entry) async {
+    final action = await showFileActionSheet(context, entry: entry);
+    if (action == null || !mounted) return;
+
+    final base = ref.read(fsListProvider).currentPath;
+    final fullPath = base.isEmpty ? entry.name : '$base/${entry.name}';
+
+    // Show a "Downloading…" snackbar with a progress tick via a
+    // setState. The page already watches fsDownloadProvider, so the
+    // snackbar message can stay simple here.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.fsDownload.downloading),
+        duration: const Duration(seconds: 30),
+      ),
+    );
+
+    final downloadService = ref.notifier(fsDownloadProvider);
+    final result = await performFileAction(
+      downloadService: downloadService,
+      device: device,
+      entry: entry,
+      fullPath: fullPath,
+      action: action,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    final msg = switch (result.action) {
+      FsFileAction.saveToGallery => result.failed
+          ? t.fsDownload.galleryDenied
+          : t.fsDownload.savedToGallery,
+      FsFileAction.saveToFiles => result.failed
+          ? t.fsDownload.failedTitle
+          : t.fsDownload.savedToFiles(path: result.savedPath ?? ''),
+      FsFileAction.preview => t.fsDownload.complete,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
+
+    if (result.action == FsFileAction.preview && result.savedPath != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ImagePreviewPage(
+            localPath: result.savedPath!,
+            title: entry.name,
+          ),
         ),
       );
     }

@@ -80,6 +80,19 @@ class ParentIsolateStateMapper extends ClassMapperBase<ParentIsolateState> {
     >
   >
   _f$fsList = Field('fsList', _$fsList);
+  static IsolateConnector<
+    IsolateTaskStreamResult<FsDownloadResult>,
+    SendToIsolateData<IsolateTask<FsDownloadTask>>
+  >?
+  _$fsDownload(ParentIsolateState v) => v.fsDownload;
+  static const Field<
+    ParentIsolateState,
+    IsolateConnector<
+      IsolateTaskStreamResult<FsDownloadResult>,
+      SendToIsolateData<IsolateTask<FsDownloadTask>>
+    >
+  >
+  _f$fsDownload = Field('fsDownload', _$fsDownload);
 
   @override
   final MappableFields<ParentIsolateState> fields = const {
@@ -88,6 +101,7 @@ class ParentIsolateStateMapper extends ClassMapperBase<ParentIsolateState> {
     #httpUpload: _f$httpUpload,
     #httpServer: _f$httpServer,
     #fsList: _f$fsList,
+    #fsDownload: _f$fsDownload,
   };
 
   static ParentIsolateState _instantiate(DecodingData data) {
@@ -97,6 +111,7 @@ class ParentIsolateStateMapper extends ClassMapperBase<ParentIsolateState> {
       httpUpload: data.dec(_f$httpUpload),
       httpServer: data.dec(_f$httpServer),
       fsList: data.dec(_f$fsList),
+      fsDownload: data.dec(_f$fsDownload),
     );
   }
 
@@ -194,6 +209,11 @@ abstract class ParentIsolateStateCopyWith<
       SendToIsolateData<IsolateTask<FsListTask>>
     >?
     fsList,
+    IsolateConnector<
+      IsolateTaskStreamResult<FsDownloadResult>,
+      SendToIsolateData<IsolateTask<FsDownloadTask>>
+    >?
+    fsDownload,
   });
   ParentIsolateStateCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -218,6 +238,7 @@ class _ParentIsolateStateCopyWithImpl<$R, $Out>
     Object? httpUpload = $none,
     Object? httpServer = $none,
     Object? fsList = $none,
+    Object? fsDownload = $none,
   }) => $apply(
     FieldCopyWithData({
       if (syncState != null) #syncState: syncState,
@@ -225,6 +246,7 @@ class _ParentIsolateStateCopyWithImpl<$R, $Out>
       if (httpUpload != $none) #httpUpload: httpUpload,
       if (httpServer != $none) #httpServer: httpServer,
       if (fsList != $none) #fsList: fsList,
+      if (fsDownload != $none) #fsDownload: fsDownload,
     }),
   );
   @override
@@ -234,6 +256,7 @@ class _ParentIsolateStateCopyWithImpl<$R, $Out>
     httpUpload: data.get(#httpUpload, or: $value.httpUpload),
     httpServer: data.get(#httpServer, or: $value.httpServer),
     fsList: data.get(#fsList, or: $value.fsList),
+    fsDownload: data.get(#fsDownload, or: $value.fsDownload),
   );
 
   @override

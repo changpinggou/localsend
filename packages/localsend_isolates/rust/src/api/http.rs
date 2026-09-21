@@ -11,6 +11,8 @@ use localsend::model::discovery::ProtocolType;
 use localsend::reqwest;
 use localsend::util::error::ErrorChain;
 
+pub use localsend::fs::{FsEntry, FsRoot, ListResponse, RootsResponse};
+
 pub struct RsHttpClient {
     inner: localsend::http::client::LsHttpClient,
 }
@@ -172,6 +174,117 @@ impl RsHttpClient {
 
         Ok(())
     }
+
+    /// `GET /api/localsend/v2/fs/roots` — fetch the peer's whitelisted
+    /// mount points. Used by the remote file browser (T-008).
+    pub async fn list_roots(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+    ) -> Result<RootsResponse, RsHttpClientError> {
+        self.inner
+            .list_roots(protocol, ip, port)
+            .await
+            .map_err(RsHttpClientError::from)
+    }
+
+    /// `GET /api/localsend/v2/fs/list` — paginated directory listing under
+    /// a whitelisted root. `path` is relative to the mount-point root and
+    /// uses `/` as the separator; pass `""` to list the root contents.
+    /// `sort` is one of `name_asc` / `name_desc` / `size_asc` / `size_desc` /
+    /// `mtime_desc` (default `name_asc`).
+    pub async fn list_dir(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: String,
+        page: u32,
+        size: u32,
+        sort: String,
+    ) -> Result<ListResponse, RsHttpClientError> {
+        self.inner
+            .list_dir(protocol, ip, port, &path, page as usize, size as usize, &sort)
+            .await
+            .map_err(RsHttpClientError::from)
+    }
+
+    /// `GET /api/localsend/v2/fs/download?path=...` — stream a single
+    /// file from a whitelisted root. Emits [RsFsDownloadEvent]s on [sink]:
+    ///
+    ///   * `Started { total_size, status }` — once, when headers arrive.
+    ///     `status` is `200` for a whole-file fetch, `206` for a Range.
+    ///   * `Chunk { bytes }`                — many times, body chunks.
+    ///   * `Finished`                       — once, on successful EOF.
+    ///   * `Failed { error }`               — once, on any error.
+    ///
+    /// The sink pattern mirrors [Self::upload]; flutter_rust_bridge
+    /// discards the returned `Result` of functions taking a [StreamSink],
+    /// so errors are emitted as a `Failed` event rather than returned
+    /// (otherwise an uncaught async error would kill the calling isolate).
+    ///
+    /// `range_start` / `range_end`: when both are `Some`, sends
+    /// `Range: bytes=start-end`. When only `start` is `Some`, sends
+    /// `Range: bytes=start-` (open-ended). When both are `None`, fetches
+    /// the whole file with no Range header.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn fs_download(
+        &self,
+        sink: StreamSink<RsFsDownloadEvent>,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: String,
+        range_start: Option<u64>,
+        range_end: Option<u64>,
+        cancel_token: &RsCancellationToken,
+    ) {
+        let range = match (range_start, range_end) {
+            (Some(s), e) => Some((s, e)),
+            (None, _) => None,
+        };
+
+        let result = async {
+            let response = self
+                .inner
+                .fs_download(protocol, ip, port, &path, range)
+                .await
+                .map_err(RsHttpClientError::from)?;
+
+            let total_size = response
+                .content_length()
+                .unwrap_or(0);
+            let status = response.status().as_u16();
+            let _ = sink.add(RsFsDownloadEvent::Started { total_size, status });
+
+            use futures_util::StreamExt;
+            let mut stream = response.bytes_stream();
+            let mut transferred: u64 = 0;
+            while let Some(chunk) = stream.next().await {
+                if cancel_token.inner.is_cancelled() {
+                    let _ = sink.add(RsFsDownloadEvent::Cancelled);
+                    return Ok(());
+                }
+                let chunk = chunk.map_err(|e| {
+                    RsHttpClientError::Reqwest(localsend::util::error::ErrorChain(&e).to_string())
+                })?;
+                transferred = transferred.saturating_add(chunk.len() as u64);
+                let _ = sink.add(RsFsDownloadEvent::Chunk {
+                    bytes: chunk.to_vec(),
+                    transferred,
+                });
+            }
+
+            let _ = sink.add(RsFsDownloadEvent::Finished);
+            Ok(())
+        }
+        .await;
+
+        if let Err(error) = result {
+            let _ = sink.add(RsFsDownloadEvent::Failed { error });
+        }
+    }
 }
 
 fn resolve_file_content(
@@ -210,6 +323,32 @@ pub enum RsUploadEvent {
     Progress { progress: f64 },
 
     /// The upload failed. Always the last event of the stream.
+    Failed { error: RsHttpClientError },
+}
+
+/// An event emitted while a file is being downloaded by
+/// [RsHttpClient::fs_download] (T-009). The stream starts with a single
+/// `Started` event, then any number of `Chunk`s, then ends with either
+/// `Finished`, `Cancelled`, or `Failed` (mutually exclusive — only one
+/// terminal event per stream).
+#[derive(Clone)]
+pub enum RsFsDownloadEvent {
+    /// Headers arrived. `total_size` is `content_length` (0 if the
+    /// server did not advertise one). `status` is the HTTP status
+    /// code (200 for whole-file, 206 for partial).
+    Started { total_size: u64, status: u16 },
+
+    /// A chunk of body bytes. `transferred` is the cumulative byte
+    /// count received so far.
+    Chunk { bytes: Vec<u8>, transferred: u64 },
+
+    /// Successful end of stream.
+    Finished,
+
+    /// The user cancelled the download via the cancel token.
+    Cancelled,
+
+    /// The download failed. Always the last event of the stream.
     Failed { error: RsHttpClientError },
 }
 
