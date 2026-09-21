@@ -48,6 +48,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   @override
   late final Translations$sendTab$zh_CN sendTab = Translations$sendTab$zh_CN.internal(_root);
   @override
+  late final Translations$remoteBrowser$zh_CN remoteBrowser = Translations$remoteBrowser$zh_CN.internal(_root);
+  @override
   late final Translations$settingsTab$zh_CN settingsTab = Translations$settingsTab$zh_CN.internal(_root);
   @override
   late final Translations$troubleshootPage$zh_CN troubleshootPage = Translations$troubleshootPage$zh_CN.internal(_root);
@@ -232,6 +234,51 @@ class Translations$sendTab$zh_CN extends Translations$sendTab$en {
   String get help => '请确保目标连接到同一个 Wi‑Fi 网络。';
   @override
   String get placeItems => '列出要分享的项目。';
+  @override
+  String get browseDrive => '浏览驱动器';
+  @override
+  String get browseDriveTooltip => '浏览此设备上的文件';
+}
+
+// Path: remoteBrowser
+class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
+  Translations$remoteBrowser$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => '浏览驱动器';
+  @override
+  String get roots => '驱动器';
+  @override
+  String get breadcrumbRoot => '驱动器';
+  @override
+  String get emptyFolder => '此文件夹为空';
+  @override
+  String get errorTitle => '无法加载文件';
+  @override
+  String get errorGeneric => '发生错误，请重试。';
+  @override
+  String get retry => '重试';
+  @override
+  String get sortBy => '排序方式';
+  @override
+  String get sortNameAsc => '名称 (A–Z)';
+  @override
+  String get sortNameDesc => '名称 (Z–A)';
+  @override
+  String get sortSizeAsc => '大小 (从小到大)';
+  @override
+  String get sortSizeDesc => '大小 (从大到小)';
+  @override
+  String get sortMtimeDesc => '最近修改';
+  @override
+  String get viewList => '列表视图';
+  @override
+  String get viewGrid => '网格视图';
+  @override
+  String get loadMore => '加载更多';
 }
 
 // Path: settingsTab
@@ -1046,6 +1093,14 @@ class Translations$settingsTab$network$zh_CN extends Translations$settingsTab$ne
   String get multicastGroup => '多播';
   @override
   String multicastGroupWarning({required Object defaultMulticast}) => '由于正在使用自定义多播地址，你可能不会被其他设备检测到。（默认地址：${defaultMulticast}）';
+  @override
+  String get enableFs => '允许其他设备浏览我的驱动器';
+  @override
+  String get enableFsSubtitle => '同一网络下的移动设备可以浏览文件夹并下载你所选驱动器中的文件。';
+  @override
+  String get enableFsNoticeTitle => '已开启驱动器浏览';
+  @override
+  String get enableFsNoticeBody => '同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。';
 }
 
 // Path: settingsTab.other

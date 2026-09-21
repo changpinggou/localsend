@@ -82,7 +82,27 @@
     },
     "sendModeHelp": "提示",
     "help": "请确保目标连接到同一个 Wi‑Fi 网络。",
-    "placeItems": "列出要分享的项目。"
+    "placeItems": "列出要分享的项目。",
+    "browseDrive": "浏览驱动器",
+    "browseDriveTooltip": "浏览此设备上的文件"
+  },
+  "remoteBrowser": {
+    "title": "浏览驱动器",
+    "roots": "驱动器",
+    "breadcrumbRoot": "驱动器",
+    "emptyFolder": "此文件夹为空",
+    "errorTitle": "无法加载文件",
+    "errorGeneric": "发生错误，请重试。",
+    "retry": "重试",
+    "sortBy": "排序方式",
+    "sortNameAsc": "名称 (A–Z)",
+    "sortNameDesc": "名称 (Z–A)",
+    "sortSizeAsc": "大小 (从小到大)",
+    "sortSizeDesc": "大小 (从大到小)",
+    "sortMtimeDesc": "最近修改",
+    "viewList": "列表视图",
+    "viewGrid": "网格视图",
+    "loadMore": "加载更多"
   },
   "settingsTab": {
     "title": "设置",
@@ -148,7 +168,11 @@
       "portWarning": "由于正在使用自定义端口，你可能不会被其他设备检测到。（默认端口：{defaultPort}）",
       "encryption": "加密",
       "multicastGroup": "多播",
-      "multicastGroupWarning": "由于正在使用自定义多播地址，你可能不会被其他设备检测到。（默认地址：{defaultMulticast}）"
+      "multicastGroupWarning": "由于正在使用自定义多播地址，你可能不会被其他设备检测到。（默认地址：{defaultMulticast}）",
+      "enableFs": "允许其他设备浏览我的驱动器",
+      "enableFsSubtitle": "同一网络下的移动设备可以浏览文件夹并下载你所选驱动器中的文件。",
+      "enableFsNoticeTitle": "已开启驱动器浏览",
+      "enableFsNoticeBody": "同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。"
     },
     "other": {
       "title": "其他",

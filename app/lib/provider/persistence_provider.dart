@@ -87,6 +87,7 @@ const _minimizeToTray = 'ls_minimize_to_tray';
 const _https = 'ls_https';
 const _sendMode = 'ls_send_mode';
 const _enableAnimations = 'ls_enable_animations';
+const _enableFs = 'ls_enable_fs';
 const _deviceType = 'ls_device_type';
 const _deviceModel = 'ls_device_model';
 const _shareViaLinkAutoAccept = 'ls_share_via_link_auto_accept';
@@ -563,6 +564,17 @@ class PersistenceService {
 
   bool getEnableAnimations() {
     return _prefs.getBool(_enableAnimations) ?? true;
+  }
+
+  /// Whether the device advertises the LocalU `fs` capability (T-006/T-007).
+  /// Defaults to `false` so a fresh install does not expose the filesystem
+  /// until the user explicitly opts in.
+  bool getEnableFs() {
+    return _prefs.getBool(_enableFs) ?? false;
+  }
+
+  Future<void> setEnableFs(bool enableFs) async {
+    await _prefs.setBool(_enableFs, enableFs);
   }
 
   DeviceType? getDeviceType() {

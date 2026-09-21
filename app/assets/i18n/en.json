@@ -82,7 +82,27 @@
     },
     "sendModeHelp": "Explanation",
     "help": "Please ensure that the desired target is also on the same Wi-Fi network.",
-    "placeItems": "Place items to share."
+    "placeItems": "Place items to share.",
+    "browseDrive": "Browse drive",
+    "browseDriveTooltip": "Browse files on this device"
+  },
+  "remoteBrowser": {
+    "title": "Browse drive",
+    "roots": "Drives",
+    "breadcrumbRoot": "Drives",
+    "emptyFolder": "This folder is empty",
+    "errorTitle": "Could not load files",
+    "errorGeneric": "An error occurred. Please try again.",
+    "retry": "Retry",
+    "sortBy": "Sort by",
+    "sortNameAsc": "Name (A–Z)",
+    "sortNameDesc": "Name (Z–A)",
+    "sortSizeAsc": "Size (small to large)",
+    "sortSizeDesc": "Size (large to small)",
+    "sortMtimeDesc": "Recently modified",
+    "viewList": "List view",
+    "viewGrid": "Grid view",
+    "loadMore": "Load more"
   },
   "settingsTab": {
     "title": "Settings",
@@ -148,7 +168,11 @@
       "portWarning": "You might not be detected by other devices because you are using a custom port. (default: {defaultPort})",
       "encryption": "Encryption",
       "multicastGroup": "Multicast address",
-      "multicastGroupWarning": "You might not be detected by other devices because you are using a custom multicast address. (default: {defaultMulticast})"
+      "multicastGroupWarning": "You might not be detected by other devices because you are using a custom multicast address. (default: {defaultMulticast})",
+      "enableFs": "Allow other devices to browse my drives",
+      "enableFsSubtitle": "Mobile devices on the same network can browse folders and download files from selected drives.",
+      "enableFsNoticeTitle": "Browsing drives is enabled",
+      "enableFsNoticeBody": "Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates."
     },
     "other": {
       "title": "Other",

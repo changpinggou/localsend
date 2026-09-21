@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/server.dart' show WebParams;
 import 'package:localsend_isolates/src/isolate/child/discovery_isolate.dart';
+import 'package:localsend_isolates/src/isolate/child/fs_list_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/server_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/upload_isolate.dart';
 import 'package:localsend_isolates/src/isolate/dto/send_to_isolate_data.dart';
@@ -538,6 +539,32 @@ class IsolateHttpServerFailFileDownloadAction extends ReduxAction<IsolateControl
     );
 
     return state;
+  }
+}
+
+/// One filesystem list request routed through the fs_list isolate (T-008).
+///
+/// For an empty [FsListRequest.path] the response is the list of mount
+/// points; otherwise the response is a single page of directory entries.
+/// The returned stream completes after the single result event.
+class IsolateFsListAction extends ReduxActionWithResult<IsolateController, ParentIsolateState, Stream<FsListResult>> {
+  final FsListRequest request;
+
+  IsolateFsListAction(this.request);
+
+  @override
+  (ParentIsolateState, Stream<FsListResult>) reduce() {
+    final connection = state.fsList;
+    if (connection == null) {
+      throw StateError('fsList is not initialized');
+    }
+
+    final task = request.path.isEmpty ? FsListRootsTask(request) : FsListDirTask(request);
+
+    return (
+      state,
+      connection.sendWrappedTaskAndListenStream(task: task),
+    );
   }
 }
 

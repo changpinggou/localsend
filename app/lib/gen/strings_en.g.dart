@@ -49,6 +49,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$general$en general = Translations$general$en.internal(_root);
   late final Translations$receiveTab$en receiveTab = Translations$receiveTab$en.internal(_root);
   late final Translations$sendTab$en sendTab = Translations$sendTab$en.internal(_root);
+  late final Translations$remoteBrowser$en remoteBrowser = Translations$remoteBrowser$en.internal(_root);
   late final Translations$settingsTab$en settingsTab = Translations$settingsTab$en.internal(_root);
   late final Translations$troubleshootPage$en troubleshootPage = Translations$troubleshootPage$en.internal(_root);
   late final Translations$networkInterfacesPage$en networkInterfacesPage = Translations$networkInterfacesPage$en.internal(_root);
@@ -258,6 +259,69 @@ class Translations$sendTab$en {
 
   /// en: 'Place items to share.'
   String get placeItems => 'Place items to share.';
+
+  /// en: 'Browse drive'
+  String get browseDrive => 'Browse drive';
+
+  /// en: 'Browse files on this device'
+  String get browseDriveTooltip => 'Browse files on this device';
+}
+
+// Path: remoteBrowser
+class Translations$remoteBrowser$en {
+  Translations$remoteBrowser$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Browse drive'
+  String get title => 'Browse drive';
+
+  /// en: 'Drives'
+  String get roots => 'Drives';
+
+  /// en: 'Drives'
+  String get breadcrumbRoot => 'Drives';
+
+  /// en: 'This folder is empty'
+  String get emptyFolder => 'This folder is empty';
+
+  /// en: 'Could not load files'
+  String get errorTitle => 'Could not load files';
+
+  /// en: 'An error occurred. Please try again.'
+  String get errorGeneric => 'An error occurred. Please try again.';
+
+  /// en: 'Retry'
+  String get retry => 'Retry';
+
+  /// en: 'Sort by'
+  String get sortBy => 'Sort by';
+
+  /// en: 'Name (A–Z)'
+  String get sortNameAsc => 'Name (A–Z)';
+
+  /// en: 'Name (Z–A)'
+  String get sortNameDesc => 'Name (Z–A)';
+
+  /// en: 'Size (small to large)'
+  String get sortSizeAsc => 'Size (small to large)';
+
+  /// en: 'Size (large to small)'
+  String get sortSizeDesc => 'Size (large to small)';
+
+  /// en: 'Recently modified'
+  String get sortMtimeDesc => 'Recently modified';
+
+  /// en: 'List view'
+  String get viewList => 'List view';
+
+  /// en: 'Grid view'
+  String get viewGrid => 'Grid view';
+
+  /// en: 'Load more'
+  String get loadMore => 'Load more';
 }
 
 // Path: settingsTab
@@ -1211,6 +1275,19 @@ class Translations$settingsTab$network$en {
   /// en: 'You might not be detected by other devices because you are using a custom multicast address. (default: {defaultMulticast})'
   String multicastGroupWarning({required Object defaultMulticast}) =>
       'You might not be detected by other devices because you are using a custom multicast address. (default: ${defaultMulticast})';
+
+  /// en: 'Allow other devices to browse my drives'
+  String get enableFs => 'Allow other devices to browse my drives';
+
+  /// en: 'Mobile devices on the same network can browse folders and download files from selected drives.'
+  String get enableFsSubtitle => 'Mobile devices on the same network can browse folders and download files from selected drives.';
+
+  /// en: 'Browsing drives is enabled'
+  String get enableFsNoticeTitle => 'Browsing drives is enabled';
+
+  /// en: 'Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.'
+  String get enableFsNoticeBody =>
+      'Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.';
 }
 
 // Path: settingsTab.other

@@ -20,6 +20,7 @@ import 'package:localsend_app/util/native/macos_channel.dart';
 import 'package:localsend_app/util/native/pick_directory_path.dart';
 import 'package:localsend_app/util/native/platform_check.dart';
 import 'package:localsend_app/widget/custom_dropdown_button.dart';
+import 'package:localsend_app/widget/dialogs/enable_fs_notice.dart';
 import 'package:localsend_app/widget/dialogs/encryption_disabled_notice.dart';
 import 'package:localsend_app/widget/dialogs/pin_dialog.dart';
 import 'package:localsend_app/widget/dialogs/quick_save_from_favorites_notice.dart';
@@ -515,6 +516,24 @@ class SettingsTab extends StatelessWidget {
                     ),
                   ),
                 ),
+                _BooleanEntry(
+                  label: t.settingsTab.network.enableFs,
+                  description: t.settingsTab.network.enableFsSubtitle,
+                  value: vm.settings.enableFs,
+                  onChanged: (b) async {
+                    final wasEnabled = vm.settings.enableFs;
+                    await ref.notifier(settingsProvider).setEnableFs(b);
+                    if (!wasEnabled && b && context.mounted) {
+                      await EnableFsNotice.open(context);
+                    }
+                    // The capability is announced by the discovery multicast
+                    // thread; restart the server so the next announcement
+                    // carries the updated set.
+                    if (ref.read(serverProvider) != null) {
+                      await ref.notifier(serverProvider).restartServerFromSettings();
+                    }
+                  },
+                ),
               ],
             ),
             _SettingsSection(
@@ -613,7 +632,14 @@ class _SettingsEntry extends StatelessWidget {
   final String label;
   final Widget child;
 
-  const _SettingsEntry({required this.label, required this.child});
+  /// Optional one-line description shown beneath the label (T-007).
+  final String? description;
+
+  const _SettingsEntry({
+    required this.label,
+    required this.child,
+    this.description,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -622,7 +648,22 @@ class _SettingsEntry extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label),
+                if (description != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    description!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(width: 10),
           SizedBox(
@@ -641,10 +682,14 @@ class _BooleanEntry extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
+  /// Optional one-line description shown above the switch (T-007).
+  final String? description;
+
   const _BooleanEntry({
     required this.label,
     required this.value,
     required this.onChanged,
+    this.description,
   });
 
   @override
@@ -652,6 +697,7 @@ class _BooleanEntry extends StatelessWidget {
     final theme = Theme.of(context);
     return _SettingsEntry(
       label: label,
+      description: description,
       child: Stack(
         children: [
           Container(

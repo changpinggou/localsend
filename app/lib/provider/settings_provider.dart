@@ -75,6 +75,7 @@ class SettingsService extends PureNotifier<SettingsState> {
     verifyChecksums: _persistence.getVerifyChecksums(),
     discoveryTimeout: _persistence.getDiscoveryTimeout(),
     advancedSettings: _persistence.getAdvancedSettingsEnabled(),
+    enableFs: _persistence.getEnableFs(),
   );
 
   Future<void> setAlias(String alias) async {
@@ -251,6 +252,19 @@ class SettingsService extends PureNotifier<SettingsState> {
     await _persistence.setEnableAnimations(enableAnimations);
     state = state.copyWith(
       enableAnimations: enableAnimations,
+    );
+  }
+
+  /// Toggles the LocalU `fs` capability advertisement (T-007).
+  ///
+  /// The toggle changes both the persisted state and what the running
+  /// server / discovery announce. A restart is required for the new
+  /// capability to appear in multicast announcements; the settings tab
+  /// triggers the restart via `serverProvider.restartServerFromSettings()`.
+  Future<void> setEnableFs(bool enableFs) async {
+    await _persistence.setEnableFs(enableFs);
+    state = state.copyWith(
+      enableFs: enableFs,
     );
   }
 
