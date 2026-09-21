@@ -1,3 +1,47 @@
+## 1.19.0 (2026-09-21)
+
+LocalU Phase 1 (P1-mvp). Adds the read-only "browse the host's drives"
+flow that turns LocalSend into a personal LAN file management surface.
+
+- **feat(protocol): v2.3 capability extension** — peers advertise a
+  `capabilities: ["send","receive","fs"]` field on announce / register
+  / info. v2.2 peers that omit the field are treated as
+  `{"send","receive"}` (no regression).
+- **feat(protocol): LocalU fs namespace** — three read-only endpoints
+  under `/api/localsend/v2/fs`:
+  - `GET /roots`     — list whitelisted mount points
+  - `GET /list`      — paginated directory listing
+  - `GET /download`  — stream a file with HTTP Range / 206
+- **feat(client): "Browse drive" entry on the device list** — visible
+  only on peers that advertise `fs`. Long-press / mobile bottom-sheet
+  behaviour preserved.
+- **feat(client): Remote file browser page** — breadcrumbs, list /
+  grid views, name / size / mtime sort, infinite scroll pagination,
+  loading / error / empty states, fs-specific icons.
+- **feat(client): Save a remote file to Photos / Files** — bottom
+  sheet on tap, `gal` for the gallery path, `file_selector` for the
+  user-picked destination on mobile, OS Downloads directory on desktop.
+- **feat(settings): "Allow other devices to browse my drives"** —
+  opt-in toggle; restart the server on flip so the next multicast
+  announcement carries the updated capability set. The toggle is
+  off by default (N-SEC-2 default-deny).
+- **feat(security): three-layer path sandbox** — canonicalize
+  (defeats `..` / symlink hops), whitelist prefix (defends against
+  cross-mount escapes), and `confirm:true` requirement for write
+  operations. Every denied request is logged at WARN with
+  `event="fs.path.denied"` (N-SEC-1).
+- **feat(security): fs namespace gated on TLS** — the dispatcher
+  refuses to register any fs route when the server is running in
+  plain-HTTP mode and emits an ERROR log line (N-SEC-3).
+- **i18n**: add the `remoteBrowser` namespace (en + zh-CN) and the
+  `fsDownload` namespace (en + zh-CN).
+- **test**: 8 capability_helper tests, 9 fs_list_provider tests,
+  14 remote-browser widget tests, 2 fs_download_provider tests, 1
+  save_to_gallery test, 6 new peer_row capability-gating tests,
+  6 tls_test fs-namespace cases, 7 fs/rest.rs unit cases. Pre-existing
+  `subnet_scan_finishes_when_events_are_not_consumed` is occasionally
+  flaky in parallel runs but passes single-threaded — unrelated.
+
 ## 1.18.2 (2026-08-21)
 
 - feat: drag and drop files into the "Receive via link" browser page

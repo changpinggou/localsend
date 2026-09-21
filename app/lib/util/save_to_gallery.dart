@@ -17,9 +17,9 @@ import 'package:localsend_app/util/native/platform_check.dart';
 /// duplicate that work.
 Future<bool> saveFileToGallery(String localPath, {required bool isImage}) async {
   if (!checkPlatformWithGallery()) return false;
-  final granted = await Gal.requestAccess(toAlbum: false);
-  if (!granted) return false;
   try {
+    final granted = await Gal.requestAccess(toAlbum: false);
+    if (!granted) return false;
     if (isImage) {
       await Gal.putImage(localPath);
     } else {
@@ -27,6 +27,9 @@ Future<bool> saveFileToGallery(String localPath, {required bool isImage}) async 
     }
     return true;
   } catch (_) {
+    // Includes `MissingPluginException` in environments where the
+    // `gal` native side is not registered (e.g. flutter_test,
+    // desktop without the plugin installed).
     return false;
   }
 }

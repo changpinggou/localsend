@@ -12,11 +12,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:localsend_app/util/save_to_gallery.dart';
 
 void main() {
-  // Note: this test runs in the flutter_test environment which does
-  // NOT initialise platform channels for the `gal` plugin. The
-  // platform-gate short-circuits to `false` on desktop, so this is
-  // safe. iOS / Android device tests would exercise the actual
-  // `Gal.putImage` path.
+  // `saveFileToGallery` calls into `checkPlatformWithGallery()`, which
+  // reaches for `defaultTargetPlatform` from the WidgetsBinding — that
+  // binding is not initialised by default in a pure `flutter_test`
+  // environment, so we ensure it here.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('saveFileToGallery returns false when path does not exist', () async {
     final ok = await saveFileToGallery('/nonexistent/path.jpg', isImage: true);
     expect(ok, isFalse);
