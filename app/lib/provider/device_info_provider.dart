@@ -5,6 +5,7 @@ import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/provider/settings_provider.dart';
 import 'package:localsend_isolates/constants.dart';
 import 'package:localsend_isolates/isolate.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/model/device_info_result.dart';
 import 'package:refena_flutter/refena_flutter.dart';
@@ -45,6 +46,7 @@ final deviceFullInfoProvider = ViewProvider((ref) {
     deviceModel: rawInfo.deviceModel,
     deviceType: rawInfo.deviceType,
     download: serverState?.webDownloadState != null,
+    capabilities: Capability.defaultSet,
     channels: const [],
   );
 });

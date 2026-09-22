@@ -10,6 +10,7 @@
 
 mod socket;
 
+use crate::model::capability::Capability;
 use crate::model::discovery::{DeviceType, MulticastMessageV2, ProtocolType};
 use crate::util::interface::InterfaceFilter;
 use serde::Serialize;
@@ -87,6 +88,9 @@ pub struct MulticastDevice {
 
     /// Whether this device's download API is active.
     pub download: bool,
+
+    /// The capabilities this device advertises (T-006, protocol v2.3).
+    pub capabilities: Vec<Capability>,
 }
 
 impl MulticastDevice {
@@ -100,6 +104,7 @@ impl MulticastDevice {
             port: self.port,
             protocol: self.protocol,
             download: self.download,
+            capabilities: self.capabilities.clone(),
         }
     }
 }
@@ -408,6 +413,7 @@ mod tests {
             port: 53317,
             protocol: ProtocolType::Https,
             download: false,
+            capabilities: Vec::new(),
         };
 
         let json = serde_json::to_string(&AnnouncedMessage {

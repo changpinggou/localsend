@@ -1,5 +1,7 @@
+import 'package:localsend_isolates/model/capability.dart' as app_model;
 import 'package:localsend_isolates/rust/api/model.dart';
 import 'package:localsend_isolates/rust/api/server.dart';
+import 'package:localsend_isolates/util/rust.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 
 final httpServerProvider = Provider((ref) => HttpServerService());
@@ -21,6 +23,7 @@ class HttpServerService {
     required String? deviceModel,
     required DeviceType? deviceType,
     required String fingerprint,
+    required Set<app_model.Capability> capabilities,
     required String? pin,
     required bool verifyChecksums,
     required WebParams web,
@@ -38,6 +41,7 @@ class HttpServerService {
       deviceModel: deviceModel,
       deviceType: deviceType,
       fingerprint: fingerprint,
+      capabilities: capabilities.map((c) => c.toRust()).toSet(),
       pin: pin,
       verifyChecksums: verifyChecksums,
       web: web,

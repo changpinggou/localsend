@@ -415,6 +415,7 @@ Future<void> setupHttpServerIsolate(
                   deviceModel: syncState.deviceInfo.deviceModel,
                   deviceType: syncState.deviceInfo.deviceType.toRust(),
                   fingerprint: syncState.securityContext.certificateHash,
+                  capabilities: syncState.capabilities,
                   pin: startTask.pin,
                   verifyChecksums: startTask.verifyChecksums,
                   web: startTask.web,

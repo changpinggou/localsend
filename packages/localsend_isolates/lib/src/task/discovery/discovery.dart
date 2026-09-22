@@ -73,6 +73,7 @@ class DiscoveryService {
           fingerprint: syncState.securityContext.certificateHash,
           protocol: syncState.protocol.toRust(),
           download: syncState.download,
+          capabilities: syncState.capabilities.map((c) => c.toRust()).toSet(),
           certPem: syncState.securityContext.certificate,
           privateKeyPem: syncState.securityContext.privateKey,
           timeoutMs: BigInt.from(syncState.discoveryTimeout),

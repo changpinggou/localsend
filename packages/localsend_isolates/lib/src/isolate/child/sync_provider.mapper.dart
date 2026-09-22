@@ -17,6 +17,7 @@ class SyncStateMapper extends ClassMapperBase<SyncState> {
       MapperContainer.globals.use(_instance = SyncStateMapper._());
       StoredSecurityContextMapper.ensureInitialized();
       ProtocolTypeMapper.ensureInitialized();
+      CapabilityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -77,6 +78,11 @@ class SyncStateMapper extends ClassMapperBase<SyncState> {
     'download',
     _$download,
   );
+  static Set<Capability> _$capabilities(SyncState v) => v.capabilities;
+  static const Field<SyncState, Set<Capability>> _f$capabilities = Field(
+    'capabilities',
+    _$capabilities,
+  );
 
   @override
   final MappableFields<SyncState> fields = const {
@@ -92,6 +98,7 @@ class SyncStateMapper extends ClassMapperBase<SyncState> {
     #discoveryTimeout: _f$discoveryTimeout,
     #serverRunning: _f$serverRunning,
     #download: _f$download,
+    #capabilities: _f$capabilities,
   };
 
   static SyncState _instantiate(DecodingData data) {
@@ -108,6 +115,7 @@ class SyncStateMapper extends ClassMapperBase<SyncState> {
       discoveryTimeout: data.dec(_f$discoveryTimeout),
       serverRunning: data.dec(_f$serverRunning),
       download: data.dec(_f$download),
+      capabilities: data.dec(_f$capabilities),
     );
   }
 
@@ -193,6 +201,7 @@ abstract class SyncStateCopyWith<$R, $In extends SyncState, $Out>
     int? discoveryTimeout,
     bool? serverRunning,
     bool? download,
+    Set<Capability>? capabilities,
   });
   SyncStateCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -245,6 +254,7 @@ class _SyncStateCopyWithImpl<$R, $Out>
     int? discoveryTimeout,
     bool? serverRunning,
     bool? download,
+    Set<Capability>? capabilities,
   }) => $apply(
     FieldCopyWithData({
       if (rootIsolateToken != null) #rootIsolateToken: rootIsolateToken,
@@ -259,6 +269,7 @@ class _SyncStateCopyWithImpl<$R, $Out>
       if (discoveryTimeout != null) #discoveryTimeout: discoveryTimeout,
       if (serverRunning != null) #serverRunning: serverRunning,
       if (download != null) #download: download,
+      if (capabilities != null) #capabilities: capabilities,
     }),
   );
   @override
@@ -275,6 +286,7 @@ class _SyncStateCopyWithImpl<$R, $Out>
     discoveryTimeout: data.get(#discoveryTimeout, or: $value.discoveryTimeout),
     serverRunning: data.get(#serverRunning, or: $value.serverRunning),
     download: data.get(#download, or: $value.download),
+    capabilities: data.get(#capabilities, or: $value.capabilities),
   );
 
   @override

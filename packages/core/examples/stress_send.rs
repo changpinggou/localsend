@@ -56,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
             port,
             protocol: ProtocolType::Http,
             download: false,
+            capabilities: Vec::new(),
         },
         files,
     };

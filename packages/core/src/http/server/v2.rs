@@ -202,6 +202,7 @@ pub(crate) async fn register(
             device_type: info.device_type,
             fingerprint: info.token,
             download,
+            capabilities: info.capabilities,
         },
     })
 }
@@ -219,6 +220,7 @@ pub(crate) async fn info(state: AppState) -> Result<JsonResponse<InfoResponseDto
             device_type: info.device_type,
             fingerprint: info.token,
             download,
+            capabilities: info.capabilities,
         },
     })
 }

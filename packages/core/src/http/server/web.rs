@@ -515,6 +515,7 @@ async fn file_list_response(
                 device_type: info.device_type,
                 fingerprint: info.token,
                 download: true,
+                capabilities: info.capabilities,
             },
             session_id,
             files: web.files.clone(),

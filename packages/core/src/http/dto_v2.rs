@@ -1,3 +1,4 @@
+use crate::model::capability::Capability;
 use crate::model::discovery::DeviceType;
 use crate::model::transfer::FileDto;
 use serde::{Deserialize, Serialize};
@@ -47,6 +48,14 @@ pub struct RegisterDtoV2 {
     /// Whether the download API (sections 5.2, 5.3) is active.
     #[serde(default)]
     pub download: bool,
+
+    /// The capabilities this device exposes (T-006, protocol v2.3).
+    ///
+    /// Optional for backwards compatibility with v2.2 peers that never
+    /// send the field. Empty list upgrades to `{Send, Receive}` in the
+    /// caller via [`crate::model::capability::parse_capabilities`].
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capabilities: Vec<Capability>,
 }
 
 /// Register response DTO for v2.2 protocol.
@@ -81,6 +90,12 @@ pub struct RegisterResponseDtoV2 {
     /// Whether the download API (sections 5.2, 5.3) is active.
     #[serde(default)]
     pub download: bool,
+
+    /// The capabilities this responder exposes (T-006, protocol v2.3).
+    /// Optional for v2.2 compatibility; missing/empty upgrades to
+    /// `{Send, Receive}` in the caller.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capabilities: Vec<Capability>,
 }
 
 /// Prepare upload request DTO for v2.2 protocol.
@@ -163,6 +178,12 @@ pub struct InfoResponseDtoV2 {
     /// Whether the download API (sections 5.2, 5.3) is active.
     #[serde(default)]
     pub download: bool,
+
+    /// The capabilities this device exposes (T-006, protocol v2.3).
+    /// Optional for v2.2 compatibility; missing/empty upgrades to
+    /// `{Send, Receive}` in the caller.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capabilities: Vec<Capability>,
 }
 
 #[cfg(test)]
@@ -235,6 +256,7 @@ mod tests {
                 port: 53317,
                 protocol: ProtocolType::Https,
                 download: false,
+                capabilities: Vec::new(),
             },
             files: HashMap::from([(
                 "file1".to_string(),

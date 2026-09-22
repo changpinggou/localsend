@@ -12,10 +12,11 @@ use localsend::http::server::web::{
 };
 pub use localsend::http::server::web::{WebI18n, WebPages};
 use localsend::http::state::ClientInfo;
+use localsend::model::capability::Capability;
 use localsend::model::discovery::DeviceType;
 use localsend::model::discovery::ProtocolType;
 use localsend::model::transfer::{FileContent, FileDto};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc, oneshot};
 
@@ -207,6 +208,7 @@ pub async fn start_server(
     device_model: Option<String>,
     device_type: Option<DeviceType>,
     fingerprint: String,
+    capabilities: HashSet<Capability>,
     pin: Option<String>,
     verify_checksums: bool,
     web: WebParams,
@@ -262,6 +264,7 @@ pub async fn start_server(
             device_model,
             device_type,
             token: fingerprint,
+            capabilities: capabilities.into_iter().collect(),
         },
         internal_config,
         Some(ServerConfigV2 {
@@ -806,6 +809,9 @@ pub struct _RegisterDtoV2 {
     pub port: u16,
     pub protocol: ProtocolType,
     pub download: bool,
+    /// T-006, protocol v2.3 — empty for v2.2 peers; see
+    /// `localsend::model::capability::parse_capabilities`.
+    pub capabilities: Vec<Capability>,
 }
 
 #[frb(mirror(SessionEndReasonV2))]

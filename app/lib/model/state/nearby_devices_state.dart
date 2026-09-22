@@ -51,6 +51,7 @@ extension on Device {
       deviceModel: deviceModel,
       deviceType: deviceType,
       download: download,
+      capabilities: {...other.capabilities, ...capabilities},
       channels: [
         ...channels,
         for (final channel in other.channels)

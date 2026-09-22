@@ -135,6 +135,7 @@ async fn start_test_server_with_verification(
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -170,6 +171,7 @@ fn sender_info() -> RegisterDtoV2 {
         port: 53317,
         protocol: ProtocolType::Http,
         download: false,
+        capabilities: Vec::new(),
     }
 }
 
@@ -972,6 +974,7 @@ async fn test_prepare_upload_aborted_by_sender_disconnect() {
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -1077,6 +1080,7 @@ async fn test_prepare_upload_cancelled_by_session_less_cancel() {
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -1215,6 +1219,7 @@ async fn test_prepare_upload_aborted_by_sender_disconnect_tls() {
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {

@@ -18,6 +18,10 @@ class DeviceListTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDetailsTap;
 
+  /// When non-null, fully overrides the default trailing widget. Use this to
+  /// add extra buttons (e.g. "browse drive") next to the info button.
+  final Widget? trailingOverride;
+
   const DeviceListTile({
     required this.device,
     this.isFavorite = false,
@@ -26,6 +30,7 @@ class DeviceListTile extends StatelessWidget {
     this.progress,
     this.onTap,
     this.onDetailsTap,
+    this.trailingOverride,
   });
 
   @override
@@ -43,12 +48,14 @@ class DeviceListTile extends StatelessWidget {
           ],
         ],
       ),
-      trailing: onDetailsTap != null
-          ? IconButton(
-              icon: const Icon(Icons.info_outline),
-              onPressed: onDetailsTap,
-            )
-          : null,
+      trailing:
+          trailingOverride ??
+          (onDetailsTap != null
+              ? IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  onPressed: onDetailsTap,
+                )
+              : null),
       subTitle: Wrap(
         runSpacing: 10,
         spacing: 10,

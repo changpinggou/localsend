@@ -68,6 +68,7 @@ async fn start_register_server(
             device_model: Some("Rust".to_string()),
             device_type: Some(DeviceType::Headless),
             token: fingerprint.to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -153,6 +154,7 @@ async fn start_instance_with_cert(
                 port: server_port,
                 protocol: ProtocolType::Http,
                 download: false,
+            capabilities: Vec::new(),
             },
             identity: DeviceIdentity {
                 cert_pem: cert.certificate_pem,
@@ -380,6 +382,7 @@ async fn test_discovery_works_without_multicast() {
                 port: announce_port(),
                 protocol: ProtocolType::Http,
                 download: false,
+            capabilities: Vec::new(),
             },
             identity: DeviceIdentity {
                 cert_pem: cert.certificate_pem,

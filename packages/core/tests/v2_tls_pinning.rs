@@ -118,6 +118,7 @@ async fn start_tls_server_with_web(identity: &Identity, web: WebConfig) -> TestS
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: identity.fingerprint.clone(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -162,6 +163,7 @@ fn sender_info(fingerprint: &str) -> RegisterDtoV2 {
         port: 53317,
         protocol: ProtocolType::Https,
         download: false,
+        capabilities: Vec::new(),
     }
 }
 

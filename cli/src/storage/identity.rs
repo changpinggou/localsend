@@ -112,6 +112,9 @@ impl Identity {
             device_model: Some("CLI".to_string()),
             device_type: Some(DeviceType::Headless),
             token: self.fingerprint.clone(),
+            // The CLI is headless and does not expose the `fs` mount; the
+            // default `{Send, Receive}` is what callers want.
+            capabilities: Vec::new(),
         }
     }
 
@@ -125,6 +128,7 @@ impl Identity {
             port: self.port,
             protocol: ProtocolType::Https,
             download: false,
+            capabilities: Vec::new(),
         }
     }
 
@@ -138,6 +142,8 @@ impl Identity {
             port: self.port,
             protocol: ProtocolType::Https,
             download: false,
+            // The CLI is headless and does not expose the `fs` mount (T-006).
+            capabilities: Vec::new(),
         }
     }
 }

@@ -117,6 +117,7 @@ async fn start_test_server(
             device_model: None,
             device_type: None,
             token: "test-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {

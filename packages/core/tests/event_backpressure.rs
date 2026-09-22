@@ -40,6 +40,7 @@ fn register_dto(port: u16) -> RegisterDtoV2 {
         port,
         protocol: ProtocolType::Http,
         download: false,
+        capabilities: Vec::new(),
     }
 }
 
@@ -59,6 +60,7 @@ async fn start_server_with_stalled_events(
             device_model: None,
             device_type: Some(DeviceType::Headless),
             token: "target-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -131,6 +133,7 @@ async fn subnet_scan_finishes_when_events_are_not_consumed() {
                 port,
                 protocol: ProtocolType::Http,
                 download: false,
+            capabilities: Vec::new(),
             },
             identity: DeviceIdentity {
                 cert_pem: cert.certificate_pem,

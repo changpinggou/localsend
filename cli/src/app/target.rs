@@ -77,7 +77,7 @@ mod tests {
         ChannelStatus, DeviceChannel, DiscoveredDevice, HttpChannel, StatefulDevice,
     };
     use localsend::model::discovery::ProtocolType;
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
     use std::net::{IpAddr, Ipv4Addr};
 
     fn device(alias: &str, fingerprint: &str, host: &str) -> StatefulDevice {
@@ -95,6 +95,7 @@ mod tests {
                 fingerprint: fingerprint.to_string(),
                 channel: channel.clone(),
                 download: false,
+                capabilities: HashSet::new(),
             },
             channels: HashMap::from([(channel, ChannelStatus::Available)]),
             logs: Vec::new(),

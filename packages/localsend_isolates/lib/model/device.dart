@@ -1,4 +1,5 @@
 import 'package:dart_mappable/dart_mappable.dart';
+import 'package:localsend_isolates/model/capability.dart';
 
 part 'device.mapper.dart';
 
@@ -94,6 +95,11 @@ class Device with DeviceMappable {
   final DeviceType deviceType;
   final bool download;
 
+  /// The capabilities this device advertises (T-006, protocol v2.3).
+  /// Never empty: the Rust core substitutes the protocol default
+  /// `{send, receive}` for v2.2 peers.
+  final Set<Capability> capabilities;
+
   /// Every channel the device was confirmed on, best first.
   final List<DeviceChannel> channels;
 
@@ -118,6 +124,7 @@ class Device with DeviceMappable {
     required this.deviceModel,
     required this.deviceType,
     required this.download,
+    required this.capabilities,
     required this.channels,
   });
 
@@ -132,6 +139,7 @@ class Device with DeviceMappable {
     deviceModel: null,
     deviceType: DeviceType.desktop,
     download: false,
+    capabilities: Capability.defaultSet,
     channels: [],
   );
 }

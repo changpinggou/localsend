@@ -2,9 +2,11 @@ use flutter_rust_bridge::frb;
 pub use localsend::http::dto::{
     PrepareUploadRequestDto, PrepareUploadResponseDto, RegisterDto, RegisterResponseDto,
 };
+pub use localsend::model::capability::Capability;
 pub use localsend::model::discovery::DeviceType;
 pub use localsend::model::discovery::ProtocolType;
 pub use localsend::model::transfer::{FileDto, FileMetadata};
+pub use localsend::fs::{FsEntry, FsRoot, ListResponse, RootsResponse};
 use std::collections::HashMap;
 
 #[frb(mirror(RegisterDto))]
@@ -36,6 +38,13 @@ pub enum _DeviceType {
     Web,
     Headless,
     Server,
+}
+
+#[frb(mirror(Capability))]
+pub enum _Capability {
+    Send,
+    Receive,
+    Fs,
 }
 
 #[frb(mirror(ProtocolType))]
@@ -71,4 +80,40 @@ pub struct _PrepareUploadRequestDto {
 pub struct _PrepareUploadResponseDto {
     pub session_id: String,
     pub files: HashMap<String, String>,
+}
+
+#[frb(mirror(FsRoot))]
+pub struct _FsRoot {
+    pub id: String,
+    pub label: String,
+    pub path: String,
+    pub total_bytes: u64,
+    pub free_bytes: u64,
+    pub filesystem: String,
+    pub is_removable: bool,
+    pub is_read_only: bool,
+}
+
+#[frb(mirror(RootsResponse))]
+pub struct _RootsResponse {
+    pub roots: Vec<FsRoot>,
+}
+
+#[frb(mirror(FsEntry))]
+pub struct _FsEntry {
+    pub name: String,
+    pub is_dir: bool,
+    pub size: u64,
+    /// Unix epoch seconds.
+    pub mtime: i64,
+    /// Best-effort MIME guess based on the file extension. `None` for
+    /// directories and unknown extensions.
+    pub mime: Option<String>,
+}
+
+#[frb(mirror(ListResponse))]
+pub struct _ListResponse {
+    pub entries: Vec<FsEntry>,
+    pub total: usize,
+    pub has_more: bool,
 }

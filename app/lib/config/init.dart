@@ -41,10 +41,12 @@ import 'package:localsend_app/util/ui/dynamic_colors.dart';
 import 'package:localsend_app/util/ui/snackbar.dart';
 import 'package:localsend_app/widget/dialogs/local_network_dialog.dart';
 import 'package:localsend_isolates/isolate.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/dto/file_dto.dart';
 import 'package:localsend_isolates/model/dto/multicast_dto.dart';
 import 'package:localsend_isolates/rust/api/logging.dart' as rust_logging;
 import 'package:localsend_isolates/rust/frb_generated.dart';
+import 'package:localsend_isolates/util/capability_helper.dart';
 import 'package:localsend_isolates/util/logger.dart';
 import 'package:localsend_isolates/util/show_instance.dart';
 import 'package:localsend_isolates/util/transfer_notification.dart';
@@ -169,6 +171,10 @@ Future<RefenaContainer> preInit(List<String> args) async {
             discoveryTimeout: settings.discoveryTimeout,
             serverRunning: true,
             download: false,
+            // T-006: protocol v2.3 capability set. The mobile app sends and
+            // receives by default; the `fs` mount is opted into via the
+            // settings (T-007 wires the toggle).
+            capabilities: settings.enableFs ? {Capability.send, Capability.receive, Capability.fs} : defaultCapabilities,
           ),
         ),
       );

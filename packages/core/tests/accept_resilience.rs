@@ -77,6 +77,7 @@ async fn server_survives_descriptor_exhaustion() {
             device_model: None,
             device_type: None,
             token: "target-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {

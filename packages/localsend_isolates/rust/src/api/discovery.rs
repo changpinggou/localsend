@@ -5,9 +5,11 @@ use localsend::discovery::{
     DeviceChannel, DeviceIdentity, DeviceLog, DiscoveredDevice, DiscoveryConfig, DiscoveryEvent,
     DiscoveryHandle, HttpChannel, StatefulDevice,
 };
+use localsend::model::capability::Capability;
 use localsend::model::discovery::{DeviceType, ProtocolType};
 use localsend::multicast::{DEFAULT_MULTICAST_GROUP_V6, MulticastDevice};
 use localsend::util::interface::InterfaceFilter;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{Mutex, mpsc, oneshot};
@@ -41,6 +43,12 @@ pub struct RsDiscoveredDevice {
 
     /// Whether the device's download API is active.
     pub download: bool,
+
+    /// The capabilities this peer advertises (T-006, protocol v2.3).
+    ///
+    /// Never empty: missing v2.2 fields are upgraded to the protocol default
+    /// `{Send, Receive}` by the Rust core before reaching this struct.
+    pub capabilities: HashSet<Capability>,
 }
 
 /// An address a stored device was confirmed on and is dialed at.
@@ -79,6 +87,10 @@ pub struct RsStoredDevice {
 
     /// Whether the device's download API is active.
     pub download: bool,
+
+    /// The capabilities this peer advertises (T-006, protocol v2.3).
+    /// Never empty; see [RsDiscoveredDevice::capabilities].
+    pub capabilities: HashSet<Capability>,
 
     /// Every address the device was confirmed on, best first (available
     /// before not-reachable, IPv6 before IPv4, most recently confirmed
@@ -174,6 +186,7 @@ pub async fn start_discovery(
     fingerprint: String,
     protocol: ProtocolType,
     download: bool,
+    capabilities: HashSet<Capability>,
     cert_pem: String,
     private_key_pem: String,
     timeout_ms: u64,
@@ -211,6 +224,7 @@ pub async fn start_discovery(
                 port,
                 protocol,
                 download,
+                capabilities: capabilities.into_iter().collect(),
             },
             identity: DeviceIdentity {
                 cert_pem,
@@ -408,6 +422,7 @@ impl RsDiscovery {
                     protocol: device.protocol,
                 }),
                 download: device.download,
+                capabilities: device.capabilities,
             })
             .await;
     }
@@ -478,6 +493,7 @@ fn rs_stored_device(stored: StatefulDevice) -> RsStoredDevice {
         device_type: device.device_type,
         fingerprint: device.fingerprint,
         download: device.download,
+        capabilities: device.capabilities,
         channels,
     }
 }

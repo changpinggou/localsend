@@ -10,6 +10,7 @@ import 'package:localsend_app/provider/persistence_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/provider/settings_provider.dart';
 import 'package:localsend_isolates/constants.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/crypto.dart' as crypto;
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
@@ -218,6 +219,7 @@ extension ClientInfoExt on ClientInfo {
       deviceModel: deviceModel,
       deviceType: deviceType?.toDeviceType() ?? DeviceType.desktop,
       download: false,
+      capabilities: Capability.defaultSet,
       channels: [
         SignalingChannel(
           signalingServer: signalingServer,

@@ -7,6 +7,7 @@ pub use store::{
 
 use crate::http::client::{ClientError, LsHttpClientV2};
 use crate::http::dto_v2::{RegisterDtoV2, RegisterResponseDtoV2};
+use crate::model::capability::parse_capabilities;
 use crate::model::discovery::{MulticastMessageV2, ProtocolType};
 use crate::multicast::{self, MulticastConfig, MulticastDevice, MulticastEvent, MulticastHandle};
 use crate::util::error::ErrorChain;
@@ -136,6 +137,7 @@ impl DiscoveryState {
             port: self.device.port,
             protocol: self.device.protocol,
             download: self.device.download,
+            capabilities: self.device.capabilities.clone(),
         }
     }
 
@@ -585,5 +587,9 @@ fn confirmed_device(
             protocol,
         }),
         download: response.download,
+        // v2.2 peers never carry `capabilities`; `parse_capabilities`
+        // substitutes the protocol default `{Send, Receive}`. A v2.3 peer
+        // that does send an explicit list is preserved verbatim.
+        capabilities: parse_capabilities(&response.capabilities),
     }
 }

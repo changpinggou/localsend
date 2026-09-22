@@ -1,4 +1,5 @@
 import 'package:localsend_isolates/api_route_builder.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:test/test.dart';
 
@@ -56,6 +57,7 @@ Device _target({
     deviceModel: 'deviceModel',
     deviceType: DeviceType.desktop,
     download: false,
+    capabilities: Capability.defaultSet,
     channels: [],
   );
 }

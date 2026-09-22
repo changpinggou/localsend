@@ -59,6 +59,10 @@ impl From<RegisterDto> for RegisterDtoV2 {
             port: v3.port,
             protocol: v3.protocol,
             download: v3.has_web_interface,
+            // v3 DTOs predate v2.3 and never advertised capabilities; the
+            // protocol default `{Send, Receive}` is applied by the receiver
+            // (see `parse_capabilities`).
+            capabilities: Vec::new(),
         }
     }
 }

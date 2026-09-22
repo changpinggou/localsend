@@ -4,6 +4,8 @@ import 'package:localsend_app/config/theme.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/model/send_mode.dart';
 import 'package:localsend_app/pages/device_details_page.dart';
+import 'package:localsend_app/pages/receive_page/widgets/peer_row.dart';
+import 'package:localsend_app/pages/remote_browser_page.dart';
 import 'package:localsend_app/pages/selected_files_page.dart';
 import 'package:localsend_app/pages/tabs/send_tab_vm.dart';
 import 'package:localsend_app/pages/troubleshoot_page.dart';
@@ -22,13 +24,13 @@ import 'package:localsend_app/widget/custom_icon_button.dart';
 import 'package:localsend_app/widget/dialogs/add_file_dialog.dart';
 import 'package:localsend_app/widget/dialogs/send_mode_help_dialog.dart';
 import 'package:localsend_app/widget/file_thumbnail.dart';
-import 'package:localsend_app/widget/list_tile/device_list_tile.dart';
 import 'package:localsend_app/widget/list_tile/device_placeholder_list_tile.dart';
 import 'package:localsend_app/widget/opacity_slideshow.dart';
 import 'package:localsend_app/widget/responsive_builder.dart';
 import 'package:localsend_app/widget/responsive_list_view.dart';
 import 'package:localsend_app/widget/responsive_wrap_view.dart';
 import 'package:localsend_app/widget/rotating_widget.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/model/session_status.dart';
 import 'package:localsend_isolates/util/file_size_helper.dart';
@@ -220,12 +222,15 @@ class SendTab extends StatelessWidget {
                           nameOverride: favoriteEntry?.alias,
                           vm: vm,
                         )
-                      : DeviceListTile(
+                      : PeerRow(
                           device: device,
                           isFavorite: favoriteEntry != null,
                           nameOverride: favoriteEntry?.alias,
                           onDetailsTap: () async => await context.push(() => DeviceDetailsPage(device: device)),
                           onTap: () async => await vm.onTapDevice(context, device),
+                          onBrowseDriveTap: device.capabilities.contains(Capability.fs)
+                              ? () async => await context.push(() => RemoteBrowserPage(fingerprint: device.fingerprint))
+                              : null,
                         ),
                 ),
               );
@@ -548,7 +553,7 @@ class _MultiSendDeviceListTile extends StatelessWidget {
       progress = null;
       info = null;
     }
-    return DeviceListTile(
+    return PeerRow(
       device: device,
       info: info,
       progress: progress,
@@ -556,6 +561,9 @@ class _MultiSendDeviceListTile extends StatelessWidget {
       nameOverride: nameOverride,
       onDetailsTap: () async => await context.push(() => DeviceDetailsPage(device: device)),
       onTap: () async => await vm.onTapDeviceMultiSend(context, device),
+      onBrowseDriveTap: device.capabilities.contains(Capability.fs)
+          ? () async => await context.push(() => RemoteBrowserPage(fingerprint: device.fingerprint))
+          : null,
     );
   }
 }

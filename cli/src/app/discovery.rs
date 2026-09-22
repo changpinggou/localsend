@@ -12,6 +12,7 @@ use localsend::discovery::{
     DeviceChannel, DiscoveredDevice, DiscoveryEvent, DiscoveryHandle, HttpChannel,
 };
 use localsend::http::dto_v2::RegisterDtoV2;
+use localsend::model::capability::parse_capabilities;
 use std::sync::Arc;
 
 impl App {
@@ -119,6 +120,8 @@ pub(super) fn device_confirmed(
             protocol: info.protocol,
         }),
         download: info.download,
+        // The CLI displays send/receive but not the `fs` mount (T-006).
+        capabilities: parse_capabilities(&info.capabilities),
     };
     let discovery = discovery.clone();
     tokio::spawn(async move {

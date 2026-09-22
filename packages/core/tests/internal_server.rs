@@ -45,6 +45,7 @@ async fn start_test_server(internal_enabled: bool) -> TestServer {
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         internal_config,
         None,

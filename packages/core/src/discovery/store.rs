@@ -1,8 +1,9 @@
 //! The in-memory store of discovered devices.
 
 use super::DiscoveryEvent;
+use crate::model::capability::Capability;
 use crate::model::discovery::{DeviceType, ProtocolType};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::net::IpAddr;
 use std::sync::Mutex;
 use std::time::SystemTime;
@@ -36,6 +37,14 @@ pub struct DiscoveredDevice {
 
     /// Whether the device's download API is active.
     pub download: bool,
+
+    /// The capabilities the device advertises (T-006, protocol v2.3).
+    ///
+    /// Empty for v2.2 peers that do not carry the field; the protocol default
+    /// `{Send, Receive}` is substituted by
+    /// [`crate::model::capability::parse_capabilities`] before this struct
+    /// is exposed to the application.
+    pub capabilities: HashSet<Capability>,
 }
 
 /// A [`DiscoveredDevice`] as kept in the store.
@@ -275,6 +284,7 @@ mod tests {
                 protocol: ProtocolType::Https,
             }),
             download: false,
+            capabilities: HashSet::new(),
         }
     }
 

@@ -1,4 +1,5 @@
 import 'package:dart_mappable/dart_mappable.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device_info_result.dart';
 import 'package:localsend_isolates/model/dto/multicast_dto.dart';
 import 'package:localsend_isolates/model/stored_security_context.dart';
@@ -24,6 +25,11 @@ class SyncState with SyncStateMappable {
   final bool serverRunning;
   final bool download;
 
+  /// The capabilities this device advertises on the wire (T-006, protocol
+  /// v2.3). Never empty: a v2.2-only app falls back to the protocol default
+  /// `{send, receive}` in the caller.
+  final Set<Capability> capabilities;
+
   SyncState({
     required this.rootIsolateToken,
     required this.securityContext,
@@ -37,11 +43,12 @@ class SyncState with SyncStateMappable {
     required this.discoveryTimeout,
     required this.serverRunning,
     required this.download,
+    required this.capabilities,
   });
 
   @override
   String toString() {
-    return 'SyncState(securityContext: <SecurityContext>, deviceInfo: $deviceInfo, alias: $alias, port: $port, networkWhitelist: $networkWhitelist, networkBlacklist: $networkBlacklist, protocol: $protocol, multicastGroup: $multicastGroup, discoveryTimeout: $discoveryTimeout, serverRunning: $serverRunning, download: $download)';
+    return 'SyncState(securityContext: <SecurityContext>, deviceInfo: $deviceInfo, alias: $alias, port: $port, networkWhitelist: $networkWhitelist, networkBlacklist: $networkBlacklist, protocol: $protocol, multicastGroup: $multicastGroup, discoveryTimeout: $discoveryTimeout, serverRunning: $serverRunning, download: $download, capabilities: $capabilities)';
   }
 }
 

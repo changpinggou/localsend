@@ -36,7 +36,7 @@ use std::time::SystemTime;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Frame, Incoming};
 use hyper::{Request, Response, StatusCode};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio_stream::StreamExt;
 use tokio_util::io::ReaderStream;
@@ -178,10 +178,10 @@ pub async fn handle_request(
 // GET /roots
 // =====================================================================
 
-/// Response body for `GET /fs/roots`.
-#[derive(Debug, Serialize)]
-struct RootsResponse {
-    roots: Vec<FsRoot>,
+/// Response body for `GET /fs/roots`. Public so the FRB client can mirror it.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RootsResponse {
+    pub roots: Vec<FsRoot>,
 }
 
 /// `GET /api/localsend/v2/fs/roots` — list the whitelisted mount
@@ -200,26 +200,26 @@ fn handle_roots(state: &FsState) -> Response<BoxedBody> {
 // GET /list
 // =====================================================================
 
-/// Response body for `GET /fs/list`.
-#[derive(Debug, Serialize)]
-struct ListResponse {
-    entries: Vec<FsEntry>,
-    total: usize,
-    has_more: bool,
+/// Response body for `GET /fs/list`. Public so the FRB client can mirror it.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ListResponse {
+    pub entries: Vec<FsEntry>,
+    pub total: usize,
+    pub has_more: bool,
 }
 
-/// A single entry inside a [`ListResponse`].
-#[derive(Debug, Clone, Serialize)]
-struct FsEntry {
-    name: String,
-    is_dir: bool,
-    size: u64,
+/// A single entry inside a [`ListResponse`]. Public for FRB mirroring.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FsEntry {
+    pub name: String,
+    pub is_dir: bool,
+    pub size: u64,
     /// Unix epoch seconds.
-    mtime: i64,
+    pub mtime: i64,
     /// Best-effort MIME guess based on the file extension. `None`
     /// for directories and unknown extensions — the client should
     /// fall back to `application/octet-stream`.
-    mime: Option<String>,
+    pub mime: Option<String>,
 }
 
 async fn handle_list<B>(state: &FsState, req: &Request<B>) -> Result<Response<BoxedBody>, FsError>

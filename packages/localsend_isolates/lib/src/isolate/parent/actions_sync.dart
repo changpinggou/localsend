@@ -137,6 +137,12 @@ class _PublishSyncStateAction extends ReduxAction<IsolateController, ParentIsola
         data: null,
       ),
     );
+    state.fsList?.sendToIsolate(
+      SendToIsolateData(
+        syncState: syncState,
+        data: null,
+      ),
+    );
 
     return state.copyWith(
       syncState: syncState,

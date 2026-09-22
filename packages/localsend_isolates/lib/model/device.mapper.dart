@@ -377,6 +377,7 @@ class DeviceMapper extends ClassMapperBase<Device> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = DeviceMapper._());
       DeviceTypeMapper.ensureInitialized();
+      CapabilityMapper.ensureInitialized();
       DeviceChannelMapper.ensureInitialized();
     }
     return _instance!;
@@ -417,6 +418,11 @@ class DeviceMapper extends ClassMapperBase<Device> {
   );
   static bool _$download(Device v) => v.download;
   static const Field<Device, bool> _f$download = Field('download', _$download);
+  static Set<Capability> _$capabilities(Device v) => v.capabilities;
+  static const Field<Device, Set<Capability>> _f$capabilities = Field(
+    'capabilities',
+    _$capabilities,
+  );
   static List<DeviceChannel> _$channels(Device v) => v.channels;
   static const Field<Device, List<DeviceChannel>> _f$channels = Field(
     'channels',
@@ -435,6 +441,7 @@ class DeviceMapper extends ClassMapperBase<Device> {
     #deviceModel: _f$deviceModel,
     #deviceType: _f$deviceType,
     #download: _f$download,
+    #capabilities: _f$capabilities,
     #channels: _f$channels,
   };
 
@@ -450,6 +457,7 @@ class DeviceMapper extends ClassMapperBase<Device> {
       deviceModel: data.dec(_f$deviceModel),
       deviceType: data.dec(_f$deviceType),
       download: data.dec(_f$download),
+      capabilities: data.dec(_f$capabilities),
       channels: data.dec(_f$channels),
     );
   }
@@ -517,6 +525,7 @@ abstract class DeviceCopyWith<$R, $In extends Device, $Out>
     String? deviceModel,
     DeviceType? deviceType,
     bool? download,
+    Set<Capability>? capabilities,
     List<DeviceChannel>? channels,
   });
   DeviceCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
@@ -551,6 +560,7 @@ class _DeviceCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Device, $Out>
     Object? deviceModel = $none,
     DeviceType? deviceType,
     bool? download,
+    Set<Capability>? capabilities,
     List<DeviceChannel>? channels,
   }) => $apply(
     FieldCopyWithData({
@@ -564,6 +574,7 @@ class _DeviceCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Device, $Out>
       if (deviceModel != $none) #deviceModel: deviceModel,
       if (deviceType != null) #deviceType: deviceType,
       if (download != null) #download: download,
+      if (capabilities != null) #capabilities: capabilities,
       if (channels != null) #channels: channels,
     }),
   );
@@ -579,6 +590,7 @@ class _DeviceCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Device, $Out>
     deviceModel: data.get(#deviceModel, or: $value.deviceModel),
     deviceType: data.get(#deviceType, or: $value.deviceType),
     download: data.get(#download, or: $value.download),
+    capabilities: data.get(#capabilities, or: $value.capabilities),
     channels: data.get(#channels, or: $value.channels),
   );
 

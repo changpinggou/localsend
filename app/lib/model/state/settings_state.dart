@@ -40,6 +40,11 @@ class SettingsState with SettingsStateMappable {
   final int discoveryTimeout;
   final bool advancedSettings;
 
+  /// T-006 / T-007: whether this device advertises the `fs` capability
+  /// (LocalU mounted-end). Defaults to `false` until T-007 wires the
+  /// user-facing toggle.
+  final bool enableFs;
+
   const SettingsState({
     required this.showToken,
     required this.alias,
@@ -71,5 +76,6 @@ class SettingsState with SettingsStateMappable {
     required this.verifyChecksums,
     required this.discoveryTimeout,
     required this.advancedSettings,
+    this.enableFs = false,
   });
 }

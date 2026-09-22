@@ -137,6 +137,7 @@ async fn start_test_server(
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -310,6 +311,7 @@ async fn test_upload_page() {
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {
@@ -368,6 +370,7 @@ async fn test_custom_web_pages() {
             device_model: Some("Rust".to_string()),
             device_type: None,
             token: "server-fingerprint".to_string(),
+            capabilities: Vec::new(),
         },
         None,
         Some(ServerConfigV2 {

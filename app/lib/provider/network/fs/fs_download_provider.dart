@@ -68,16 +68,16 @@ class FsDownloadState with FsDownloadStateMappable {
   });
 
   factory FsDownloadState.initial() => const FsDownloadState(
-        sessionId: null,
-        path: null,
-        filename: null,
-        transferred: 0,
-        total: 0,
-        status: FsDownloadStatus.idle,
-        cachedPath: null,
-        destinationPath: null,
-        error: null,
-      );
+    sessionId: null,
+    path: null,
+    filename: null,
+    transferred: 0,
+    total: 0,
+    status: FsDownloadStatus.idle,
+    cachedPath: null,
+    destinationPath: null,
+    error: null,
+  );
 }
 
 final fsDownloadProvider = NotifierProvider<FsDownloadService, FsDownloadState>((ref) {
@@ -126,7 +126,9 @@ class FsDownloadService extends Notifier<FsDownloadState> {
     }
     final activeSink = sink;
 
-    final stream = ref.redux(parentIsolateProvider).dispatchTakeResult(
+    final stream = ref
+        .redux(parentIsolateProvider)
+        .dispatchTakeResult(
           IsolateFsDownloadAction(
             request: FsDownloadRequest(
               device: device,

@@ -1,3 +1,4 @@
+use crate::model::capability::Capability;
 use serde::{Deserialize, Serialize};
 
 /// The protocol version (major.minor) implemented by this crate for the v2 protocol.
@@ -138,6 +139,16 @@ pub struct MulticastMessageV2 {
     /// Whether the download API (sections 5.2, 5.3) is active.
     #[serde(default)]
     pub download: bool,
+
+    /// The capabilities this device exposes (T-006, protocol v2.3).
+    ///
+    /// A v2.2 peer does not send this field; an empty `Vec` is then
+    /// upgraded by [`crate::model::capability::parse_capabilities`] to
+    /// the protocol default `{Send, Receive}`. We always omit the field
+    /// when it's empty so the announcement stays byte-compatible with
+    /// v2.2 receivers.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capabilities: Vec<Capability>,
 }
 
 #[cfg(test)]
@@ -155,6 +166,7 @@ mod tests {
             port: 53317,
             protocol: ProtocolType::Https,
             download: true,
+            capabilities: Vec::new(),
         };
 
         let json = serde_json::to_string(&msg).unwrap();
@@ -164,6 +176,32 @@ mod tests {
         assert!(json.contains("\"download\":true"));
         assert!(json.contains("\"protocol\":\"https\""));
         assert!(json.contains("\"deviceType\":\"mobile\""));
+        // Empty capabilities are skipped to stay byte-compatible with v2.2 receivers.
+        assert!(!json.contains("\"capabilities\""));
+    }
+
+    #[test]
+    fn test_multicast_message_capabilities_round_trip() {
+        // v2.3 devices serialise their capabilities as `["send","receive","fs"]`.
+        let msg = MulticastMessageV2 {
+            alias: "Mount".to_string(),
+            version: "2.3".to_string(),
+            device_model: None,
+            device_type: Some(DeviceType::Server),
+            fingerprint: "fp".to_string(),
+            port: 53317,
+            protocol: ProtocolType::Https,
+            download: false,
+            capabilities: vec![Capability::Send, Capability::Receive, Capability::Fs],
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains("\"capabilities\":[\"send\",\"receive\",\"fs\"]"));
+
+        let parsed: MulticastMessageV2 = serde_json::from_str(&json).unwrap();
+        assert_eq!(
+            parsed.capabilities,
+            vec![Capability::Send, Capability::Receive, Capability::Fs]
+        );
     }
 
     #[test]
@@ -187,6 +225,9 @@ mod tests {
         assert_eq!(msg.port, 53317);
         assert_eq!(msg.protocol, ProtocolType::Https);
         assert!(msg.download);
+        // v2.2 messages do not carry `capabilities`; the field default to
+        // an empty Vec — the caller upgrades it with `parse_capabilities`.
+        assert!(msg.capabilities.is_empty());
     }
 
     #[test]

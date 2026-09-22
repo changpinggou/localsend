@@ -1,5 +1,6 @@
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowException;
 import 'package:localsend_isolates/constants.dart';
+import 'package:localsend_isolates/model/capability.dart' as app_model;
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/model/dto/file_dto.dart';
 import 'package:localsend_isolates/model/dto/multicast_dto.dart';
@@ -39,6 +40,12 @@ extension DeviceExt on Device {
       hasWebInterface: download,
     );
   }
+
+  /// Maps the app-side [Device] to a FRB `Set<rust_model.Capability>` for
+  /// use as the `capabilities` parameter of the discovery/server APIs.
+  Set<rust_model.Capability> toRustCapabilities() {
+    return capabilities.map((c) => c.toRust()).toSet();
+  }
 }
 
 extension DeviceTypeExt on DeviceType {
@@ -49,6 +56,31 @@ extension DeviceTypeExt on DeviceType {
       DeviceType.web => rust_model.DeviceType.web,
       DeviceType.headless => rust_model.DeviceType.headless,
       DeviceType.server => rust_model.DeviceType.server,
+    };
+  }
+}
+
+extension CapabilityExt on app_model.Capability {
+  /// Maps the app-side `dart_mappable` [app_model.Capability] to the FRB
+  /// plain enum that the Rust side expects. Both enums share the wire
+  /// values, so this is a straight switch.
+  rust_model.Capability toRust() {
+    return switch (this) {
+      app_model.Capability.send => rust_model.Capability.send,
+      app_model.Capability.receive => rust_model.Capability.receive,
+      app_model.Capability.fs => rust_model.Capability.fs,
+    };
+  }
+}
+
+extension RustCapabilityExt on rust_model.Capability {
+  /// Inverse of [CapabilityExt.toRust]: maps the FRB plain enum back to
+  /// the app-side `dart_mappable` [app_model.Capability].
+  app_model.Capability toDart() {
+    return switch (this) {
+      rust_model.Capability.send => app_model.Capability.send,
+      rust_model.Capability.receive => app_model.Capability.receive,
+      rust_model.Capability.fs => app_model.Capability.fs,
     };
   }
 }
@@ -147,6 +179,7 @@ extension RsStoredDeviceExt on rust_discovery.RsStoredDevice {
       deviceModel: deviceModel,
       deviceType: deviceType?.toDart() ?? DeviceType.desktop,
       download: download,
+      capabilities: capabilities.map((c) => c.toDart()).toSet(),
       channels: [
         for (final channel in channels)
           HttpChannel(
@@ -188,6 +221,9 @@ extension DeviceToRsDiscoveredDeviceExt on Device {
       port: port,
       protocol: https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http,
       download: download,
+      // T-006: keep the discovered peer's capabilities through to the store.
+      // The FRB layer passes these as a `Set<rust_model.Capability>`.
+      capabilities: toRustCapabilities(),
     );
   }
 }
@@ -205,6 +241,7 @@ extension RegisterDtoV2Ext on rust_server.RegisterDtoV2 {
       deviceModel: deviceModel,
       deviceType: deviceType?.toDart() ?? DeviceType.desktop,
       download: download,
+      capabilities: capabilities.map((c) => c.toDart()).toSet(),
       channels: withChannel ? [HttpChannel(host: ip, port: port, https: protocol == rust_model.ProtocolType.https)] : const [],
     );
   }
@@ -223,6 +260,9 @@ extension RegisterResponseDtoExt on rust_model.RegisterResponseDto {
       deviceModel: deviceModel,
       deviceType: deviceType?.toDart() ?? DeviceType.desktop,
       download: hasWebInterface,
+      // v3 register payloads predate v2.3; substitute the protocol default
+      // for the missing capabilities field.
+      capabilities: app_model.Capability.defaultSet,
       channels: [HttpChannel(host: ip, port: port, https: https)],
     );
   }
