@@ -42,7 +42,7 @@ use std::path::{Path, PathBuf};
 
 use thiserror::Error;
 
-use super::mount::{FsRoot, MountTable};
+use super::mount::MountTable;
 
 // =====================================================================
 // PathDeniedReason

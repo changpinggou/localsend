@@ -64,7 +64,12 @@ pub struct FsRoot {
     /// stored (T-002 [`FsMount::list`] calls `canonicalize` when
     /// possible; whitelist entries supplied via the UI are normalised
     /// by [`MountTable::from_config`]).
-    pub path: PathBuf,
+    ///
+    /// Stored as `String` rather than `PathBuf` so the FRB wire
+    /// boundary has a simple `String` codec — the Dart side never has
+    /// to deal with path-like wrappers. Path operations that need a
+    /// `PathBuf` should construct one via `PathBuf::from(&root.path)`.
+    pub path: String,
 
     /// Total size of the volume, in bytes. `0` if the OS does not
     /// report it (network share with restricted ACL, exotic
@@ -95,7 +100,7 @@ impl FsRoot {
     /// Build an `FsRoot` with the disk-size / filesystem fields
     /// zeroed. Convenient for tests and for the whitelist
     /// serialisation path where the OS hasn't been queried yet.
-    pub fn new(id: impl Into<String>, label: impl Into<String>, path: impl Into<PathBuf>) -> Self {
+    pub fn new(id: impl Into<String>, label: impl Into<String>, path: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             label: label.into(),
@@ -161,7 +166,9 @@ impl MountTable {
     /// Prefix match, with platform-specific case folding (see
     /// module-level docs).
     pub fn contains(&self, abs_path: &Path) -> bool {
-        self.roots.values().any(|r| path_starts_with(abs_path, &r.path))
+        self.roots
+            .values()
+            .any(|r| path_starts_with(abs_path, &PathBuf::from(&r.path)))
     }
 
     /// Replace the entire whitelist. Used by the `update_whitelist`
@@ -179,7 +186,7 @@ impl MountTable {
     /// log to render paths in user-friendly form.
     pub fn label_of(&self, abs_path: &Path) -> Option<String> {
         for r in self.roots.values() {
-            if path_starts_with(abs_path, &r.path) {
+            if path_starts_with(abs_path, &PathBuf::from(&r.path)) {
                 return Some(r.label.clone());
             }
         }
@@ -295,7 +302,7 @@ impl FsMount {
             }
             let id = path.to_string_lossy().to_string();
             let label = name.clone();
-            let mut root = FsRoot::new(&id, &label, &path);
+            let mut root = FsRoot::new(&id, &label, &id);
             fill_unix_disk_info(&mut root, &path);
             out.push(root);
         }
@@ -313,7 +320,7 @@ fn list_macos_volumes() -> Vec<FsRoot> {
     // macOS has a synthetic read-only `/System/Volumes/Data` mount
     // that shows up as a candidate but is part of the sealed system
     // volume. Filter it.
-    roots.retain(|r| !is_macos_system_volume(&r.path));
+    roots.retain(|r| !is_macos_system_volume(&PathBuf::from(&r.path)));
     roots
 }
 
@@ -427,7 +434,7 @@ mod tests {
         let r = sample_root();
         assert_eq!(r.id, "/Volumes/Photos");
         assert_eq!(r.label, "Photos");
-        assert_eq!(r.path, PathBuf::from("/Volumes/Photos"));
+        assert_eq!(r.path, "/Volumes/Photos");
         assert_eq!(r.total_bytes, 0);
         assert_eq!(r.free_bytes, 0);
         assert_eq!(r.filesystem, "unknown");

@@ -2220,7 +2220,7 @@ dependencies = [
 
 [[package]]
 name = "localsend-cli"
-version = "1.18.2"
+version = "1.19.0"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3318,6 +3318,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "flutter_rust_bridge",
+ "futures-util",
  "localsend",
  "tokio",
  "tokio-util",

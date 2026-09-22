@@ -8,7 +8,6 @@ pub use localsend::http::dto::{
     RegisterDto, RegisterResponseDto,
 };
 use localsend::model::discovery::ProtocolType;
-use localsend::reqwest;
 use localsend::util::error::ErrorChain;
 
 pub use localsend::fs::{FsEntry, FsRoot, ListResponse, RootsResponse};
@@ -186,6 +185,7 @@ impl RsHttpClient {
         self.inner
             .list_roots(protocol, ip, port)
             .await
+            .map(Into::into)
             .map_err(RsHttpClientError::from)
     }
 
@@ -207,6 +207,7 @@ impl RsHttpClient {
         self.inner
             .list_dir(protocol, ip, port, &path, page as usize, size as usize, &sort)
             .await
+            .map(Into::into)
             .map_err(RsHttpClientError::from)
     }
 

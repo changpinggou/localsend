@@ -43,7 +43,7 @@ use tokio_util::io::ReaderStream;
 
 use super::config::FsConfig;
 use super::mount::{FsRoot, MountTable};
-use super::path::{FsError, PathDeniedReason, PathGuard};
+use super::path::{FsError, PathGuard};
 use crate::http::server::common::query::parse_query;
 use crate::http::server::common::response::{full_body, BoxedBody};
 
