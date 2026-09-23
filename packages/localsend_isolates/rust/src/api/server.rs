@@ -270,7 +270,18 @@ pub async fn start_server(
     let fs_config = if enable_fs {
         #[cfg(feature = "fs")]
         {
-            Some(crate::fs::FsConfig::default())
+            // Auto-populate the whitelist from the OS's current mount
+            // points (macOS /Volumes, Windows D:..Z:, Linux /media + /run/media).
+            // T-002 ships the listing and the path sandbox; P1-mvp wants
+            // the user to see their drives the moment they flip
+            // enableFs without a second settings page. Later phases
+            // (T-019 / T-018 hotplug) will replace this auto-snapshot
+            // with a live MountWatcher stream.
+            let roots = crate::fs::FsMount::list();
+            Some(crate::fs::FsConfig {
+                whitelist: roots,
+                ..crate::fs::FsConfig::default()
+            })
         }
         #[cfg(not(feature = "fs"))]
         {

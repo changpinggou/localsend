@@ -47,6 +47,13 @@ x509-parser = { version = "0.18.1", features = ["verify"], optional = true }
 # `accept_resilience` test to lower this process' descriptor limit.
 libc = "0.2"
 
+[target.'cfg(windows)'.dependencies]
+# Used by list_windows_drives() to enumerate drive letters
+# (GetLogicalDrives) and fill size info (GetDiskFreeSpaceExW /
+# GetVolumeInformationW). Kept on the windows target only so
+# macOS / Linux builds don't pay for it.
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Ioctl", "Win32_System_Com"] }
+
 [[example]]
 name = "stress_send"
 required-features = ["http"]

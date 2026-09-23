@@ -370,11 +370,92 @@ fn list_linux_user_media() -> Vec<FsRoot> {
 /// `windows-latest` because the function exists and is called.
 #[cfg(target_os = "windows")]
 fn list_windows_drives() -> Vec<FsRoot> {
-    // TODO(t-002-windows): enumerate via GetLogicalDrives, filter
-    // system volumes (DRIVE_FIXED + is_system), fill size/fs info
-    // via GetDiskFreeSpaceExW + GetVolumeInformationW. Add the
-    // `windows` crate at that point.
-    Vec::new()
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::GetLastError;
+    use windows_sys::Win32::Storage::FileSystem::{
+        GetDiskFreeSpaceExW, GetLogicalDrives, GetVolumeInformationW,
+    };
+
+    const DRIVE_FIXED: u32 = 0x3;
+    const DRIVE_REMOVABLE: u32 = 0x2;
+
+    unsafe fn wide(s: &str) -> Vec<u16> {
+        std::ffi::OsStr::new(s).encode_wide().chain(Some(0)).collect()
+    }
+
+    let mut roots = Vec::new();
+    let bitmap = unsafe { GetLogicalDrives() };
+    if bitmap == 0 {
+        tracing::warn!(err = ?unsafe { GetLastError() }, "GetLogicalDrives failed");
+        return roots;
+    }
+    for letter in b'A'..=b'Z' {
+        let bit = 1u32 << (letter - b'A');
+        if bitmap & bit == 0 {
+            continue;
+        }
+        let drive_root = format!("{}:\\", letter as char);
+        let drive_type = unsafe {
+            windows_sys::Win32::Storage::FileSystem::GetDriveTypeW(wide(&drive_root).as_ptr())
+        };
+        // Drive types we expose: fixed disks (HDDs / SSDs) and
+        // removable media (USB sticks, SD cards). Skip CD-ROMs,
+        // network drives, RAM disks, and unknown.
+        if drive_type != DRIVE_FIXED && drive_type != DRIVE_REMOVABLE {
+            continue;
+        }
+
+        let mut free_bytes_available: u64 = 0;
+        let mut total_bytes: u64 = 0;
+        let mut total_free_bytes: u64 = 0;
+        let ok = unsafe {
+            GetDiskFreeSpaceExW(
+                wide(&drive_root).as_ptr(),
+                Some(&mut free_bytes_available),
+                Some(&mut total_bytes),
+                Some(&mut total_free_bytes),
+            );
+        };
+        if ok == 0 {
+            tracing::debug!(letter = letter as char, "GetDiskFreeSpaceExW failed; skipping");
+            continue;
+        }
+
+        let mut volume_name = [0u16; 261];
+        let mut fs_name = [0u16; 261];
+        let _ = unsafe { GetVolumeInformationW(wide(&drive_root).as_ptr(), Some(volume_name.as_mut_ptr()), Some(volume_name.len() as u32), None, None, None, Some(fs_name.as_mut_ptr()), Some(fs_name.len() as u32)) };
+        let label = if let Some(end) = volume_name.iter().position(|&c| c == 0) {
+            String::from_utf16_lossy(&volume_name[..end])
+        } else {
+            String::new()
+        };
+        let fs = if let Some(end) = fs_name.iter().position(|&c| c == 0) {
+            String::from_utf16_lossy(&fs_name[..end])
+        } else {
+            "unknown".to_string()
+        };
+
+        // We don't actually canonicalize the path string because
+        // "D:\" is already absolute and the server-side guard treats
+        // it as a prefix. The whitelist entry's `id` is the drive
+        // letter so the IPC layer can later update / remove entries
+        // by id without touching the path.
+        roots.push(FsRoot {
+            id: format!("{}:", letter as char),
+            label: if label.is_empty() {
+                format!("Drive {}:", letter as char)
+            } else {
+                format!("{label} ({}:)", letter as char)
+            },
+            path: drive_root,
+            total_bytes,
+            free_bytes: total_free_bytes,
+            filesystem: fs,
+            is_removable: drive_type == DRIVE_REMOVABLE,
+            is_read_only: false,
+        });
+    }
+    roots
 }
 
 // ---------------------------------------------------------------------
