@@ -15,7 +15,7 @@
 | 里程碑 | 范围 | 出口准则 | 状态 |
 |---|---|---|---|
 | **M1：协议握手** | T-006 | v2.3 协议字段 + `capabilities: ["send","receive","fs"]` 在 announce / register / info 三处都带 | ✅ |
-| **M2：MVP 上线** | T-001 ~ T-009 | iPhone 能点开 Mac 的 `D:\Photos` 下载一张图片 | ✅ [¹](#m2-验收补丁commit-53a537df) |
+| **M2：MVP 上线** | T-001 ~ T-009 | iPhone 能点开 Mac 的 `D:\Photos` 下载一张图片 | ✅ [¹](#m2-验收补丁commit-53a537df) [²](#m2-验收补丁-commit-32bec536) |
 | **M3：可写** | T-010 ~ T-013 | 50 张照片从 iPhone 传到 Mac `D:\Photos\2026-09\`，并发 2~4 | ❌ |
 | **M4：完整 CRUD** | T-014 ~ T-017 | 长按菜单 / 多选 / 移入回收站全可用 | ❌ |
 | **M5：动态挂载** | T-018 ~ T-020 | Mac 拔插移动硬盘，iPhone 3 秒内列表变化 | ❌ |
@@ -160,6 +160,31 @@ M2 标记 ✅ 之后，在真机/模拟器端到端验证时发现一处 **错�
 **测试覆盖**：现有 98 个 flutter 测试全部通过；无新增/修改。错误处理路径用真实场景触发（截图 7 即修复前的卡 skeleton 现象），修复后端到端跑通。
 
 **为什么不在原 M2 段里改？** 原 M2 段的"端到端验证（macOS 宿主 + iOS 移动端）"流程是在我自己的 macOS dev 环境上用 curl 抓 + dart 单测覆盖的，没在真 iOS ↔ 真 Windows host 这种"host 端配置不完全正确"的边界条件里跑过。这次加补丁正是因为**实际跨设备验证暴露了 UX 缺陷**——M2 段保留 ✅ 但下方新增此段作为"P1-mvp 完成 → 真实验证 → 补丁"的链路记录，方便后续每个里程碑在 M 段后留同样补丁位。
+
+### P1-mvp 验收补丁（commit `32bec536`）
+
+`53a537df` 把错误从"silent"变"显示"，但显示的是 `RsHttpClientError.statusCode(status: 404, message: null)` 这种**工程师字符串**，普通用户看不懂"这是要我做什么"。
+
+**修复**：
+
+| 文件 | 改动 |
+|---|---|
+| `app/lib/pages/remote_browser/widgets/empty_state.dart` | 新增 `FsErrorReason` enum（`fsDisabledByPeer` / `notFound` / `timeout` / `pathDenied` / `network`）；`FsErrorState` 加可选 `reason` 参数，按 reason 选图标 + 标题 + 描述 |
+| `app/lib/provider/network/fs/fs_list_provider.dart` | `FsListState` 加 `errorReason` 字段；`classifyFsError(String)` 把 `RsHttpClientError::to_string()` 解析成 reason（404 → `fsDisabledByPeer`，403 → `pathDenied`，408/504/524 → `timeout`，500 → `notFound`，连接失败/超时字符串 → `network`，其他 → `network` 兜底） |
+| `app/lib/pages/remote_browser_page.dart` | 把 `state.errorReason` 透传给 `FsErrorState` |
+| `app/assets/i18n/{en,zh-CN}.json` | 新增 `fsBrowser.{fsDisabledByPeerTitle, fsDisabledByPeerBody, notFound*, timeout*, pathDenied*, network*}` 5 × 2 文案 |
+
+**端到端复现**（修复后）：
+
+| 场景 | 修复前（53a537df） | 修复后（32bec536） |
+|---|---|---|
+| 对端没开 fs / HTTP 模式 | 🔴 原始 Rust 字符串 | 🔒 "该设备未开启驱动器浏览" + "请让对端在 设置 → 网络 → 打开允许其他设备浏览我的驱动器。同时需要启用加密（HTTPS）。" |
+| 路径越权（403） | 同上原始 | 🚫 "路径未被共享" + "请让对端加入白名单" |
+| 超时（408/504/524） | 同上 | ⏱ "连接超时" + "请确认双方在同一 Wi-Fi 下后重试" |
+| 网络断开（DNS / refused） | 同上 | 📡 "无法连接设备" + "对端无响应，可能已进入睡眠或已关闭" |
+| 其他 HTTP 错误 | 同上 | ❓ "找不到对应接口" + "可能是旧版本 LocalSend" |
+
+**测试覆盖**：7 个新 `classifyFsError` 单测（覆盖所有 reason + 兜底路径）。flutter test 105/105 通过。
 
 ### 已修复的 macOS build 障碍
 
