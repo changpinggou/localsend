@@ -255,6 +255,31 @@ pub async fn start_server(
         None => (None, None),
     };
 
+    // T-006/T-007: when the SyncState advertises `Capability.fs`,
+    // mount the fs namespace on the same listener. The v2 router's
+    // fs dispatch still goes through `crate::fs::register`, which
+    // re-checks TLS gating (N-SEC-3) and `enable_fs` so a missing
+    // TLS channel silently drops the route.
+    //
+    // The earlier T-005 design called for a *second* `start_with_port`
+    // mounted on a separate listener, but the Dart app never
+    // implemented that second call. Wiring the mount through the
+    // single existing listener keeps the dispatch code path simple
+    // and matches the "capabilities drive the wire surface" goal.
+    let enable_fs = capabilities.contains(&Capability::Fs);
+    let fs_config = if enable_fs {
+        #[cfg(feature = "fs")]
+        {
+            Some(crate::fs::FsConfig::default())
+        }
+        #[cfg(not(feature = "fs"))]
+        {
+            None
+        }
+    } else {
+        None
+    };
+
     let handle = localsend::http::server::start_with_port(
         port,
         tls,
@@ -271,17 +296,11 @@ pub async fn start_server(
             pin,
             verify_checksums,
             event_tx,
-            // T-005: the Flutter app disables the fs namespace by default
-            // (the fs namespace is opt-in, configured separately on the
-            // settings page and only mounted on a separate TLS listener).
-            enable_fs: false,
+            enable_fs,
         }),
         web_config,
         stop_rx,
-        // T-005: no FsConfig here either. The Flutter app constructs an
-        // FsConfig and starts a second `start_with_port` when the user
-        // explicitly enables fs sharing.
-        None,
+        fs_config,
     )
     .await?;
 
