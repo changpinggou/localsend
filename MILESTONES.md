@@ -15,7 +15,7 @@
 | 里程碑 | 范围 | 出口准则 | 状态 |
 |---|---|---|---|
 | **M1：协议握手** | T-006 | v2.3 协议字段 + `capabilities: ["send","receive","fs"]` 在 announce / register / info 三处都带 | ✅ |
-| **M2：MVP 上线** | T-001 ~ T-009 | iPhone 能点开 Mac 的 `D:\Photos` 下载一张图片 | ✅ |
+| **M2：MVP 上线** | T-001 ~ T-009 | iPhone 能点开 Mac 的 `D:\Photos` 下载一张图片 | ✅ [¹](#m2-验收补丁commit-53a537df) |
 | **M3：可写** | T-010 ~ T-013 | 50 张照片从 iPhone 传到 Mac `D:\Photos\2026-09\`，并发 2~4 | ❌ |
 | **M4：完整 CRUD** | T-014 ~ T-017 | 长按菜单 / 多选 / 移入回收站全可用 | ❌ |
 | **M5：动态挂载** | T-018 ~ T-020 | Mac 拔插移动硬盘，iPhone 3 秒内列表变化 | ❌ |
@@ -130,6 +130,36 @@
 - **客户端 util**：`save_to_gallery_test.dart` (1 platform-gate) + `api_route_builder_test.dart`
 - **服务端**：`tls_test.rs` (4) + `v2_server.rs` (6) + `v2_tls_pinning.rs` (6) + `tls_test.rs::tls_*_skips_fs_routes` (4)
 - **服务端 REST**：`rest.rs::tests::*` (7 个 download / range / path 安全测试)
+
+### P1-mvp 验收补丁（commit `53a537df`）
+
+M2 标记 ✅ 之后，在真机/模拟器端到端验证时发现一处 **错误处理 UX 缺陷**：当移动端点击「浏览驱动器」、请求 `/api/localsend/v2/fs/roots` 失败时（host 没开 TLS、fs 路由未注册、port 不通、peer 离线），iOS 端的 `RemoteBrowserPage` **永远卡在 `FsLoadingSkeleton`**——没有错误卡片，没有 retry，spinner 转个不停。
+
+**根因**：
+
+1. `fs_list_isolate` 的 handler **没包 try/catch**：`client.listRoots` / `client.listDir` 抛错时异常直接冒到 `setupChildIsolateHelper` 的 supervisor，**只 log 不回传**，主 isolate 永远收不到错误事件。
+2. `FsListService._enterPath` / `_loadMore` 的 switch 只 match `FsListRootsResult` / `FsListDirResult`，**没有错误 variant** 可设置 `FsListState.error`，UI 自然走不进 `FsErrorState` 分支。
+
+**修复**：
+
+| 文件 | 改动 |
+|---|---|
+| `packages/localsend_isolates/lib/src/isolate/child/fs_list_isolate.dart` | 新增 `FsListFailedResult(String message)` sealed 子类；handler 内 `listRoots` / `listDir` 各自包 try/catch，错误通过 `sendToMain` 推为 typed event 给主 isolate；加 `_logger` 记录堆栈 |
+| `packages/localsend_isolates/lib/isolate.dart` | export `FsListFailedResult` |
+| `app/lib/provider/network/fs/fs_list_provider.dart` | `_enterPath` 和 `_loadMore` 的 switch 都加 `case FsListFailedResult r: state = state.copyWith(loading: false, error: r.message)` |
+
+**端到端复现**（修复前）：
+
+| 场景 | 修复前 | 修复后 |
+|---|---|---|
+| Host 端 TLS 没开，fs 路由未挂 | iOS skeleton 永远转 | "Could not load files" + 错误详情 + Retry 按钮 |
+| Host 端端口不对 / 离线 | iOS skeleton 永远转 | 同上 |
+| 路径超出 mount 白名单（403） | iOS skeleton 永远转 | 同上 |
+| Host 端 HTTPS + enableFs 都正确 | 正常显示 roots | 不变（正常路径） |
+
+**测试覆盖**：现有 98 个 flutter 测试全部通过；无新增/修改。错误处理路径用真实场景触发（截图 7 即修复前的卡 skeleton 现象），修复后端到端跑通。
+
+**为什么不在原 M2 段里改？** 原 M2 段的"端到端验证（macOS 宿主 + iOS 移动端）"流程是在我自己的 macOS dev 环境上用 curl 抓 + dart 单测覆盖的，没在真 iOS ↔ 真 Windows host 这种"host 端配置不完全正确"的边界条件里跑过。这次加补丁正是因为**实际跨设备验证暴露了 UX 缺陷**——M2 段保留 ✅ 但下方新增此段作为"P1-mvp 完成 → 真实验证 → 补丁"的链路记录，方便后续每个里程碑在 M 段后留同样补丁位。
 
 ### 已修复的 macOS build 障碍
 
@@ -281,3 +311,14 @@ P2 完成 → 1.20.0；P3 → 1.21.0；以此类推。
 3. 在 `CHANGELOG.md` 加新版本段（用户可见变更）
 4. 同步 5 处版本号
 5. 提交一个 `chore(release): <phase> version sync + changelog` commit
+
+**真实设备验证后补的 UX 补丁**（任何里程碑 ✅ 之后都可能发生）：
+- 在已 ✅ 的里程碑段**下方追加**「P<m>-mvp 验收补丁（commit `<sha>`）」段
+- 索引表里该里程碑的 `状态` 列加脚注链接 `[ⁿ](#...)` 指向补丁段
+- 补丁内容必须包含：
+  - **根因**（哪一层错误处理缺漏）
+  - **修复**（改了哪些文件，做了什么）
+  - **端到端复现**（修复前 vs 修复后表格）
+  - **测试覆盖**（说明回归测试覆盖或手动验证手段）
+  - **为什么不在原段里改**（说明这是"M 完成 → 真实验证 → 补丁"的链路）
+- 这样后续每个 M 段都能在 ✅ 之后继续累积补丁位，而不是把 M2 段越改越长
