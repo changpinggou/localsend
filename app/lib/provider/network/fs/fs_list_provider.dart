@@ -167,6 +167,17 @@ class FsListService extends Notifier<FsListState> {
               page: 0,
               total: r.total.toInt(),
             );
+          case FsListFailedResult r:
+            // T-008 follow-up: the isolate handler now wraps every
+            // HTTP / TLS / parse failure in `FsListFailedResult`
+            // instead of letting it bubble up to the isolate
+            // supervisor. Surface it on the state so the page can
+            // render [FsErrorState] with a retry button instead of
+            // an eternal skeleton spinner.
+            state = state.copyWith(
+              loading: false,
+              error: r.message,
+            );
         }
       }
     } catch (e, st) {
@@ -218,6 +229,13 @@ class FsListService extends Notifier<FsListState> {
               hasMore: r.hasMore,
               page: nextPage,
               total: r.total.toInt(),
+            );
+          case FsListFailedResult r:
+            // Same treatment as `_enterPath`: the isolate handler
+            // wrapped the error into a typed event.
+            state = state.copyWith(
+              loading: false,
+              error: r.message,
             );
         }
       }

@@ -4,10 +4,13 @@ import 'package:localsend_isolates/rust/api/model.dart' as rust_model;
 import 'package:localsend_isolates/src/isolate/child/http_provider.dart';
 import 'package:localsend_isolates/src/isolate/child/main.dart';
 import 'package:localsend_isolates/src/isolate/dto/send_to_isolate_data.dart';
+import 'package:logging/logging.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 import 'package:typed_isolates/typed_isolates.dart';
 
 sealed class FsListTask {}
+
+final _logger = Logger('FsListIsolate');
 
 /// One request to the remote filesystem (T-008).
 ///
@@ -65,6 +68,17 @@ class FsListDirResult implements FsListResult {
   });
 }
 
+/// T-008 follow-up: surfaces HTTP / TLS / parse errors so the UI
+/// can stop showing the loading skeleton and fall back to
+/// [FsErrorState]. Without this, the isolate handler would let the
+/// exception bubble up to `setupChildIsolateHelper` which logs it
+/// but never tells the page — leaving the user staring at a
+/// spinner until they give up.
+class FsListFailedResult implements FsListResult {
+  final String message;
+  FsListFailedResult(this.message);
+}
+
 Future<void> setupFsListIsolate(
   Stream<SendToIsolateData<IsolateTask<FsListTask>>> receiveFromMain,
   void Function(IsolateTaskStreamResult<FsListResult>) sendToMain,
@@ -94,37 +108,57 @@ Future<void> setupFsListIsolate(
       }
 
       if (request.path.isEmpty) {
-        final roots = await client.listRoots(
-          protocol: protocol,
-          ip: ip,
-          port: device.port,
-        );
-        sendToMain(
-          IsolateTaskStreamResult.event(
-            id: task.id,
-            data: FsListRootsResult(roots.roots),
-          ),
-        );
-      } else {
-        final response = await client.listDir(
-          protocol: protocol,
-          ip: ip,
-          port: device.port,
-          path: request.path,
-          page: request.page,
-          size: request.size,
-          sort: request.sort,
-        );
-        sendToMain(
-          IsolateTaskStreamResult.event(
-            id: task.id,
-            data: FsListDirResult(
-              entries: response.entries,
-              total: response.total,
-              hasMore: response.hasMore,
+        try {
+          final roots = await client.listRoots(
+            protocol: protocol,
+            ip: ip,
+            port: device.port,
+          );
+          sendToMain(
+            IsolateTaskStreamResult.event(
+              id: task.id,
+              data: FsListRootsResult(roots.roots),
             ),
-          ),
-        );
+          );
+        } catch (e, st) {
+          _logger.warning('Failed to list fs roots', e, st);
+          sendToMain(
+            IsolateTaskStreamResult.event(
+              id: task.id,
+              data: FsListFailedResult(e.toString()),
+            ),
+          );
+        }
+      } else {
+        try {
+          final response = await client.listDir(
+            protocol: protocol,
+            ip: ip,
+            port: device.port,
+            path: request.path,
+            page: request.page,
+            size: request.size,
+            sort: request.sort,
+          );
+          sendToMain(
+            IsolateTaskStreamResult.event(
+              id: task.id,
+              data: FsListDirResult(
+                entries: response.entries,
+                total: response.total,
+                hasMore: response.hasMore,
+              ),
+            ),
+          );
+        } catch (e, st) {
+          _logger.warning('Failed to list fs path=${request.path}', e, st);
+          sendToMain(
+            IsolateTaskStreamResult.event(
+              id: task.id,
+              data: FsListFailedResult(e.toString()),
+            ),
+          );
+        }
       }
 
 

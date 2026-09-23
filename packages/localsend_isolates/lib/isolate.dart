@@ -25,7 +25,7 @@ export 'package:localsend_isolates/src/isolate/child/upload_isolate.dart'
         HttpUploadFileProgressEvent,
         HttpUploadFileStartedEvent;
 export 'package:localsend_isolates/src/isolate/child/fs_list_isolate.dart'
-    show FsListDirResult, FsListRequest, FsListResult, FsListRootsResult;
+    show FsListDirResult, FsListFailedResult, FsListRequest, FsListResult, FsListRootsResult;
 export 'package:localsend_isolates/src/isolate/child/fs_download_isolate.dart'
     show FsDownloadCancelledResult, FsDownloadChunkResult, FsDownloadFailedResult, FsDownloadFinishedResult, FsDownloadRequest, FsDownloadResult, FsDownloadStartedResult;
 export 'package:localsend_isolates/src/isolate/parent/actions.dart';
