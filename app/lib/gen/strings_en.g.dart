@@ -50,6 +50,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$receiveTab$en receiveTab = Translations$receiveTab$en.internal(_root);
   late final Translations$sendTab$en sendTab = Translations$sendTab$en.internal(_root);
   late final Translations$remoteBrowser$en remoteBrowser = Translations$remoteBrowser$en.internal(_root);
+  late final Translations$fsBrowser$en fsBrowser = Translations$fsBrowser$en.internal(_root);
   late final Translations$fsDownload$en fsDownload = Translations$fsDownload$en.internal(_root);
   late final Translations$settingsTab$en settingsTab = Translations$settingsTab$en.internal(_root);
   late final Translations$troubleshootPage$en troubleshootPage = Translations$troubleshootPage$en.internal(_root);
@@ -323,6 +324,46 @@ class Translations$remoteBrowser$en {
 
   /// en: 'Load more'
   String get loadMore => 'Load more';
+}
+
+// Path: fsBrowser
+class Translations$fsBrowser$en {
+  Translations$fsBrowser$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Drive browsing is off'
+  String get fsDisabledByPeerTitle => 'Drive browsing is off';
+
+  /// en: 'This device hasn't enabled drive browsing yet. Ask the owner to open Settings → Network → "Allow other devices to browse my drives". The connection also needs to be encrypted (HTTPS).'
+  String get fsDisabledByPeerBody =>
+      'This device hasn\'t enabled drive browsing yet. Ask the owner to open Settings → Network → "Allow other devices to browse my drives". The connection also needs to be encrypted (HTTPS).';
+
+  /// en: 'Endpoint not found'
+  String get notFoundTitle => 'Endpoint not found';
+
+  /// en: 'The peer did not respond to the file-browsing request. It may be running an older LocalSend version.'
+  String get notFoundBody => 'The peer did not respond to the file-browsing request. It may be running an older LocalSend version.';
+
+  /// en: 'Connection timed out'
+  String get timeoutTitle => 'Connection timed out';
+
+  /// en: 'The peer took too long to respond. Check that you're on the same Wi-Fi network and try again.'
+  String get timeoutBody => 'The peer took too long to respond. Check that you\'re on the same Wi-Fi network and try again.';
+
+  /// en: 'Path not shared'
+  String get pathDeniedTitle => 'Path not shared';
+
+  /// en: 'This path is outside the peer's shared drives. Ask the owner to whitelist it.'
+  String get pathDeniedBody => 'This path is outside the peer\'s shared drives. Ask the owner to whitelist it.';
+
+  /// en: 'Can't reach the device'
+  String get networkTitle => 'Can\'t reach the device';
+
+  /// en: 'The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down.'
+  String get networkBody => 'The peer didn\'t respond. It may have gone to sleep, lost Wi-Fi, or shut down.';
 }
 
 // Path: fsDownload

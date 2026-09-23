@@ -104,6 +104,18 @@
     "viewGrid": "Grid view",
     "loadMore": "Load more"
   },
+  "fsBrowser": {
+    "fsDisabledByPeerTitle": "Drive browsing is off",
+    "fsDisabledByPeerBody": "This device hasn't enabled drive browsing yet. Ask the owner to open Settings → Network → \"Allow other devices to browse my drives\". The connection also needs to be encrypted (HTTPS).",
+    "notFoundTitle": "Endpoint not found",
+    "notFoundBody": "The peer did not respond to the file-browsing request. It may be running an older LocalSend version.",
+    "timeoutTitle": "Connection timed out",
+    "timeoutBody": "The peer took too long to respond. Check that you're on the same Wi-Fi network and try again.",
+    "pathDeniedTitle": "Path not shared",
+    "pathDeniedBody": "This path is outside the peer's shared drives. Ask the owner to whitelist it.",
+    "networkTitle": "Can't reach the device",
+    "networkBody": "The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down."
+  },
   "fsDownload": {
     "saveToGallery": "Save to Photos",
     "saveToFiles": "Save to Files",

@@ -104,6 +104,18 @@
     "viewGrid": "网格视图",
     "loadMore": "加载更多"
   },
+  "fsBrowser": {
+    "fsDisabledByPeerTitle": "该设备未开启驱动器浏览",
+    "fsDisabledByPeerBody": "对端还没有开启驱动器共享。请让对方在 设置 → 网络 → 打开「允许其他设备浏览我的驱动器」。同时需要启用加密（HTTPS）。",
+    "notFoundTitle": "找不到对应接口",
+    "notFoundBody": "对端没有响应文件浏览请求，可能是旧版本 LocalSend。",
+    "timeoutTitle": "连接超时",
+    "timeoutBody": "对端响应过慢。请确认双方在同一 Wi-Fi 下后重试。",
+    "pathDeniedTitle": "路径未被共享",
+    "pathDeniedBody": "该路径不在对端的共享驱动器内。请让对方将其加入白名单。",
+    "networkTitle": "无法连接设备",
+    "networkBody": "对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。"
+  },
   "fsDownload": {
     "saveToGallery": "保存到相册",
     "saveToFiles": "保存到文件",

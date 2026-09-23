@@ -50,6 +50,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   @override
   late final Translations$remoteBrowser$zh_CN remoteBrowser = Translations$remoteBrowser$zh_CN.internal(_root);
   @override
+  late final Translations$fsBrowser$zh_CN fsBrowser = Translations$fsBrowser$zh_CN.internal(_root);
+  @override
   late final Translations$fsDownload$zh_CN fsDownload = Translations$fsDownload$zh_CN.internal(_root);
   @override
   late final Translations$settingsTab$zh_CN settingsTab = Translations$settingsTab$zh_CN.internal(_root);
@@ -281,6 +283,35 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   String get viewGrid => '网格视图';
   @override
   String get loadMore => '加载更多';
+}
+
+// Path: fsBrowser
+class Translations$fsBrowser$zh_CN extends Translations$fsBrowser$en {
+  Translations$fsBrowser$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get fsDisabledByPeerTitle => '该设备未开启驱动器浏览';
+  @override
+  String get fsDisabledByPeerBody => '对端还没有开启驱动器共享。请让对方在 设置 → 网络 → 打开「允许其他设备浏览我的驱动器」。同时需要启用加密（HTTPS）。';
+  @override
+  String get notFoundTitle => '找不到对应接口';
+  @override
+  String get notFoundBody => '对端没有响应文件浏览请求，可能是旧版本 LocalSend。';
+  @override
+  String get timeoutTitle => '连接超时';
+  @override
+  String get timeoutBody => '对端响应过慢。请确认双方在同一 Wi-Fi 下后重试。';
+  @override
+  String get pathDeniedTitle => '路径未被共享';
+  @override
+  String get pathDeniedBody => '该路径不在对端的共享驱动器内。请让对方将其加入白名单。';
+  @override
+  String get networkTitle => '无法连接设备';
+  @override
+  String get networkBody => '对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。';
 }
 
 // Path: fsDownload

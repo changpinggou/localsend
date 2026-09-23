@@ -65,6 +65,11 @@ class FsListStateMapper extends ClassMapperBase<FsListState> {
   );
   static String? _$error(FsListState v) => v.error;
   static const Field<FsListState, String> _f$error = Field('error', _$error);
+  static FsErrorReason? _$errorReason(FsListState v) => v.errorReason;
+  static const Field<FsListState, FsErrorReason> _f$errorReason = Field(
+    'errorReason',
+    _$errorReason,
+  );
 
   @override
   final MappableFields<FsListState> fields = const {
@@ -79,6 +84,7 @@ class FsListStateMapper extends ClassMapperBase<FsListState> {
     #sort: _f$sort,
     #viewMode: _f$viewMode,
     #error: _f$error,
+    #errorReason: _f$errorReason,
   };
 
   static FsListState _instantiate(DecodingData data) {
@@ -94,6 +100,7 @@ class FsListStateMapper extends ClassMapperBase<FsListState> {
       sort: data.dec(_f$sort),
       viewMode: data.dec(_f$viewMode),
       error: data.dec(_f$error),
+      errorReason: data.dec(_f$errorReason),
     );
   }
 
@@ -181,6 +188,7 @@ abstract class FsListStateCopyWith<$R, $In extends FsListState, $Out>
     FsSort? sort,
     FsViewMode? viewMode,
     String? error,
+    FsErrorReason? errorReason,
   });
   FsListStateCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -228,6 +236,7 @@ class _FsListStateCopyWithImpl<$R, $Out>
     FsSort? sort,
     FsViewMode? viewMode,
     Object? error = $none,
+    Object? errorReason = $none,
   }) => $apply(
     FieldCopyWithData({
       if (deviceFingerprint != $none) #deviceFingerprint: deviceFingerprint,
@@ -241,6 +250,7 @@ class _FsListStateCopyWithImpl<$R, $Out>
       if (sort != null) #sort: sort,
       if (viewMode != null) #viewMode: viewMode,
       if (error != $none) #error: error,
+      if (errorReason != $none) #errorReason: errorReason,
     }),
   );
   @override
@@ -259,6 +269,7 @@ class _FsListStateCopyWithImpl<$R, $Out>
     sort: data.get(#sort, or: $value.sort),
     viewMode: data.get(#viewMode, or: $value.viewMode),
     error: data.get(#error, or: $value.error),
+    errorReason: data.get(#errorReason, or: $value.errorReason),
   );
 
   @override

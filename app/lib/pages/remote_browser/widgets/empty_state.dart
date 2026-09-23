@@ -46,35 +46,75 @@ class FsEmptyState extends StatelessWidget {
 
 /// T-008: error state for failed fetches. Replaces the body with a
 /// retryable error card; on tap of retry the parent reissues the request.
+///
+/// The optional [reason] tag lets the page pick a more specific subtitle
+/// for known failure modes (404 from a peer that didn't enable fs, 403
+/// from a peer that didn't whitelist the path, timeout when the peer
+/// is offline, etc.). When [reason] is null the message falls back to
+/// the caller-supplied [message] or the generic "try again" copy.
 class FsErrorState extends StatelessWidget {
   final String? message;
   final VoidCallback onRetry;
+  final FsErrorReason? reason;
 
-  const FsErrorState({required this.message, required this.onRetry, super.key});
+  const FsErrorState({
+    required this.onRetry,
+    this.message,
+    this.reason,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final (icon, title, body) = switch (reason) {
+      FsErrorReason.fsDisabledByPeer => (
+        Icons.lock_outline,
+        t.fsBrowser.fsDisabledByPeerTitle,
+        t.fsBrowser.fsDisabledByPeerBody,
+      ),
+      FsErrorReason.notFound => (
+        Icons.help_outline,
+        t.fsBrowser.notFoundTitle,
+        t.fsBrowser.notFoundBody,
+      ),
+      FsErrorReason.timeout => (
+        Icons.wifi_off,
+        t.fsBrowser.timeoutTitle,
+        t.fsBrowser.timeoutBody,
+      ),
+      FsErrorReason.pathDenied => (
+        Icons.block,
+        t.fsBrowser.pathDeniedTitle,
+        t.fsBrowser.pathDeniedBody,
+      ),
+      FsErrorReason.network => (
+        Icons.cloud_off,
+        t.fsBrowser.networkTitle,
+        t.fsBrowser.networkBody,
+      ),
+      null => (
+        Icons.error_outline,
+        t.remoteBrowser.errorTitle,
+        message ?? t.remoteBrowser.errorGeneric,
+      ),
+    };
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(icon, size: 64, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
-              t.remoteBrowser.errorTitle,
+              title,
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              message ?? t.remoteBrowser.errorGeneric,
+              body,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -91,6 +131,28 @@ class FsErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// T-008 follow-up: structured error reasons so the page can pick a
+/// user-readable message instead of dumping `RsHttpClientError` to
+/// the screen. New variants get added as we discover new failure
+/// modes.
+enum FsErrorReason {
+  /// HTTP 404 — the peer didn't enable the `fs` capability, or it's
+  /// running on plain HTTP (T-005 requires HTTPS for the fs namespace).
+  fsDisabledByPeer,
+
+  /// Generic HTTP 404 from a non-fs endpoint.
+  notFound,
+
+  /// The request timed out (peer unreachable or slow).
+  timeout,
+
+  /// HTTP 403 — the path was outside the peer's whitelist (T-004).
+  pathDenied,
+
+  /// Network-level failure (DNS, refused connection, etc.).
+  network,
 }
 
 /// T-008: skeleton list rendered while a fetch is in-flight and no
