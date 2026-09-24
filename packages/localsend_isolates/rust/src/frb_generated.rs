@@ -5156,9 +5156,11 @@ impl SseDecode for crate::api::server::RsServerEvent {
             0 => {
                 let mut var_ip = <String>::sse_decode(deserializer);
                 let mut var_info = <crate::api::server::RegisterDtoV2>::sse_decode(deserializer);
+                let mut var_certFingerprint = <Option<String>>::sse_decode(deserializer);
                 return crate::api::server::RsServerEvent::Register {
                     ip: var_ip,
                     info: var_info,
+                    cert_fingerprint: var_certFingerprint,
                 };
             }
             1 => {
@@ -6766,10 +6768,15 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::http::RsHttpClientError>
 impl flutter_rust_bridge::IntoDart for crate::api::server::RsServerEvent {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
-            crate::api::server::RsServerEvent::Register { ip, info } => [
+            crate::api::server::RsServerEvent::Register {
+                ip,
+                info,
+                cert_fingerprint,
+            } => [
                 0.into_dart(),
                 ip.into_into_dart().into_dart(),
                 info.into_into_dart().into_dart(),
+                cert_fingerprint.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::api::server::RsServerEvent::PrepareUpload {
@@ -8303,10 +8310,15 @@ impl SseEncode for crate::api::server::RsServerEvent {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         match self {
-            crate::api::server::RsServerEvent::Register { ip, info } => {
+            crate::api::server::RsServerEvent::Register {
+                ip,
+                info,
+                cert_fingerprint,
+            } => {
                 <i32>::sse_encode(0, serializer);
                 <String>::sse_encode(ip, serializer);
                 <crate::api::server::RegisterDtoV2>::sse_encode(info, serializer);
+                <Option<String>>::sse_encode(cert_fingerprint, serializer);
             }
             crate::api::server::RsServerEvent::PrepareUpload {
                 session_id,

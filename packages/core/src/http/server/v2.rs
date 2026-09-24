@@ -37,6 +37,12 @@ pub enum ServerEventV2 {
 
         /// The device information sent by the remote device.
         info: RegisterDtoV2,
+
+        /// The SHA-256 fingerprint (uppercase hex) of the sender's client
+        /// certificate verified during the mTLS handshake. Unlike
+        /// `info.fingerprint`, this value cannot be spoofed.
+        /// `None` when the server runs without TLS.
+        cert_fingerprint: Option<String>,
     },
 
     /// A sender requests to upload files via `POST /api/localsend/v2/prepare-upload`.
@@ -179,6 +185,7 @@ pub(crate) async fn register(
             if let Err(err) = v2.event_tx.try_send(ServerEventV2::Register {
                 ip: client_info.ip,
                 info: payload,
+                cert_fingerprint: client_info.cert_fingerprint().map(|s| s.to_string()),
             }) {
                 tracing::debug!("Dropped a register event: {err}");
             }

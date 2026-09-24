@@ -95,6 +95,8 @@
       "Bash(tasklist //FI \"IMAGENAME eq localsend_app.exe\")",
       "Bash(cmd //c \"start cmd /c \\\\\"C:\\\\Users\\\\Sterling\\\\AppData\\\\Local\\\\Temp\\\\run_localsend.bat\\\\\"\" 2>&1)",
       "Bash(tasklist //FI \"IMAGENAME eq flutter_tools*\")"
+      "Bash(xcrun simctl *)",
+      "Bash(flutter_rust_bridge_codegen generate *)"
     ]
   }
 }

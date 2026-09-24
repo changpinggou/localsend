@@ -1,5 +1,6 @@
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/src/isolate/child/main.dart';
+import 'package:localsend_isolates/src/isolate/child/sync_provider.dart';
 import 'package:localsend_isolates/src/isolate/dto/send_to_isolate_data.dart';
 import 'package:localsend_isolates/src/task/discovery/discovery.dart';
 import 'package:typed_isolates/typed_isolates.dart';
@@ -111,7 +112,20 @@ Future<void> setupDiscoveryIsolate(
     handler: (ref, task) async {
       switch (task.data) {
         case DiscoveryListenTask():
+          // T-008 follow-up: filter out our own multicast loopback
+          // self-reports. Without this, the local app's iOS-sim
+          // build sees itself in its own device list and the
+          // RemoteBrowserPage then pinsTo our own fingerprint
+          // against a peer — which the peer correctly rejects with
+          // a 404. Read the fingerprint from the live syncProvider
+          // (not from initialData) so a mid-session certificate
+          // rotation stays aligned with what Rust-side discovery
+          // advertises.
           await for (final device in ref.read(discoveryProvider).startListener()) {
+            final selfFingerprint = ref.read(syncProvider).securityContext.certificateHash;
+            if (device.fingerprint == selfFingerprint) {
+              continue;
+            }
             sendToMain(
               IsolateTaskStreamResult.event(
                 id: task.id,
