@@ -10,6 +10,7 @@ import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart';
 import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
+import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
@@ -74,8 +75,26 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
   @override
   Widget build(BuildContext context) {
+    // T-008 follow-up: filter our own self-fingerprint out so we
+    // don't pin our own cert against the remote server when the
+    // page was pushed before 14c5437f's filter was applied (or for
+    // a stale widget.fingerprint that the send_tab filter would
+    // have removed by now). The device's IP is otherwise fine, so
+    // we read all devices and pick by fingerprint but exclude self.
+    final selfFingerprint = ref.watch(deviceFullInfoProvider).fingerprint;
     final device = ref.watch(
-      nearbyDevicesProvider.select((s) => s.allDevices[widget.fingerprint]),
+      nearbyDevicesProvider.select((s) {
+        final all = s.allDevices;
+        if (all.containsKey(widget.fingerprint) && widget.fingerprint != selfFingerprint) {
+          return all[widget.fingerprint];
+        }
+        // widget.fingerprint was the self-fingerprint (filter would
+        // have caught it) — fall back to the first peer so the page
+        // can still render something useful. In practice the page is
+        // re-pushed by the user tapping a non-self PeerRow, so the
+        // fallback rarely fires.
+        return all.values.firstWhere((d) => d.fingerprint != selfFingerprint, orElse: () => all[widget.fingerprint]!);
+      }),
     );
     final fsState = ref.watch(fsListProvider);
 

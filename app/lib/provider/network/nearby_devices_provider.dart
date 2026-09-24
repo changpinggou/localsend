@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:localsend_app/model/persistence/favorite_device.dart';
 import 'package:localsend_app/model/state/nearby_devices_state.dart';
+import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/favorites_provider.dart';
 import 'package:localsend_app/provider/logging/discovery_logs_provider.dart';
 import 'package:localsend_isolates/isolate.dart';
@@ -19,6 +20,7 @@ final nearbyDevicesProvider = ReduxProvider<NearbyDevicesService, NearbyDevicesS
     isolateController: ref.notifier(parentIsolateProvider),
     favoriteService: ref.notifier(favoritesProvider),
     discoveryLogs: ref.notifier(discoveryLoggerProvider),
+    selfFingerprint: ref.read(deviceFullInfoProvider).fingerprint,
   );
 });
 
@@ -27,13 +29,20 @@ class NearbyDevicesService extends ReduxNotifier<NearbyDevicesState> {
   final FavoritesService _favoriteService;
   final DiscoveryLogger _discoveryLogger;
 
+  /// Cached at construction time so [RegisterDeviceAction.reduce] can
+  /// short-circuit self-reports without round-tripping back through
+  /// Refena (the reducer doesn't get a `ref` argument).
+  final String _selfFingerprint;
+
   NearbyDevicesService({
     required IsolateController isolateController,
     required FavoritesService favoriteService,
     required DiscoveryLogger discoveryLogs,
+    required String selfFingerprint,
   }) : _discoveryLogger = discoveryLogs,
        _isolateController = isolateController,
-       _favoriteService = favoriteService;
+       _favoriteService = favoriteService,
+       _selfFingerprint = selfFingerprint;
 
   @override
   NearbyDevicesState init() => const NearbyDevicesState(
@@ -85,6 +94,19 @@ class RegisterDeviceAction extends AsyncReduxAction<NearbyDevicesService, Nearby
   @override
   Future<NearbyDevicesState> reduce() async {
     assert(device.ip?.isNotEmpty ?? false, 'IP must not be empty');
+
+    // T-008 follow-up: filter out our own self-reports. Multicast
+    // loopback + register self-reports both put 'us' in the
+    // devices map under our own fingerprint; leaving it there
+    // causes the RemoteBrowserPage to pinTo our own cert against
+    // a remote server, which the server (correctly) rejects with
+    // 404. The filter is applied at insertion time so every
+    // downstream consumer (vm.nearbyDevices, allDevices, the
+    // RemoteBrowserPage fallback) gets the same clean map.
+    final selfFingerprint = notifier._selfFingerprint;
+    if (device.fingerprint == selfFingerprint) {
+      return state;
+    }
 
     final favoriteDevice = notifier._favoriteService.state.firstWhereOrNull((e) => e.fingerprint == device.fingerprint);
     if (favoriteDevice != null && !favoriteDevice.customAlias) {
