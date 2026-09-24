@@ -329,6 +329,29 @@ New-NetFirewallRule -DisplayName "LocalSend" -Direction Inbound -Protocol TCP -L
 
 **P1-mvp 验证**请用真 iPhone（同一份 macOS 端 build 装到 iPhone 上）才能确认 Photos app 真的出现 test.jpg。
 
+### E. iOS sim ↔ Windows host 在 mTLS 模式下可能不工作（待确认）
+
+**症状**：
+- Mac 端 `openssl s_client` 能完成 TLS handshake（Windows 自签证书 `CN=LocalSend User`, 10 年有效期）
+- 但 iOS sim 端 `reqwest` 即使配了 `with_client_auth_cert`（强 mTLS）发请求去 Windows 53317，**Windows log 完全没记到 fs 请求**
+- 同时 iOS sim log 显示"connected to 192.168.88.253:53317"（TCP 通），但 HTTP request 没真发出去
+
+**最可能根因**：reqwest 客户端在 TLS 1.3 strict mTLS 模式下，`ALPN` 协商、`client cert` 发送、`server cert` 验证 三者之一出错都会 silently fail——`reqwest::Client::execute` 返回的 `reqwest::Error` 在 isolate handler 里被 catch 转成 `RsHttpClientError`，但 `error.toString()` 只显示**最后一步**的错（"certificate verify failed" or "alert 116 certificate required"）。
+
+**诊断**（下次用）：
+```dart
+// 在 fs_list_isolate.dart 的 try 块 catch 里加上：
+//   tracing::debug!("fs request error chain: {:?}", e);
+// 用 e.chain() 拿到完整错误链
+```
+
+**短期 workaround**：用真 iPhone 真机 + 真 Mac 网关验证（真机不走 Apple simulator NAT，cert / 同步路径更直接）。
+
+**长期修复方向**：
+- 在 isolates crate 的 fs_list_isolate 增加错误链透传（Dart `error.toString()` + Rust `chain()`）
+- 让客户端的 cert pinning 在失败时**详细报错**而不是 silently close connection
+- macOS 上跑 `RUST_LOG=trace cargo test fs_list` 用真实的 mTLS handshake 复现
+
 ---
 
 ## 完成 T-009 验证后的下一步
