@@ -1,3 +1,4 @@
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device_info_result.dart';
 import 'package:localsend_isolates/model/dto/multicast_dto.dart';
 import 'package:localsend_isolates/model/stored_security_context.dart';
@@ -84,12 +85,21 @@ class IsolateSyncServerStateAction extends ReduxAction<IsolateController, Parent
   final bool serverRunning;
   final bool download;
 
+  /// The capability set to publish to the server / discovery isolates.
+  /// T-006/T-007 wired `enableFs` into the bootstrap SyncState but
+  /// forgot to pipe it through every restart; without this field
+  /// the server isolate's start_with_port sees the old
+  /// startup-time capabilities (= {}) and advertises / mounts no fs
+  /// routes even though the user toggled enableFs on.
+  final Set<Capability> capabilities;
+
   IsolateSyncServerStateAction({
     required this.alias,
     required this.port,
     required this.protocol,
     required this.serverRunning,
     required this.download,
+    required this.capabilities,
   });
 
   @override
@@ -102,6 +112,7 @@ class IsolateSyncServerStateAction extends ReduxAction<IsolateController, Parent
           protocol: protocol,
           serverRunning: serverRunning,
           download: download,
+          capabilities: capabilities,
         ),
       ),
     );

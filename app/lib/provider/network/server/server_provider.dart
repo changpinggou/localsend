@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/model/cross_file.dart';
 import 'package:localsend_app/model/state/server/server_state.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_app/model/state/server/web_share_state.dart';
 import 'package:localsend_app/provider/network/server/controller/receive_controller.dart';
 import 'package:localsend_app/provider/network/server/controller/send_controller.dart';
@@ -48,6 +49,15 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
       return;
     }
 
+    // Compute capabilities from settings (T-006/T-007): enableFs
+    // toggles Capability.fs. Without including this in every restart,
+    // the server isolate's start_with_port would see the old
+    // startup-time capabilities (= {}) and never mount the fs
+    // route even when the user has flipped enableFs on.
+    final capabilities = settings.enableFs
+        ? <Capability>{Capability.send, Capability.receive, Capability.fs}
+        : <Capability>{Capability.send, Capability.receive};
+
     ref
         .redux(parentIsolateProvider)
         .dispatch(
@@ -57,6 +67,7 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
             protocol: syncStateNext.$3,
             serverRunning: syncStateNext.$4,
             download: syncStateNext.$5,
+            capabilities: capabilities,
           ),
         );
   },
@@ -135,10 +146,21 @@ class ServerService extends Notifier<ServerState?> {
     _logger.info('Starting server...');
 
     // The server isolate derives its configuration from the sync state,
-    // so it must be published before the start task.
-    _syncServerState(alias: alias, port: port, https: https, serverRunning: true, download: web is WebShareDownload);
-
+    // so it must be published before the start task. Capabilities are
+    // computed from settings (T-006/T-007): enableFs adds Capability.fs.
     final settings = ref.read(settingsProvider);
+    final capabilities = settings.enableFs
+        ? <Capability>{Capability.send, Capability.receive, Capability.fs}
+        : <Capability>{Capability.send, Capability.receive};
+    _syncServerState(
+      alias: alias,
+      port: port,
+      https: https,
+      serverRunning: true,
+      download: web is WebShareDownload,
+      capabilities: capabilities,
+    );
+
     // Custom pages provided by the user next to the executable, if any.
     // A custom error-403.html replaces the built-in 403 page even while no web
     // share is active; client certificates stay mandatory in that mode.
@@ -206,7 +228,14 @@ class ServerService extends Notifier<ServerState?> {
       await started.future;
     } catch (e) {
       await subscription.cancel();
-      _syncServerState(alias: alias, port: port, https: https, serverRunning: false, download: false);
+      _syncServerState(
+        alias: alias,
+        port: port,
+        https: https,
+        serverRunning: false,
+        download: false,
+        capabilities: capabilities,
+      );
       _logger.warning('Failed to start server', e);
       rethrow;
     }
@@ -436,6 +465,7 @@ class ServerService extends Notifier<ServerState?> {
     required bool https,
     required bool serverRunning,
     required bool download,
+    required Set<Capability> capabilities,
   }) {
     ref
         .redux(parentIsolateProvider)
@@ -446,6 +476,7 @@ class ServerService extends Notifier<ServerState?> {
             protocol: https ? ProtocolType.https : ProtocolType.http,
             serverRunning: serverRunning,
             download: download,
+            capabilities: capabilities,
           ),
         );
   }
