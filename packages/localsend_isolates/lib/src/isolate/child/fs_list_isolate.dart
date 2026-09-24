@@ -108,6 +108,14 @@ Future<void> setupFsListIsolate(
       }
 
       if (request.path.isEmpty) {
+        // T-008 follow-up: log the actual host:port we're hitting so a
+        // real-device verifier can tell 'we reached the Windows host'
+        // from 'we ended up on the same Mac (404 from the older
+        // isolates crate that didn't have the fs feature on)'.
+        _logger.info(
+          'fs_list_roots -> $protocol://$ip:${device.port}/api/localsend/v2/fs/roots '
+          '(device fingerprint ${device.fingerprint.take(16)}...)',
+        );
         try {
           final roots = await client.listRoots(
             protocol: protocol,
