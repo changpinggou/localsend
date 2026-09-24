@@ -179,9 +179,16 @@ class HttpServerRegisterEvent extends HttpServerEvent {
   final String ip;
   final RegisterDtoV2 info;
 
+  /// The SHA-256 fingerprint (uppercase hex) of the sender's client
+  /// certificate verified during the mTLS handshake. Unlike
+  /// [RegisterDtoV2.fingerprint], this value cannot be spoofed.
+  /// `null` when the server runs without TLS.
+  final String? certFingerprint;
+
   HttpServerRegisterEvent({
     required this.ip,
     required this.info,
+    this.certFingerprint,
   });
 }
 
@@ -453,8 +460,8 @@ Future<void> setupHttpServerIsolate(
             await for (final event in events) {
               final holder = ref.read(_receiveSessionProvider);
               switch (event) {
-                case RsServerEvent_Register(:final ip, :final info):
-                  emit(HttpServerRegisterEvent(ip: ip, info: info));
+                case RsServerEvent_Register(:final ip, :final info, :final certFingerprint):
+                  emit(HttpServerRegisterEvent(ip: ip, info: info, certFingerprint: certFingerprint));
                 case RsServerEvent_PrepareUpload(:final sessionId, :final ip, :final info, :final certFingerprint, :final files):
                   // The Rust server is the authority on the single-session
                   // invariant: a new request means the old session is over.

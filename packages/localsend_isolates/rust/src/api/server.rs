@@ -34,7 +34,15 @@ pub enum RsServerEvent {
     /// On TLS, this event is only emitted when `info.fingerprint` matches the
     /// fingerprint of the client certificate verified during the mTLS
     /// handshake, so the fingerprint cannot be spoofed.
-    Register { ip: String, info: RegisterDtoV2 },
+    Register {
+        ip: String,
+        info: RegisterDtoV2,
+        /// The SHA-256 fingerprint (uppercase hex) of the sender's client
+        /// certificate verified during the mTLS handshake. Unlike
+        /// `info.fingerprint`, this value cannot be spoofed.
+        /// `None` when the server runs without TLS.
+        cert_fingerprint: Option<String>,
+    },
 
     /// A sender requests to upload files via `POST /api/localsend/v2/prepare-upload`.
     PrepareUpload {
@@ -402,10 +410,11 @@ impl RsHttpServer {
         event: ServerEventV2,
     ) -> bool {
         match event {
-            ServerEventV2::Register { ip, info } => sink
+            ServerEventV2::Register { ip, info, cert_fingerprint } => sink
                 .add(RsServerEvent::Register {
                     ip: ip.to_string(),
                     info,
+                    cert_fingerprint,
                 })
                 .is_ok(),
             ServerEventV2::PrepareUpload {

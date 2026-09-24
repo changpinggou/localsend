@@ -53,14 +53,24 @@ class ReceiveController {
 
   /// A device registered itself on this server.
   Future<void> onRegister(HttpServerRegisterEvent event) async {
-    if (event.info.fingerprint == server.ref.read(securityProvider).certificateHash) {
+    // In HTTPS mode the TLS client certificate is the authoritative peer
+    // identity; the JSON-body fingerprint is only a fallback for plain HTTP
+    // and can be trivially spoofed. When two devices share the same cert
+    // (e.g. imported from the same keystore) their JSON fingerprints are
+    // identical but the mTLS handshake binds each connection to a distinct
+    // cert, so `certFingerprint` correctly disambiguates.
+    final realFingerprint = event.certFingerprint ?? event.info.fingerprint;
+    if (realFingerprint == server.ref.read(securityProvider).certificateHash) {
       // "I talked to myself lol"
       return;
     }
 
     // Feed the device into the discovery store; it comes back (and is
-    // registered) via the [StartDiscoveryListener] stream.
-    server.ref.redux(parentIsolateProvider).dispatch(IsolateDiscoveryAddDeviceAction(device: event.info.toDevice(event.ip, withChannel: true)));
+    // registered) via the [StartDiscoveryListener] stream. Use the real
+    // TLS-verified fingerprint so downstream consumers (RemoteBrowserPage
+    // cert pin, send session) bind to the correct peer identity.
+    final device = event.info.toDevice(event.ip, withChannel: true).copyWith(fingerprint: realFingerprint);
+    server.ref.redux(parentIsolateProvider).dispatch(IsolateDiscoveryAddDeviceAction(device: device));
     server.ref.notifier(discoveryLoggerProvider).addLog('[DISCOVER/TCP] Received "/register" HTTP request: ${event.info.alias} (${event.ip})');
   }
 

@@ -129,6 +129,14 @@ class RegisterSignalingDeviceAction extends ReduxAction<NearbyDevicesService, Ne
 
   @override
   NearbyDevicesState reduce() {
+    // T-008 follow-up: same self-fingerprint filter as
+    // [RegisterDeviceAction]. Without it, signaling self-reports
+    // (e.g. when a looped-back announcement reaches the signaling
+    // server) end up in `signalingDevices` and leak into `allDevices`.
+    if (device.fingerprint == notifier._selfFingerprint) {
+      return state;
+    }
+
     final Set<Device> existingDevices = state.signalingDevices[device.fingerprint]?.toSet() ?? {};
     final existingDevice = existingDevices.firstWhereOrNull((e) => e.signalingId == device.signalingId);
     if (existingDevice != null) {

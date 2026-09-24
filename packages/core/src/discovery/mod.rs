@@ -546,6 +546,16 @@ async fn answer_announcement(
         Ok(response) => {
             // The pinned certificate identifies the peer, so the fingerprint
             // is taken from the announcement, not from the response body.
+            if message.fingerprint == state.device.fingerprint {
+                // T-008 follow-up: this is our own multicast loopback
+                // self-report — skip it to keep our own fingerprint
+                // out of the discovery store. Without this filter a
+                // looped-back announcement puts a device with our own
+                // cert hash but the peer's IP into the store, which
+                // the Dart layer then uses to pinTo our own cert
+                // against the peer's server → 404.
+                return;
+            }
             let device = confirmed_device(
                 response.body,
                 host,

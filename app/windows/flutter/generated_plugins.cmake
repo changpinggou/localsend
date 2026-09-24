@@ -3,9 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  connectivity_plus
   desktop_drop
   dynamic_color
   file_selector_windows
+  gal
   pasteboard
   permission_handler_windows
   screen_retriever_windows

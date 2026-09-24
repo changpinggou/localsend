@@ -3521,6 +3521,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return RsServerEvent_Register(
           ip: dco_decode_String(raw[1]),
           info: dco_decode_box_autoadd_register_dto_v_2(raw[2]),
+          certFingerprint: dco_decode_opt_String(raw[3]),
         );
       case 1:
         return RsServerEvent_PrepareUpload(
@@ -5050,7 +5051,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 0:
         var var_ip = sse_decode_String(deserializer);
         var var_info = sse_decode_box_autoadd_register_dto_v_2(deserializer);
-        return RsServerEvent_Register(ip: var_ip, info: var_info);
+        var var_certFingerprint = sse_decode_opt_String(deserializer);
+        return RsServerEvent_Register(ip: var_ip, info: var_info, certFingerprint: var_certFingerprint);
       case 1:
         var var_sessionId = sse_decode_String(deserializer);
         var var_ip = sse_decode_String(deserializer);
@@ -6558,10 +6560,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_rs_server_event(RsServerEvent self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     switch (self) {
-      case RsServerEvent_Register(ip: final ip, info: final info):
+      case RsServerEvent_Register(ip: final ip, info: final info, certFingerprint: final certFingerprint):
         sse_encode_i_32(0, serializer);
         sse_encode_String(ip, serializer);
         sse_encode_box_autoadd_register_dto_v_2(info, serializer);
+        sse_encode_opt_String(certFingerprint, serializer);
       case RsServerEvent_PrepareUpload(
         sessionId: final sessionId,
         ip: final ip,

@@ -191,6 +191,12 @@ sealed class RsServerEvent with _$RsServerEvent {
   const factory RsServerEvent.register({
     required String ip,
     required RegisterDtoV2 info,
+
+    /// The SHA-256 fingerprint (uppercase hex) of the sender's client
+    /// certificate verified during the mTLS handshake. Unlike
+    /// `info.fingerprint`, this value cannot be spoofed.
+    /// `None` when the server runs without TLS.
+    String? certFingerprint,
   }) = RsServerEvent_Register;
 
   /// A sender requests to upload files via `POST /api/localsend/v2/prepare-upload`.

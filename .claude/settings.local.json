@@ -89,7 +89,9 @@
       "Bash(find D:/localsend/src/app/build/windows/x64/ -name *.log)",
       "Bash(find D:/localsend/src -name rust_lib_localsend_app_cargokit*.log)",
       "Bash(cargo check:*)",
-      "Bash(\"C:\\\\Users\\\\Sterling\\\\.cargo\\\\bin\\\\cargo.exe\" check:*)"
+      "Bash(\"C:\\\\Users\\\\Sterling\\\\.cargo\\\\bin\\\\cargo.exe\" check:*)",
+      "Bash(xcrun simctl *)",
+      "Bash(flutter_rust_bridge_codegen generate *)"
     ]
   }
 }
