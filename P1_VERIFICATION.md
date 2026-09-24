@@ -285,6 +285,52 @@ P1-mvp 不强制要这个 UI 入口（媒体预览 UI 是 P5 T-023），但 FRB 
 
 ---
 
+## 已知环境陷阱（真机验证踩过）
+
+### A. iCloud Private Relay 把 Mac 端到局域网的包都路由到 iCloud
+
+**症状**：在 Mac 端 `nc -z -G 5 -v 192.168.88.253 53317` 返回 `Host is down`，而 iOS simulator / Mac curl 任何 Windows IP 都 timeout。`ping` 也 timeout。`netstat -rn` 显示 `default → utun4` 而不是 `en0`（WLAN）。
+
+**根因**：`utun4` 是 iCloud Private Relay 的本地接口，进程 `nesessionmanager` + `neagent` 负责把 Mac 的 outbound 流量包到 iCloud。Windows 在 `192.168.88.253`（Mac 局域网 subnet 192.168.88.x/22），但 Mac 出去的包**先到 utun4** 走 iCloud，再绕回来——Windows 完全收不到。
+
+**修复**：系统设置 → 你的名字 → iCloud → Private Relay → 关。关后 `netstat -rn` 的 default 回到 en0，Mac 端到 Windows 端的 TCP 立即通。
+
+**诊断**：
+```bash
+# 在 Mac 端跑这个，能区分三种失败：
+nc -z -G 5 -v 192.168.88.253 53317
+# 'succeeded' → 局域网 OK，问题在 fs 路由 / TLS / cert pin
+# 'timed out'  → firewall / AP 隔离（去 Windows firewall 放行 53317）
+# 'Host is down'→ Mac 端 VPN / Private Relay / 错 subnet（关 Private Relay）
+```
+
+### B. Windows 端 Windows Defender firewall 默认阻 53317 入站
+
+**症状**：iOS sim / iPhone 真机能 multicast 发现 Windows 端设备，能 register（TCP 出站成功），但 GET /api/...（TCP 入站）返回 `connection reset` 或 timeout。
+
+**修复**（Windows PowerShell admin）：
+```powershell
+New-NetFirewallRule -DisplayName "LocalSend" -Direction Inbound -Protocol TCP -LocalPort 53317 -Action Allow
+```
+
+### C. Mac ↔ 同台 Mac 上的 iOS simulator —— v1.18 老问题（与 P1-mvp 无关）
+
+**症状**：Mac 端 LocalSend + Mac 上 iOS simulator 互相看不到对方。
+
+**根因**：两个进程都 bind `0.0.0.0:53317` + multicast 走 `224.0.0.251`，Apple simulator NAT 不转发。
+
+**P1-mvp 验证请用 iOS sim ↔ Windows 跨设备场景**（这是 P1-mvp 的"iPhone 能点开 Mac 的 D:\Photos"出口准则的真正拓扑）。
+
+### D. iOS simulator 写真库（`gal` 写入）是空的
+
+**症状**：保存到相册时 `Gal.putImage` 不报错但 Photos app 里看不到图。
+
+**根因**：iOS simulator 的 Photos app 是模拟的占位。`gal` 写入路径本身成功（`Gal.requestAccess` 总是返回 true in simulator），但 simulator 的相册 DB 是只读的。
+
+**P1-mvp 验证**请用真 iPhone（同一份 macOS 端 build 装到 iPhone 上）才能确认 Photos app 真的出现 test.jpg。
+
+---
+
 ## 完成 T-009 验证后的下一步
 
 按 `MILESTONES.md` 的 M3 (P2) 路径开始：
