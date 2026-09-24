@@ -7,6 +7,7 @@ import 'package:localsend_app/pages/progress_page.dart';
 import 'package:localsend_app/pages/send_page.dart';
 import 'package:localsend_app/pages/tabs/send_tab.dart';
 import 'package:localsend_app/pages/web_share_page.dart';
+import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/favorites_provider.dart';
 import 'package:localsend_app/provider/local_ip_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
@@ -52,7 +53,15 @@ final sendTabVmProvider = ViewProvider((ref) {
   final sendMode = ref.watch(settingsProvider.select((s) => s.sendMode));
   final selectedFiles = ref.watch(selectedSendingFilesProvider);
   final localIps = ref.watch(localIpProvider).localIps;
-  final nearbyDevices = ref.watch(nearbyDevicesProvider).allDevices.values;
+  // T-008 follow-up: filter out our own self-fingerprint so the
+  // device list doesn't include "ourselves" (multicast loopback +
+  // register self-reports). Without the filter the user can
+  // accidentally tap our own row, which then leads to a request
+  // pinnedTo our own fingerprint hitting the server — which the
+  // server is also us, so this is benign, but on a real cross-
+  // device scenario the request would silently 404.
+  final selfFingerprint = ref.watch(deviceFullInfoProvider).fingerprint;
+  final nearbyDevices = ref.watch(nearbyDevicesProvider).allDevices.values.where((d) => d.fingerprint != selfFingerprint);
   final favoriteDevices = ref.watch(favoritesProvider);
 
   return SendTabVm(
