@@ -89,7 +89,12 @@
       "Bash(find D:/localsend/src/app/build/windows/x64/ -name *.log)",
       "Bash(find D:/localsend/src -name rust_lib_localsend_app_cargokit*.log)",
       "Bash(cargo check:*)",
-      "Bash(\"C:\\\\Users\\\\Sterling\\\\.cargo\\\\bin\\\\cargo.exe\" check:*)"
+      "Bash(\"C:\\\\Users\\\\Sterling\\\\.cargo\\\\bin\\\\cargo.exe\" check:*)",
+      "Bash(tasklist)",
+      "Bash(powershell -Command \"Get-Process | Where-Object {$_ame -like ''''*localsend*'''' -or $_ame -like ''''*flutter*''''} | Format-Table -AutoSize\")",
+      "Bash(tasklist //FI \"IMAGENAME eq localsend_app.exe\")",
+      "Bash(cmd //c \"start cmd /c \\\\\"C:\\\\Users\\\\Sterling\\\\AppData\\\\Local\\\\Temp\\\\run_localsend.bat\\\\\"\" 2>&1)",
+      "Bash(tasklist //FI \"IMAGENAME eq flutter_tools*\")"
     ]
   }
 }
