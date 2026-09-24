@@ -34,13 +34,19 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
     return ServerService();
   },
   onChanged: (_, next, ref) {
-    final settings = ref.read(settingsProvider);
     final syncState = ref.read(parentIsolateProvider).syncState;
     final syncStatePrev = (syncState.alias, syncState.port, syncState.protocol, syncState.serverRunning, syncState.download);
-    final syncStateNext = (
-      next?.alias ?? settings.alias,
-      next?.port ?? settings.port,
-      (next?.https ?? settings.https) ? ProtocolType.https : ProtocolType.http,
+    // We don't read settingsProvider here — settings.onChanged is
+    // responsible for republishing the capabilities field whenever
+    // enableFs flips, and reading it here would form a settings <-> server
+    // reference cycle that dart analyzer rejects. As a fallback when
+    // serverState is null (server not yet started), fall back to the
+    // sync state's currently-published alias / port / protocol (which
+    // settings.onChanged will have refreshed).
+    final (String, int, ProtocolType, bool, bool) syncStateNext = (
+      next?.alias ?? syncState.alias,
+      next?.port ?? syncState.port,
+      (next?.https ?? false) ? ProtocolType.https : syncState.protocol,
       next != null,
       next?.webDownloadState != null,
     );
@@ -49,14 +55,11 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
       return;
     }
 
-    // Compute capabilities from settings (T-006/T-007): enableFs
-    // toggles Capability.fs. Without including this in every restart,
-    // the server isolate's start_with_port would see the old
-    // startup-time capabilities (= {}) and never mount the fs
-    // route even when the user has flipped enableFs on.
-    final capabilities = settings.enableFs
-        ? <Capability>{Capability.send, Capability.receive, Capability.fs}
-        : <Capability>{Capability.send, Capability.receive};
+    // Capabilities: settings.onChanged already republishes them on
+    // every settings change. We mirror whatever is already in the
+    // isolate's syncState (the most-recent publish) so start_with_port
+    // sees the same set.
+    final capabilities = syncState.capabilities;
 
     ref
         .redux(parentIsolateProvider)

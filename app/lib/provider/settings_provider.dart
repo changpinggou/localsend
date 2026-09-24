@@ -7,6 +7,7 @@ import 'package:localsend_app/model/send_mode.dart';
 import 'package:localsend_app/model/state/settings_state.dart';
 import 'package:localsend_app/provider/persistence_provider.dart';
 import 'package:localsend_isolates/isolate.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 
@@ -22,8 +23,34 @@ final settingsProvider = NotifierProvider<SettingsService, SettingsState>(
         _listEq(syncState.networkBlacklist, next.networkBlacklist) &&
         syncState.multicastGroup == next.multicastGroup &&
         syncState.discoveryTimeout == next.discoveryTimeout) {
-      return;
+      // T-006/T-007 follow-up: even when only enableFs flips, the
+      // capabilities set (which controls announce / mount) must be
+      // republished, otherwise the server isolate keeps the
+      // startup-time empty capability set and never advertises fs.
+      // Fall through and republish capabilities either way.
     }
+
+    // Always republish server-side state so the running server
+    // isolate picks up the new capability set. capabilities are
+    // derived from settings.enableFs here; settings.isHttps also
+    // matters for the protocol field. We can't read serverProvider
+    // here (would form a settings <-> server cycle) — use whatever
+    // was last synced, which the server isolate mirrors.
+    final capabilities = next.enableFs
+        ? <Capability>{Capability.send, Capability.receive, Capability.fs}
+        : <Capability>{Capability.send, Capability.receive};
+    ref
+        .redux(parentIsolateProvider)
+        .dispatch(
+          IsolateSyncServerStateAction(
+            alias: syncState.alias,
+            port: syncState.port,
+            protocol: syncState.protocol,
+            serverRunning: syncState.serverRunning,
+            download: syncState.download,
+            capabilities: capabilities,
+          ),
+        );
 
     ref
         .redux(parentIsolateProvider)
