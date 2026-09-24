@@ -69,7 +69,18 @@ pub fn register(
     tls_enabled: bool,
     enable_fs: bool,
 ) -> Option<FsConfig> {
-    let cfg = fs_config?;
+    let cfg = match fs_config {
+        Some(c) => c,
+        None => {
+            // The Flutter app's start_server wrapper may have decided
+            // not to mount fs at all (e.g. capability.fs not in the
+            // current SyncState). Logging at info so a real-device
+            // verification can grep the server log and see why a
+            // /api/localsend/v2/fs/* request returned 404.
+            tracing::info!("fs namespace not mounted (fs_config is None)");
+            return None;
+        }
+    };
     if !tls_enabled {
         // N-SEC-3: the fs namespace MUST NOT be exposed over
         // plain HTTP. The error log is the audit-trail seed
@@ -84,6 +95,10 @@ pub fn register(
         tracing::info!("fs namespace disabled by config");
         return None;
     }
+    tracing::info!(
+        whitelist_len = cfg.whitelist.len(),
+        "fs namespace mounted"
+    );
     Some(cfg)
 }
 

@@ -277,10 +277,10 @@ pub async fn start_server(
             // enableFs without a second settings page. Later phases
             // (T-019 / T-018 hotplug) will replace this auto-snapshot
             // with a live MountWatcher stream.
-            let roots = crate::fs::FsMount::list();
-            Some(crate::fs::FsConfig {
+            let roots = localsend::fs::FsMount::list();
+            Some(localsend::fs::FsConfig {
                 whitelist: roots,
-                ..crate::fs::FsConfig::default()
+                ..localsend::fs::FsConfig::default()
             })
         }
         #[cfg(not(feature = "fs"))]
