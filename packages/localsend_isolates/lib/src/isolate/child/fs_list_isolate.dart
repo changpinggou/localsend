@@ -114,7 +114,7 @@ Future<void> setupFsListIsolate(
         // isolates crate that didn't have the fs feature on)'.
         _logger.info(
           'fs_list_roots -> $protocol://$ip:${device.port}/api/localsend/v2/fs/roots '
-          '(device fingerprint ${device.fingerprint.take(16)}...)',
+          '(device fingerprint ${device.fingerprint.substring(0, 16)}...)',
         );
         try {
           final roots = await client.listRoots(
