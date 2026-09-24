@@ -411,19 +411,30 @@ fn list_windows_drives() -> Vec<FsRoot> {
         let ok = unsafe {
             GetDiskFreeSpaceExW(
                 wide(&drive_root).as_ptr(),
-                Some(&mut free_bytes_available),
-                Some(&mut total_bytes),
-                Some(&mut total_free_bytes),
-            );
+                &mut free_bytes_available,
+                &mut total_bytes,
+                &mut total_free_bytes,
+            )
         };
         if ok == 0 {
-            tracing::debug!(letter = letter as char, "GetDiskFreeSpaceExW failed; skipping");
+            tracing::debug!(letter = letter, "GetDiskFreeSpaceExW failed; skipping");
             continue;
         }
 
         let mut volume_name = [0u16; 261];
         let mut fs_name = [0u16; 261];
-        let _ = unsafe { GetVolumeInformationW(wide(&drive_root).as_ptr(), Some(volume_name.as_mut_ptr()), Some(volume_name.len() as u32), None, None, None, Some(fs_name.as_mut_ptr()), Some(fs_name.len() as u32)) };
+        let _ = unsafe {
+            GetVolumeInformationW(
+                wide(&drive_root).as_ptr(),
+                volume_name.as_mut_ptr(),
+                volume_name.len() as u32,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                fs_name.as_mut_ptr(),
+                fs_name.len() as u32,
+            )
+        };
         let label = if let Some(end) = volume_name.iter().position(|&c| c == 0) {
             String::from_utf16_lossy(&volume_name[..end])
         } else {
