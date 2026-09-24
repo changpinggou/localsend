@@ -13,6 +13,13 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
 # Forwarded from the `localsend` core crate. Keeping the alias locally means
 # `#[cfg(feature = "fs")]` on the FRB wrappers matches the feature that
 # `localsend` is actually built with.
+#
+# `fs` is in `default` so the isolates build that cargokit hands
+# to Flutter on iOS / macOS / Windows actually compiles the
+# /api/localsend/v2/fs/* dispatcher. Without it, `#[cfg(feature =
+# "fs")]` branches in server.rs (the fs_config / start_with_port
+# wiring) are erased and every fs endpoint silently 404s.
+default = ["fs"]
 fs = ["localsend/fs"]
 
 [dependencies]
