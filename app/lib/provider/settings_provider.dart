@@ -5,11 +5,15 @@ import 'package:localsend_app/model/persistence/color_mode.dart';
 import 'package:localsend_app/model/persistence/quick_save_mode.dart';
 import 'package:localsend_app/model/send_mode.dart';
 import 'package:localsend_app/model/state/settings_state.dart';
+import 'package:localsend_app/provider/network/server/server_provider.dart';
 import 'package:localsend_app/provider/persistence_provider.dart';
 import 'package:localsend_isolates/isolate.dart';
 import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
+import 'package:logging/logging.dart';
 import 'package:refena_flutter/refena_flutter.dart';
+
+final _logger = Logger('SettingsService');
 
 final _listEq = const ListEquality().equals;
 
@@ -293,6 +297,13 @@ class SettingsService extends PureNotifier<SettingsState> {
     state = state.copyWith(
       enableFs: enableFs,
     );
+    // Server fs_config is built at startup, so a restart is needed for
+    // the new capability to take effect.
+    try {
+      await ref.read(serverProvider.notifier).restartServerFromSettings();
+    } catch (e) {
+      _logger.warning('Failed to restart server after enableFs toggle', e);
+    }
   }
 
   Future<void> setDeviceType(DeviceType deviceType) async {
