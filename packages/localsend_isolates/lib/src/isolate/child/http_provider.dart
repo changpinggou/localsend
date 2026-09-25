@@ -5,12 +5,14 @@ import 'package:refena_flutter/refena_flutter.dart';
 class HttpClientCollection {
   final String _privateKey;
   final String _certificate;
+  final RsHttpClient _httpOnly;
 
   HttpClientCollection({
     required String privateKey,
     required String certificate,
   }) : _privateKey = privateKey,
-       _certificate = certificate;
+       _certificate = certificate,
+       _httpOnly = createHttpOnlyClient();
 
   /// A client that only talks to the peer holding the certificate with the
   /// given [fingerprint].
@@ -31,6 +33,13 @@ class HttpClientCollection {
       timeoutMs: timeoutMs,
     );
   }
+
+  /// A plain HTTP client without TLS or client certificate.
+  ///
+  /// Used for `fs/roots` and `fs/list` which are served on the same port as
+  /// the HTTPS server but accept plain HTTP. The client does not send a
+  /// certificate and does not verify the server certificate.
+  RsHttpClient get httpOnly => _httpOnly;
 }
 
 final httpProvider = ViewProvider((ref) {

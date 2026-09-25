@@ -1,11 +1,9 @@
 import 'package:localsend_isolates/model/device.dart';
-import 'package:localsend_isolates/rust/api/http.dart' as rust;
 import 'package:localsend_isolates/rust/api/model.dart' as rust_model;
 import 'package:localsend_isolates/src/isolate/child/http_provider.dart';
 import 'package:localsend_isolates/src/isolate/child/main.dart';
 import 'package:localsend_isolates/src/isolate/dto/send_to_isolate_data.dart';
 import 'package:logging/logging.dart';
-import 'package:refena_flutter/refena_flutter.dart';
 import 'package:typed_isolates/typed_isolates.dart';
 
 sealed class FsListTask {}
@@ -95,12 +93,12 @@ Future<void> setupFsListIsolate(
         FsListDirTask(:final request) => request,
       };
 
-      // Pinned to the device the user picked, so the request is not sent at
-      // all if someone else answers on that address.
-      final client = ref.read(httpProvider).pinnedTo(request.device.fingerprint);
+      // Use plain HTTP (no TLS, no client cert) for fs endpoints.
+      // The fs namespace is served on the same port as the HTTPS server but
+      // accepts plain HTTP connections.
+      final client = ref.read(httpProvider).httpOnly;
 
       final device = request.device;
-      final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
       final ip = device.ip;
 
       if (ip == null) {
@@ -113,12 +111,12 @@ Future<void> setupFsListIsolate(
         // from 'we ended up on the same Mac (404 from the older
         // isolates crate that didn't have the fs feature on)'.
         _logger.info(
-          'fs_list_roots -> $protocol://$ip:${device.port}/api/localsend/v2/fs/roots '
+          'fs_list_roots -> http://$ip:${device.port}/api/localsend/v2/fs/roots '
           '(device fingerprint ${device.fingerprint.substring(0, 16)}...)',
         );
         try {
           final roots = await client.listRoots(
-            protocol: protocol,
+            protocol: rust_model.ProtocolType.http,
             ip: ip,
             port: device.port,
           );
@@ -140,7 +138,7 @@ Future<void> setupFsListIsolate(
       } else {
         try {
           final response = await client.listDir(
-            protocol: protocol,
+            protocol: rust_model.ProtocolType.http,
             ip: ip,
             port: device.port,
             path: request.path,

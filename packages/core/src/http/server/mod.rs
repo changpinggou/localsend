@@ -526,8 +526,21 @@ async fn serve_connection(
     tls_acceptor: Option<tokio_rustls::TlsAcceptor>,
     app_state: AppState,
 ) {
-    let res = match tls_acceptor {
-        Some(tls_acceptor) => {
+    // Peek the first byte to determine if it's TLS (0x16 = ClientHello) or plain HTTP.
+    // This allows the same port to serve both HTTPS (mTLS) and HTTP (fs endpoints).
+    let mut peek_buf = [0u8; 1];
+    let is_tls = match tls_acceptor {
+        Some(_) => {
+            match tcp_stream.peek(&mut peek_buf).await {
+                Ok(1) => peek_buf[0] == 0x16,
+                _ => false,
+            }
+        }
+        None => false,
+    };
+
+    let res = match (tls_acceptor, is_tls) {
+        (Some(tls_acceptor), true) => {
             let tls_stream = match tls_acceptor.accept(tcp_stream).await {
                 Ok(tls_stream) => tls_stream,
                 Err(err) => {
@@ -562,7 +575,9 @@ async fn serve_connection(
                 )
                 .await
         }
-        None => {
+        // TLS is configured but the connection is plain HTTP — serve without TLS.
+        // This allows fs endpoints to work over HTTP (unencrypted) on the same port.
+        (Some(_), false) | (None, _) => {
             Builder::new(TokioExecutor::new())
                 .serve_connection(
                     TokioIo::new(tcp_stream),

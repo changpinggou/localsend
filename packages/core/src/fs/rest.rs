@@ -66,38 +66,24 @@ use crate::http::server::common::response::{full_body, BoxedBody};
 /// configuration choice).
 pub fn register(
     fs_config: Option<FsConfig>,
-    tls_enabled: bool,
+    _tls_enabled: bool,
     enable_fs: bool,
 ) -> Option<FsConfig> {
     let cfg = match fs_config {
         Some(c) => c,
         None => {
-            // The Flutter app's start_server wrapper may have decided
-            // not to mount fs at all (e.g. capability.fs not in the
-            // current SyncState). Logging at info so a real-device
-            // verification can grep the server log and see why a
-            // /api/localsend/v2/fs/* request returned 404.
             tracing::info!("fs namespace not mounted (fs_config is None)");
             return None;
         }
     };
-    if !tls_enabled {
-        // N-SEC-3: the fs namespace MUST NOT be exposed over
-        // plain HTTP. The error log is the audit-trail seed
-        // (T-025 will persist it). We deliberately do *not*
-        // panic: the rest of the server (file transfers,
-        // discovery, web download) is still useful even
-        // without fs.
-        tracing::error!("fs namespace requires TLS; skipping registration");
-        return None;
-    }
+    // fs namespace works over both HTTP and HTTPS — no TLS requirement.
     if !enable_fs {
         tracing::info!("fs namespace disabled by config");
         return None;
     }
     tracing::info!(
         whitelist_len = cfg.whitelist.len(),
-        "fs namespace mounted"
+        "fs namespace mounted (HTTP+HTTPS)"
     );
     Some(cfg)
 }
