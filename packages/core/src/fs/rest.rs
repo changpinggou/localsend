@@ -69,16 +69,22 @@ pub fn register(
     _tls_enabled: bool,
     enable_fs: bool,
 ) -> Option<FsConfig> {
+    tracing::info!(
+        "fs::register called: fs_config={:?}, tls_enabled={}, enable_fs={}",
+        fs_config.is_some(),
+        _tls_enabled,
+        enable_fs,
+    );
     let cfg = match fs_config {
         Some(c) => c,
         None => {
-            tracing::info!("fs namespace not mounted (fs_config is None)");
+            tracing::warn!("fs namespace not mounted (fs_config is None)");
             return None;
         }
     };
     // fs namespace works over both HTTP and HTTPS — no TLS requirement.
     if !enable_fs {
-        tracing::info!("fs namespace disabled by config");
+        tracing::warn!("fs namespace disabled by config (enable_fs=false)");
         return None;
     }
     tracing::info!(

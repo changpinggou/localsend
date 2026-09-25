@@ -293,16 +293,21 @@ class SettingsService extends PureNotifier<SettingsState> {
   /// capability to appear in multicast announcements; the settings tab
   /// triggers the restart via `serverProvider.restartServerFromSettings()`.
   Future<void> setEnableFs(bool enableFs) async {
+    _logger.info('setEnableFs called: enableFs=$enableFs');
     await _persistence.setEnableFs(enableFs);
     state = state.copyWith(
       enableFs: enableFs,
     );
+    _logger.info('enableFs state updated, attempting server restart...');
     // Server fs_config is built at startup, so a restart is needed for
     // the new capability to take effect.
     try {
-      await ref.read(serverProvider.notifier).restartServerFromSettings();
-    } catch (e) {
-      _logger.warning('Failed to restart server after enableFs toggle', e);
+      final serverNotifier = ref.read(serverProvider.notifier);
+      _logger.info('Calling restartServerFromSettings...');
+      await serverNotifier.restartServerFromSettings();
+      _logger.info('Server restart completed successfully');
+    } catch (e, st) {
+      _logger.warning('Failed to restart server after enableFs toggle', e, st);
     }
   }
 
