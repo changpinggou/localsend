@@ -303,7 +303,7 @@ class SettingsService extends PureNotifier<SettingsState> {
     // Server fs_config is built at startup, so a restart is needed for
     // the new capability to take effect.
     try {
-      final serverNotifier = ref.read(serverProvider.notifier);
+      final serverNotifier = _ref.notifier(serverProvider);
       _logger.info('Calling restartServerFromSettings...');
       await serverNotifier.restartServerFromSettings();
       _logger.info('Server restart completed successfully');
