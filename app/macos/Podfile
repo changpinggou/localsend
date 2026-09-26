@@ -42,4 +42,12 @@ post_install do |installer|
       config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '11.0'
     end
   end
+
+  # Fix Xcode 15+ compatibility: DT_TOOLCHAIN_DIR → TOOLCHAIN_DIR in xcconfig
+  Dir.glob(File.join(File.dirname(__FILE__), 'Pods', 'Target Support Files', '**/*.xcconfig')).each do |path|
+    content = File.read(path)
+    if content.include?('DT_TOOLCHAIN_DIR')
+      File.write(path, content.gsub('DT_TOOLCHAIN_DIR', 'TOOLCHAIN_DIR'))
+    end
+  end
 end
