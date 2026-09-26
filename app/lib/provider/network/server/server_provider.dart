@@ -36,13 +36,6 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
   onChanged: (_, next, ref) {
     final syncState = ref.read(parentIsolateProvider).syncState;
     final syncStatePrev = (syncState.alias, syncState.port, syncState.protocol, syncState.serverRunning, syncState.download);
-    // We don't read settingsProvider here — settings.onChanged is
-    // responsible for republishing the capabilities field whenever
-    // enableFs flips, and reading it here would form a settings <-> server
-    // reference cycle that dart analyzer rejects. As a fallback when
-    // serverState is null (server not yet started), fall back to the
-    // sync state's currently-published alias / port / protocol (which
-    // settings.onChanged will have refreshed).
     final (String, int, ProtocolType, bool, bool) syncStateNext = (
       next?.alias ?? syncState.alias,
       next?.port ?? syncState.port,
@@ -55,12 +48,11 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
       return;
     }
 
-    // Capabilities: settings.onChanged already republishes them on
-    // every settings change. We mirror whatever is already in the
-    // isolate's syncState (the most-recent publish) so start_with_port
-    // sees the same set.
-    final capabilities = syncState.capabilities;
-
+    // Do NOT sync capabilities here. Capabilities are managed by:
+    // 1. startServer() - reads from settingsProvider directly
+    // 2. settingsProvider.onChanged - syncs when enableFs changes
+    // Syncing here causes race conditions where stale capabilities
+    // overwrite the correct ones during server restart.
     ref
         .redux(parentIsolateProvider)
         .dispatch(
@@ -70,7 +62,7 @@ final serverProvider = NotifierProvider<ServerService, ServerState?>(
             protocol: syncStateNext.$3,
             serverRunning: syncStateNext.$4,
             download: syncStateNext.$5,
-            capabilities: capabilities,
+            capabilities: syncState.capabilities, // Keep current capabilities
           ),
         );
   },
@@ -148,13 +140,15 @@ class ServerService extends Notifier<ServerState?> {
 
     _logger.info('Starting server...');
 
-    // The server isolate derives its configuration from the sync state,
-    // so it must be published before the start task. Capabilities are
-    // computed from settings (T-006/T-007): enableFs adds Capability.fs.
+    // Read capabilities directly from settings to avoid reading stale
+    // capabilities from syncState (which may not have been updated yet
+    // after a server restart triggered by enableFs toggle).
     final settings = ref.read(settingsProvider);
+    _logger.info('startServer: settings.enableFs=${settings.enableFs}');
     final capabilities = settings.enableFs
         ? <Capability>{Capability.send, Capability.receive, Capability.fs}
         : <Capability>{Capability.send, Capability.receive};
+    _logger.info('startServer: capabilities=$capabilities (size=${capabilities.length})');
     _syncServerState(
       alias: alias,
       port: port,
@@ -163,6 +157,7 @@ class ServerService extends Notifier<ServerState?> {
       download: web is WebShareDownload,
       capabilities: capabilities,
     );
+    _logger.info('startServer: dispatched IsolateSyncServerStateAction with capabilities=$capabilities');
 
     // Custom pages provided by the user next to the executable, if any.
     // A custom error-403.html replaces the built-in 403 page even while no web
