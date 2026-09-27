@@ -316,11 +316,67 @@ impl FsMount {
 
 #[cfg(target_os = "macos")]
 fn list_macos_volumes() -> Vec<FsRoot> {
-    let mut roots = FsMount::scan(Path::new("/Volumes"));
-    // macOS has a synthetic read-only `/System/Volumes/Data` mount
-    // that shows up as a candidate but is part of the sealed system
-    // volume. Filter it.
-    roots.retain(|r| !is_macos_system_volume(&PathBuf::from(&r.path)));
+    // In sandbox, `/Volumes` may not be readable, so `scan` returns
+    // nothing. Use `getmntinfo` syscall which works inside sandbox.
+    list_macos_volumes_via_getmntinfo()
+}
+
+#[cfg(target_os = "macos")]
+fn list_macos_volumes_via_getmntinfo() -> Vec<FsRoot> {
+    // libc::getmntinfo(buffer: *mut *mut statfs, flags: c_int) -> c_int
+    let mut buf: *mut libc::statfs = std::ptr::null_mut();
+    let count = unsafe { libc::getmntinfo(&mut buf, libc::MNT_NOWAIT) };
+
+    if count <= 0 || buf.is_null() {
+        tracing::debug!("getmntinfo returned no entries");
+        return Vec::new();
+    }
+
+    let entries = unsafe { std::slice::from_raw_parts(buf, count as usize) };
+    let mut roots = Vec::new();
+
+    for entry in entries {
+        let mnt_on = unsafe {
+            std::ffi::CStr::from_ptr(entry.f_mntonname.as_ptr())
+                .to_string_lossy()
+                .into_owned()
+        };
+        let mnt_from = unsafe {
+            std::ffi::CStr::from_ptr(entry.f_mntfromname.as_ptr())
+                .to_string_lossy()
+                .into_owned()
+        };
+
+        // Only include volumes under /Volumes (external, network, dmg).
+        if !mnt_on.starts_with("/Volumes/") {
+            continue;
+        }
+        // Skip the sealed system volume overlays.
+        if is_macos_system_volume(Path::new(&mnt_on)) {
+            continue;
+        }
+
+        let label = mnt_on
+            .rsplit('/')
+            .next()
+            .unwrap_or(&mnt_from)
+            .to_string();
+
+        let total_bytes = (entry.f_blocks as u64)
+            .saturating_mul(entry.f_bsize as u64);
+        let free_bytes = (entry.f_bavail as u64)
+            .saturating_mul(entry.f_bsize as u64);
+
+        let mut root = FsRoot::new(&mnt_on, &label, &mnt_on);
+        root.total_bytes = total_bytes as i64;
+        root.free_bytes = free_bytes as i64;
+        roots.push(root);
+    }
+
+    tracing::info!(
+        "getmntinfo found {} volume(s) under /Volumes",
+        roots.len()
+    );
     roots
 }
 
