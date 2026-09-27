@@ -368,8 +368,8 @@ fn list_macos_volumes_via_getmntinfo() -> Vec<FsRoot> {
             .saturating_mul(entry.f_bsize as u64);
 
         let mut root = FsRoot::new(&mnt_on, &label, &mnt_on);
-        root.total_bytes = total_bytes as i64;
-        root.free_bytes = free_bytes as i64;
+        root.total_bytes = total_bytes;
+        root.free_bytes = free_bytes;
         roots.push(root);
     }
 
