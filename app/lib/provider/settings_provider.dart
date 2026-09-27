@@ -21,7 +21,7 @@ final _listEq = const ListEquality().equals;
 
 final settingsProvider = NotifierProvider<SettingsService, SettingsState>(
   (ref) {
-    return SettingsService(ref.read(persistenceProvider));
+    return SettingsService(ref, ref.read(persistenceProvider));
   },
   onChanged: (prev, next, ref) {
     final syncState = ref.read(parentIsolateProvider).syncState;
@@ -85,9 +85,10 @@ final settingsProvider = NotifierProvider<SettingsService, SettingsState>(
 );
 
 class SettingsService extends PureNotifier<SettingsState> {
+  final Ref _ref;
   final PersistenceService _persistence;
 
-  SettingsService(this._persistence);
+  SettingsService(this._ref, this._persistence);
 
   @override
   SettingsState init() => SettingsState(
@@ -313,8 +314,17 @@ class SettingsService extends PureNotifier<SettingsState> {
     state = state.copyWith(
       enableFs: enableFs,
     );
-    // Server restart is triggered in the provider's onChanged callback
-    // which has access to ref.
+    _logger.info('enableFs state updated, attempting server restart...');
+    // Server fs_config is built at startup, so a restart is needed for
+    // the new capability to take effect.
+    try {
+      final serverNotifier = _ref.notifier(serverProvider);
+      _logger.info('Calling restartServerFromSettings...');
+      await serverNotifier.restartServerFromSettings();
+      _logger.info('Server restart completed successfully');
+    } catch (e, st) {
+      _logger.warning('Failed to restart server after enableFs toggle', e, st);
+    }
   }
 
   Future<void> setDeviceType(DeviceType deviceType) async {
