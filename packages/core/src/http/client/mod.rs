@@ -235,6 +235,105 @@ impl LsHttpClient {
             ))),
         }
     }
+
+    /// `POST /api/localsend/v2/fs/mkdir` — create a directory on the remote
+    /// device's whitelisted mount point. T-010.
+    #[cfg(feature = "fs")]
+    pub async fn fs_mkdir(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_mkdir(protocol, ip, port, path).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `POST /api/localsend/v2/fs/upload/init` — initialize an upload session.
+    /// T-011: returns session_id, etag, and received offset.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_init(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        dir: &str,
+        filename: &str,
+        total_size: u64,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => {
+                client.fs_upload_init(protocol, ip, port, dir, filename, total_size).await
+            }
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `POST /api/localsend/v2/fs/upload/:session_id` — upload a chunk of data.
+    /// T-011: sends raw bytes with Content-Range header for resume support.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_chunk(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        session_id: &str,
+        chunk: bytes::Bytes,
+        offset: u64,
+        total_size: u64,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => {
+                client.fs_upload_chunk(protocol, ip, port, session_id, chunk, offset, total_size).await
+            }
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `POST /api/localsend/v2/fs/upload/:session_id/finish` — finalize the upload.
+    /// T-011: server fsyncs and renames the temp file to the final path.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_finish(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        session_id: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_upload_finish(protocol, ip, port, session_id).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `DELETE /api/localsend/v2/fs/upload/:session_id` — cancel the upload.
+    /// T-011: server removes the temp file and session state.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_cancel(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        session_id: &str,
+    ) -> Result<(), ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_upload_cancel(protocol, ip, port, session_id).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
 }
 
 /// Builds a streaming request body from the file content, invoking `progress`

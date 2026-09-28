@@ -124,6 +124,19 @@ pub enum FsError {
     /// to HTTP 500.
     #[error("io error: {0}")]
     Io(String),
+
+    /// The target already exists. Used by `mkdir` when the
+    /// requested directory is already present on disk, and by
+    /// `upload` when a file with the same name exists and the
+    /// client did not supply a matching etag for resume. Maps
+    /// to HTTP 409.
+    #[error("conflict: {0}")]
+    Conflict(String),
+
+    /// The declared upload size exceeds
+    /// `FsConfig::max_upload_size`. Maps to HTTP 413.
+    #[error("payload too large: requested {0} bytes")]
+    PayloadTooLarge(u64),
 }
 
 impl FsError {
@@ -137,6 +150,8 @@ impl FsError {
             FsError::NotFound(_) => StatusCode::NOT_FOUND,
             FsError::BadRequest(_) => StatusCode::BAD_REQUEST,
             FsError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            FsError::Conflict(_) => StatusCode::CONFLICT,
+            FsError::PayloadTooLarge(_) => StatusCode::PAYLOAD_TOO_LARGE,
         }
     }
 
@@ -150,6 +165,8 @@ impl FsError {
             FsError::NotFound(_) => "not_found",
             FsError::BadRequest(_) => "bad_request",
             FsError::Io(_) => "internal",
+            FsError::Conflict(_) => "conflict",
+            FsError::PayloadTooLarge(_) => "payload_too_large",
         }
     }
 }
@@ -710,12 +727,14 @@ fn is_absolute_path(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fs::FsRoot;
 
     /// A minimal mount table with a single root at a real tempdir.
     /// We use `std::env::temp_dir()` so the test works on every
     /// platform without an extra `tempfile` dep.
     fn table_with_root(label: &str, path: &Path) -> MountTable {
-        let root = FsRoot::new(path.to_string_lossy(), label, path);
+        let path_str = path.to_string_lossy().into_owned();
+        let root = FsRoot::new(path_str.clone(), label, path_str);
         MountTable::from_config(vec![root])
     }
 
@@ -1062,6 +1081,12 @@ mod tests {
 
         assert_eq!(FsError::Io("x".into()).http_status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(FsError::Io("x".into()).code(), "internal");
+
+        assert_eq!(FsError::Conflict("x".into()).http_status(), StatusCode::CONFLICT);
+        assert_eq!(FsError::Conflict("x".into()).code(), "conflict");
+
+        assert_eq!(FsError::PayloadTooLarge(1024).http_status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(FsError::PayloadTooLarge(1024).code(), "payload_too_large");
     }
 
     // -----------------------------------------------------------------

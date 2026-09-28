@@ -116,7 +116,11 @@ pub(super) enum Answer {
 impl App {
     pub(super) fn handle_server_event(&mut self, event: ServerEventV2) {
         match event {
-            ServerEventV2::Register { ip, info } => {
+            ServerEventV2::Register {
+                ip,
+                info,
+                cert_fingerprint: _,
+            } => {
                 self.device_confirmed(ip.to_string(), info);
             }
             ServerEventV2::PrepareUpload {

@@ -751,7 +751,7 @@ mod tests {
         ];
         let filtered: Vec<FsRoot> = candidates
             .into_iter()
-            .filter(|r| !is_macos_system_volume(&r.path))
+            .filter(|r| !is_macos_system_volume(Path::new(&r.path)))
             .collect();
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].label, "Photos");

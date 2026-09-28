@@ -13,7 +13,7 @@ import 'package:localsend_isolates/rust/frb_generated.dart';
 part 'http.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `resolve_file_content`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `from`
 
 /// Creates an HTTP client.
 ///
@@ -71,6 +71,30 @@ abstract class RsHttpClient implements RustOpaqueInterface {
     required String path,
     BigInt? rangeStart,
     BigInt? rangeEnd,
+    required RsCancellationToken cancelToken,
+  });
+
+  /// `POST /api/localsend/v2/fs/mkdir` — create a directory on the remote device.
+  Future<void> fsMkdir({required ProtocolType protocol, required String ip, required int port, required String path});
+
+  /// `POST /api/localsend/v2/fs/upload` — upload a file to a remote directory.
+  /// Implements the session-based upload protocol (init → chunk → finish).
+  /// Emits [RsFsUploadEvent]s on [sink].
+  ///
+  /// The isolate is responsible for reading the file and streaming chunks
+  /// to this method via the `binary` parameter. This method handles the
+  /// HTTP session management (init, chunk POSTs, finish, cancel).
+  Stream<RsFsUploadEvent> fsUpload({
+    required ProtocolType protocol,
+    required String ip,
+    required int port,
+    required String remoteDir,
+    required String filename,
+    required BigInt fileSize,
+    required Dart2RustStreamReceiver binary,
+    String? resumeSessionId,
+    String? resumeEtag,
+    BigInt? resumeOffset,
     required RsCancellationToken cancelToken,
   });
 
@@ -202,6 +226,45 @@ sealed class RsFsDownloadEvent with _$RsFsDownloadEvent {
   const factory RsFsDownloadEvent.failed({
     required RsHttpClientError error,
   }) = RsFsDownloadEvent_Failed;
+}
+
+@freezed
+sealed class RsFsUploadEvent with _$RsFsUploadEvent {
+  const RsFsUploadEvent._();
+
+  /// The upload session was initialized on the server.
+  const factory RsFsUploadEvent.started({
+    /// The session ID for subsequent chunk/finish/cancel requests.
+    required String sessionId,
+
+    /// The ETag for resume support.
+    required String etag,
+
+    /// How many bytes the server already has (for resume).
+    required BigInt received,
+  }) = RsFsUploadEvent_Started;
+
+  /// Progress update: `sent` is the cumulative byte count sent so far.
+  const factory RsFsUploadEvent.progress({
+    required BigInt sent,
+  }) = RsFsUploadEvent_Progress;
+
+  /// The upload completed successfully.
+  const factory RsFsUploadEvent.finished({
+    /// The final path on the server.
+    required String path,
+
+    /// The final size in bytes.
+    required BigInt size,
+  }) = RsFsUploadEvent_Finished;
+
+  /// The user cancelled the upload via the cancel token.
+  const factory RsFsUploadEvent.cancelled() = RsFsUploadEvent_Cancelled;
+
+  /// The upload failed. Always the last event of the stream.
+  const factory RsFsUploadEvent.failed({
+    required RsHttpClientError error,
+  }) = RsFsUploadEvent_Failed;
 }
 
 @freezed

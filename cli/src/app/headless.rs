@@ -143,7 +143,11 @@ fn handle_server_event(
     match event {
         // Peers answer the startup announcement by registering here; this is
         // how the destination usually enters the device store.
-        ServerEventV2::Register { ip, info } => {
+        ServerEventV2::Register {
+            ip,
+            info,
+            cert_fingerprint: _,
+        } => {
             discovery::device_confirmed(
                 discovery,
                 &storage.identity.fingerprint,

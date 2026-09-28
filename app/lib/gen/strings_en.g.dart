@@ -52,6 +52,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$remoteBrowser$en remoteBrowser = Translations$remoteBrowser$en.internal(_root);
   late final Translations$fsBrowser$en fsBrowser = Translations$fsBrowser$en.internal(_root);
   late final Translations$fsDownload$en fsDownload = Translations$fsDownload$en.internal(_root);
+  late final Translations$fsUpload$en fsUpload = Translations$fsUpload$en.internal(_root);
   late final Translations$settingsTab$en settingsTab = Translations$settingsTab$en.internal(_root);
   late final Translations$troubleshootPage$en troubleshootPage = Translations$troubleshootPage$en.internal(_root);
   late final Translations$networkInterfacesPage$en networkInterfacesPage = Translations$networkInterfacesPage$en.internal(_root);
@@ -409,6 +410,114 @@ class Translations$fsDownload$en {
 
   /// en: 'Loading preview…'
   String get previewLoading => 'Loading preview…';
+}
+
+// Path: fsUpload
+class Translations$fsUpload$en {
+  Translations$fsUpload$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Upload'
+  String get title => 'Upload';
+
+  /// en: 'From Photos'
+  String get fromPhotos => 'From Photos';
+
+  /// en: 'From Files'
+  String get fromFiles => 'From Files';
+
+  /// en: 'New Folder'
+  String get newFolder => 'New Folder';
+
+  /// en: 'Folder name'
+  String get newFolderName => 'Folder name';
+
+  /// en: 'Enter a name for the new folder'
+  String get newFolderHint => 'Enter a name for the new folder';
+
+  /// en: 'Create'
+  String get createFolder => 'Create';
+
+  /// en: 'Creating folder…'
+  String get creatingFolder => 'Creating folder…';
+
+  /// en: 'Folder created'
+  String get folderCreated => 'Folder created';
+
+  /// en: 'Upload failed'
+  String get uploadFailed => 'Upload failed';
+
+  /// en: 'Upload cancelled'
+  String get uploadCancelled => 'Upload cancelled';
+
+  /// en: 'Upload complete'
+  String get uploadComplete => 'Upload complete';
+
+  /// en: 'Uploading {count} file(s)…'
+  String uploadingFiles({required Object count}) => 'Uploading ${count} file(s)…';
+
+  /// en: 'Queued'
+  String get queued => 'Queued';
+
+  /// en: 'Uploading'
+  String get uploading => 'Uploading';
+
+  /// en: 'Paused'
+  String get paused => 'Paused';
+
+  /// en: 'Failed'
+  String get failed => 'Failed';
+
+  /// en: 'Complete'
+  String get complete => 'Complete';
+
+  /// en: 'Cancel'
+  String get cancel => 'Cancel';
+
+  /// en: 'Pause'
+  String get pause => 'Pause';
+
+  /// en: 'Resume'
+  String get resume => 'Resume';
+
+  /// en: 'Retry'
+  String get retry => 'Retry';
+
+  /// en: 'Remove'
+  String get remove => 'Remove';
+
+  /// en: 'Clear completed'
+  String get clearCompleted => 'Clear completed';
+
+  /// en: 'No uploads in progress'
+  String get noUploads => 'No uploads in progress';
+
+  /// en: '{percent}%'
+  String progressPercent({required Object percent}) => '${percent}%';
+
+  /// en: '{transferred} / {total}'
+  String bytesProgress({required Object transferred, required Object total}) => '${transferred} / ${total}';
+
+  /// en: 'ETA: {time}'
+  String eta({required Object time}) => 'ETA: ${time}';
+
+  /// en: '{speed}/s'
+  String speed({required Object speed}) => '${speed}/s';
+
+  /// en: 'Cancel this upload?'
+  String get confirmCancel => 'Cancel this upload?';
+
+  /// en: 'Cancel all uploads?'
+  String get confirmCancelAll => 'Cancel all uploads?';
+
+  /// en: 'Yes'
+  String get yes => 'Yes';
+
+  /// en: 'No'
+  String get no => 'No';
 }
 
 // Path: settingsTab

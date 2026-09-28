@@ -731,15 +731,19 @@ async fn handle_request_inner(mut req: Request<Incoming>) -> Result<Response<Box
                 .await?
                 .into_response())
         }
-        // `fs` read-only endpoints. Any URI under
+        // `fs` endpoints (read + write). Any URI under
         // `/api/localsend/v2/fs/*` is delegated to the fs
-        // module's own dispatcher, which knows the three exact
-        // sub-routes (`/roots`, `/list`, `/download`) and
-        // returns 400 for anything else.
+        // module's own dispatcher, which matches the exact
+        // sub-routes for GET/POST/DELETE and returns 400 for
+        // anything else.
         #[cfg(feature = "fs")]
-        (&Method::GET, path) if path.starts_with(crate::fs::FS_PREFIX) => {
+        (method, path)
+            if path.starts_with(crate::fs::FS_PREFIX)
+                && matches!(method, &Method::GET | &Method::POST | &Method::DELETE) =>
+        {
             tracing::info!(
-                "fs request: path={}, state.fs.is_some()={}, client_cert={:?}",
+                "fs request: method={}, path={}, state.fs.is_some()={}, client_cert={:?}",
+                method,
                 path,
                 state.fs.is_some(),
                 client_info.cert_fingerprint()

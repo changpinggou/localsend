@@ -37,12 +37,14 @@ mod events;
 mod mount;
 mod path;
 mod rest;
+pub(crate) mod upload;
 
 pub use config::FsConfig;
 pub use events::FsEvent;
 pub use mount::{FsMount, FsRoot, MountTable};
 pub use path::{FsError, FsPath, PathDeniedReason, PathGuard};
 pub use rest::{handle_request, register, FsEntry, FsState, ListResponse, RootsResponse, FS_PREFIX};
+pub use upload::{UploadSession, SESSION_TTL};
 
 #[cfg(test)]
 mod tests {

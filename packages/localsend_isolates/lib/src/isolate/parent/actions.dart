@@ -5,6 +5,7 @@ import 'package:localsend_isolates/rust/api/server.dart' show WebParams;
 import 'package:localsend_isolates/src/isolate/child/discovery_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/fs_download_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/fs_list_isolate.dart';
+import 'package:localsend_isolates/src/isolate/child/fs_upload_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/server_isolate.dart';
 import 'package:localsend_isolates/src/isolate/child/upload_isolate.dart';
 import 'package:localsend_isolates/src/isolate/dto/send_to_isolate_data.dart';
@@ -595,6 +596,62 @@ class IsolateFsDownloadAction extends ReduxActionWithResult<IsolateController, P
         task: FsDownloadStartTask(request, sessionId),
       ),
     );
+  }
+}
+
+/// T-012: one filesystem upload routed through the `fsUpload`
+/// isolate. The returned stream emits one or more
+/// [FsUploadResult]s (Progress / Finished / Cancelled / Failed)
+/// and completes when the upload finishes or is cancelled.
+///
+/// `sessionId` lets the caller keep multiple concurrent uploads
+/// distinct; the cancel token inside the isolate is keyed by it, so
+/// cancelling one session does not affect others.
+class IsolateFsUploadAction extends ReduxActionWithResult<IsolateController, ParentIsolateState, Stream<FsUploadResult>> {
+  final FsUploadRequest request;
+  final String sessionId;
+
+  IsolateFsUploadAction({required this.request, required this.sessionId});
+
+  @override
+  (ParentIsolateState, Stream<FsUploadResult>) reduce() {
+    final connection = state.fsUpload;
+    if (connection == null) {
+      throw StateError('fsUpload is not initialized');
+    }
+    return (
+      state,
+      connection.sendWrappedTaskAndListenStream(
+        task: FsUploadStartTask(request, sessionId),
+      ),
+    );
+  }
+}
+
+/// T-012: cancels a running filesystem upload by `sessionId`.
+/// Sends a cancel task to the isolate, which cancels the Rust
+/// cancel token and cleans up the session.
+class IsolateFsUploadCancelAction extends ReduxAction<IsolateController, ParentIsolateState> {
+  final String sessionId;
+
+  IsolateFsUploadCancelAction({required this.sessionId});
+
+  @override
+  ParentIsolateState reduce() {
+    final connection = state.fsUpload;
+    if (connection == null) {
+      throw StateError('fsUpload is not initialized');
+    }
+    connection.sendToIsolate(
+      SendToIsolateData(
+        syncState: null,
+        data: IsolateTask(
+          id: null,
+          data: FsUploadCancelTask(sessionId),
+        ),
+      ),
+    );
+    return state;
   }
 }
 

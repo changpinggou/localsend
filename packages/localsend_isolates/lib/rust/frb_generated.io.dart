@@ -201,6 +201,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustStreamSink<RsFsDownloadEvent> dco_decode_StreamSink_rs_fs_download_event_Sse(dynamic raw);
 
   @protected
+  RustStreamSink<RsFsUploadEvent> dco_decode_StreamSink_rs_fs_upload_event_Sse(dynamic raw);
+
+  @protected
   RustStreamSink<RsHashFileEvent> dco_decode_StreamSink_rs_hash_file_event_Sse(dynamic raw);
 
   @protected
@@ -483,6 +486,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RsFsDownloadEvent dco_decode_rs_fs_download_event(dynamic raw);
 
   @protected
+  RsFsUploadEvent dco_decode_rs_fs_upload_event(dynamic raw);
+
+  @protected
   RsHashFileEvent dco_decode_rs_hash_file_event(dynamic raw);
 
   @protected
@@ -705,6 +711,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RustStreamSink<RsFsDownloadEvent> sse_decode_StreamSink_rs_fs_download_event_Sse(SseDeserializer deserializer);
+
+  @protected
+  RustStreamSink<RsFsUploadEvent> sse_decode_StreamSink_rs_fs_upload_event_Sse(SseDeserializer deserializer);
 
   @protected
   RustStreamSink<RsHashFileEvent> sse_decode_StreamSink_rs_hash_file_event_Sse(SseDeserializer deserializer);
@@ -991,6 +1000,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RsFsDownloadEvent sse_decode_rs_fs_download_event(SseDeserializer deserializer);
 
   @protected
+  RsFsUploadEvent sse_decode_rs_fs_upload_event(SseDeserializer deserializer);
+
+  @protected
   RsHashFileEvent sse_decode_rs_hash_file_event(SseDeserializer deserializer);
 
   @protected
@@ -1257,6 +1269,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_StreamSink_rs_fs_download_event_Sse(RustStreamSink<RsFsDownloadEvent> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_StreamSink_rs_fs_upload_event_Sse(RustStreamSink<RsFsUploadEvent> self, SseSerializer serializer);
 
   @protected
   void sse_encode_StreamSink_rs_hash_file_event_Sse(RustStreamSink<RsHashFileEvent> self, SseSerializer serializer);
@@ -1543,6 +1558,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_rs_fs_download_event(RsFsDownloadEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_rs_fs_upload_event(RsFsUploadEvent self, SseSerializer serializer);
 
   @protected
   void sse_encode_rs_hash_file_event(RsHashFileEvent self, SseSerializer serializer);

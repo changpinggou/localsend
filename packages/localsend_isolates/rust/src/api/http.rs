@@ -300,6 +300,137 @@ impl RsHttpClient {
             let _ = sink.add(RsFsDownloadEvent::Failed { error });
         }
     }
+
+    /// `POST /api/localsend/v2/fs/upload` — upload a file to a remote directory.
+    /// Implements the session-based upload protocol (init → chunk → finish).
+    /// Emits [RsFsUploadEvent]s on [sink].
+    ///
+    /// The isolate is responsible for reading the file and streaming chunks
+    /// to this method via the `binary` parameter. This method handles the
+    /// HTTP session management (init, chunk POSTs, finish, cancel).
+    #[allow(clippy::too_many_arguments)]
+    pub async fn fs_upload(
+        &self,
+        sink: StreamSink<RsFsUploadEvent>,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        remote_dir: String,
+        filename: String,
+        file_size: u64,
+        binary: stream::Dart2RustStreamReceiver,
+        resume_session_id: Option<String>,
+        resume_etag: Option<String>,
+        resume_offset: Option<u64>,
+        cancel_token: &RsCancellationToken,
+    ) {
+        let result = async {
+            // Step 1: Initialize the upload session
+            let init_response = self
+                .inner
+                .fs_upload_init(
+                    protocol,
+                    ip,
+                    port,
+                    &remote_dir,
+                    &filename,
+                    file_size,
+                )
+                .await
+                .map_err(RsHttpClientError::from)?;
+
+            let session_id = init_response["sessionId"]
+                .as_str()
+                .ok_or_else(|| RsHttpClientError::Other("Missing sessionId in init response".into()))?
+                .to_string();
+
+            let etag = init_response["etag"]
+                .as_str()
+                .unwrap_or("")
+                .to_string();
+
+            let received = init_response["received"]
+                .as_u64()
+                .unwrap_or(0);
+
+            let _ = sink.add(RsFsUploadEvent::Started {
+                session_id: session_id.clone(),
+                etag,
+                received,
+            });
+
+            // Step 2: Stream chunks from the binary receiver
+            let mut receiver = binary.receiver;
+            let mut offset = received;
+
+            while let Some(chunk) = receiver.recv().await {
+                if cancel_token.inner.is_cancelled() {
+                    // Cancel the session on the server
+                    let _ = self
+                        .inner
+                        .fs_upload_cancel(protocol, ip, port, &session_id)
+                        .await;
+                    let _ = sink.add(RsFsUploadEvent::Cancelled);
+                    return Ok(());
+                }
+
+                let chunk_len = chunk.len() as u64;
+
+                // POST the chunk to /fs/upload/:session_id
+                let _ = self
+                    .inner
+                    .fs_upload_chunk(protocol, ip, port, &session_id, chunk, offset, file_size)
+                    .await
+                    .map_err(RsHttpClientError::from)?;
+
+                offset += chunk_len;
+                let _ = sink.add(RsFsUploadEvent::Progress { sent: offset });
+            }
+
+            // Step 3: Finalize the upload
+            let finish_response = self
+                .inner
+                .fs_upload_finish(protocol, ip, port, &session_id)
+                .await
+                .map_err(RsHttpClientError::from)?;
+
+            let final_path = finish_response["path"]
+                .as_str()
+                .unwrap_or("")
+                .to_string();
+
+            let final_size = finish_response["size"]
+                .as_u64()
+                .unwrap_or(file_size);
+
+            let _ = sink.add(RsFsUploadEvent::Finished {
+                path: final_path,
+                size: final_size,
+            });
+
+            Ok(())
+        }
+        .await;
+
+        if let Err(error) = result {
+            let _ = sink.add(RsFsUploadEvent::Failed { error });
+        }
+    }
+
+    /// `POST /api/localsend/v2/fs/mkdir` — create a directory on the remote device.
+    pub async fn fs_mkdir(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: String,
+    ) -> Result<(), RsHttpClientError> {
+        self.inner
+            .fs_mkdir(protocol, ip, port, &path)
+            .await
+            .map_err(RsHttpClientError::from)?;
+        Ok(())
+    }
 }
 
 fn resolve_file_content(
@@ -364,6 +495,41 @@ pub enum RsFsDownloadEvent {
     Cancelled,
 
     /// The download failed. Always the last event of the stream.
+    Failed { error: RsHttpClientError },
+}
+
+/// An event emitted while a file is being uploaded by
+/// [RsHttpClient::fs_upload] (T-012). The stream starts with a single
+/// `Started` event (containing the session ID), then any number of
+/// `Progress` events, then ends with either `Finished`, `Cancelled`,
+/// or `Failed` (mutually exclusive — only one terminal event per stream).
+#[derive(Clone)]
+pub enum RsFsUploadEvent {
+    /// The upload session was initialized on the server.
+    Started {
+        /// The session ID for subsequent chunk/finish/cancel requests.
+        session_id: String,
+        /// The ETag for resume support.
+        etag: String,
+        /// How many bytes the server already has (for resume).
+        received: u64,
+    },
+
+    /// Progress update: `sent` is the cumulative byte count sent so far.
+    Progress { sent: u64 },
+
+    /// The upload completed successfully.
+    Finished {
+        /// The final path on the server.
+        path: String,
+        /// The final size in bytes.
+        size: u64,
+    },
+
+    /// The user cancelled the upload via the cancel token.
+    Cancelled,
+
+    /// The upload failed. Always the last event of the stream.
     Failed { error: RsHttpClientError },
 }
 

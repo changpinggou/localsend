@@ -465,6 +465,500 @@ $RsHttpClientErrorCopyWith<$Res> get error {
 }
 
 /// @nodoc
+mixin _$RsFsUploadEvent {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsUploadEvent);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'RsFsUploadEvent()';
+}
+
+
+}
+
+/// @nodoc
+class $RsFsUploadEventCopyWith<$Res>  {
+$RsFsUploadEventCopyWith(RsFsUploadEvent _, $Res Function(RsFsUploadEvent) __);
+}
+
+
+/// Adds pattern-matching-related methods to [RsFsUploadEvent].
+extension RsFsUploadEventPatterns on RsFsUploadEvent {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( RsFsUploadEvent_Started value)?  started,TResult Function( RsFsUploadEvent_Progress value)?  progress,TResult Function( RsFsUploadEvent_Finished value)?  finished,TResult Function( RsFsUploadEvent_Cancelled value)?  cancelled,TResult Function( RsFsUploadEvent_Failed value)?  failed,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case RsFsUploadEvent_Started() when started != null:
+return started(_that);case RsFsUploadEvent_Progress() when progress != null:
+return progress(_that);case RsFsUploadEvent_Finished() when finished != null:
+return finished(_that);case RsFsUploadEvent_Cancelled() when cancelled != null:
+return cancelled(_that);case RsFsUploadEvent_Failed() when failed != null:
+return failed(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( RsFsUploadEvent_Started value)  started,required TResult Function( RsFsUploadEvent_Progress value)  progress,required TResult Function( RsFsUploadEvent_Finished value)  finished,required TResult Function( RsFsUploadEvent_Cancelled value)  cancelled,required TResult Function( RsFsUploadEvent_Failed value)  failed,}){
+final _that = this;
+switch (_that) {
+case RsFsUploadEvent_Started():
+return started(_that);case RsFsUploadEvent_Progress():
+return progress(_that);case RsFsUploadEvent_Finished():
+return finished(_that);case RsFsUploadEvent_Cancelled():
+return cancelled(_that);case RsFsUploadEvent_Failed():
+return failed(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( RsFsUploadEvent_Started value)?  started,TResult? Function( RsFsUploadEvent_Progress value)?  progress,TResult? Function( RsFsUploadEvent_Finished value)?  finished,TResult? Function( RsFsUploadEvent_Cancelled value)?  cancelled,TResult? Function( RsFsUploadEvent_Failed value)?  failed,}){
+final _that = this;
+switch (_that) {
+case RsFsUploadEvent_Started() when started != null:
+return started(_that);case RsFsUploadEvent_Progress() when progress != null:
+return progress(_that);case RsFsUploadEvent_Finished() when finished != null:
+return finished(_that);case RsFsUploadEvent_Cancelled() when cancelled != null:
+return cancelled(_that);case RsFsUploadEvent_Failed() when failed != null:
+return failed(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String sessionId,  String etag,  BigInt received)?  started,TResult Function( BigInt sent)?  progress,TResult Function( String path,  BigInt size)?  finished,TResult Function()?  cancelled,TResult Function( RsHttpClientError error)?  failed,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case RsFsUploadEvent_Started() when started != null:
+return started(_that.sessionId,_that.etag,_that.received);case RsFsUploadEvent_Progress() when progress != null:
+return progress(_that.sent);case RsFsUploadEvent_Finished() when finished != null:
+return finished(_that.path,_that.size);case RsFsUploadEvent_Cancelled() when cancelled != null:
+return cancelled();case RsFsUploadEvent_Failed() when failed != null:
+return failed(_that.error);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String sessionId,  String etag,  BigInt received)  started,required TResult Function( BigInt sent)  progress,required TResult Function( String path,  BigInt size)  finished,required TResult Function()  cancelled,required TResult Function( RsHttpClientError error)  failed,}) {final _that = this;
+switch (_that) {
+case RsFsUploadEvent_Started():
+return started(_that.sessionId,_that.etag,_that.received);case RsFsUploadEvent_Progress():
+return progress(_that.sent);case RsFsUploadEvent_Finished():
+return finished(_that.path,_that.size);case RsFsUploadEvent_Cancelled():
+return cancelled();case RsFsUploadEvent_Failed():
+return failed(_that.error);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String sessionId,  String etag,  BigInt received)?  started,TResult? Function( BigInt sent)?  progress,TResult? Function( String path,  BigInt size)?  finished,TResult? Function()?  cancelled,TResult? Function( RsHttpClientError error)?  failed,}) {final _that = this;
+switch (_that) {
+case RsFsUploadEvent_Started() when started != null:
+return started(_that.sessionId,_that.etag,_that.received);case RsFsUploadEvent_Progress() when progress != null:
+return progress(_that.sent);case RsFsUploadEvent_Finished() when finished != null:
+return finished(_that.path,_that.size);case RsFsUploadEvent_Cancelled() when cancelled != null:
+return cancelled();case RsFsUploadEvent_Failed() when failed != null:
+return failed(_that.error);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class RsFsUploadEvent_Started extends RsFsUploadEvent {
+  const RsFsUploadEvent_Started({required this.sessionId, required this.etag, required this.received}): super._();
+  
+
+/// The session ID for subsequent chunk/finish/cancel requests.
+ final  String sessionId;
+/// The ETag for resume support.
+ final  String etag;
+/// How many bytes the server already has (for resume).
+ final  BigInt received;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsUploadEvent_StartedCopyWith<RsFsUploadEvent_Started> get copyWith => _$RsFsUploadEvent_StartedCopyWithImpl<RsFsUploadEvent_Started>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsUploadEvent_Started&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.etag, etag) || other.etag == etag)&&(identical(other.received, received) || other.received == received));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,etag,received);
+
+@override
+String toString() {
+  return 'RsFsUploadEvent.started(sessionId: $sessionId, etag: $etag, received: $received)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsUploadEvent_StartedCopyWith<$Res> implements $RsFsUploadEventCopyWith<$Res> {
+  factory $RsFsUploadEvent_StartedCopyWith(RsFsUploadEvent_Started value, $Res Function(RsFsUploadEvent_Started) _then) = _$RsFsUploadEvent_StartedCopyWithImpl;
+@useResult
+$Res call({
+ String sessionId, String etag, BigInt received
+});
+
+
+
+
+}
+/// @nodoc
+class _$RsFsUploadEvent_StartedCopyWithImpl<$Res>
+    implements $RsFsUploadEvent_StartedCopyWith<$Res> {
+  _$RsFsUploadEvent_StartedCopyWithImpl(this._self, this._then);
+
+  final RsFsUploadEvent_Started _self;
+  final $Res Function(RsFsUploadEvent_Started) _then;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = null,Object? etag = null,Object? received = null,}) {
+  return _then(RsFsUploadEvent_Started(
+sessionId: null == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String,etag: null == etag ? _self.etag : etag // ignore: cast_nullable_to_non_nullable
+as String,received: null == received ? _self.received : received // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class RsFsUploadEvent_Progress extends RsFsUploadEvent {
+  const RsFsUploadEvent_Progress({required this.sent}): super._();
+  
+
+ final  BigInt sent;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsUploadEvent_ProgressCopyWith<RsFsUploadEvent_Progress> get copyWith => _$RsFsUploadEvent_ProgressCopyWithImpl<RsFsUploadEvent_Progress>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsUploadEvent_Progress&&(identical(other.sent, sent) || other.sent == sent));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sent);
+
+@override
+String toString() {
+  return 'RsFsUploadEvent.progress(sent: $sent)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsUploadEvent_ProgressCopyWith<$Res> implements $RsFsUploadEventCopyWith<$Res> {
+  factory $RsFsUploadEvent_ProgressCopyWith(RsFsUploadEvent_Progress value, $Res Function(RsFsUploadEvent_Progress) _then) = _$RsFsUploadEvent_ProgressCopyWithImpl;
+@useResult
+$Res call({
+ BigInt sent
+});
+
+
+
+
+}
+/// @nodoc
+class _$RsFsUploadEvent_ProgressCopyWithImpl<$Res>
+    implements $RsFsUploadEvent_ProgressCopyWith<$Res> {
+  _$RsFsUploadEvent_ProgressCopyWithImpl(this._self, this._then);
+
+  final RsFsUploadEvent_Progress _self;
+  final $Res Function(RsFsUploadEvent_Progress) _then;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sent = null,}) {
+  return _then(RsFsUploadEvent_Progress(
+sent: null == sent ? _self.sent : sent // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class RsFsUploadEvent_Finished extends RsFsUploadEvent {
+  const RsFsUploadEvent_Finished({required this.path, required this.size}): super._();
+  
+
+/// The final path on the server.
+ final  String path;
+/// The final size in bytes.
+ final  BigInt size;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsUploadEvent_FinishedCopyWith<RsFsUploadEvent_Finished> get copyWith => _$RsFsUploadEvent_FinishedCopyWithImpl<RsFsUploadEvent_Finished>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsUploadEvent_Finished&&(identical(other.path, path) || other.path == path)&&(identical(other.size, size) || other.size == size));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,path,size);
+
+@override
+String toString() {
+  return 'RsFsUploadEvent.finished(path: $path, size: $size)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsUploadEvent_FinishedCopyWith<$Res> implements $RsFsUploadEventCopyWith<$Res> {
+  factory $RsFsUploadEvent_FinishedCopyWith(RsFsUploadEvent_Finished value, $Res Function(RsFsUploadEvent_Finished) _then) = _$RsFsUploadEvent_FinishedCopyWithImpl;
+@useResult
+$Res call({
+ String path, BigInt size
+});
+
+
+
+
+}
+/// @nodoc
+class _$RsFsUploadEvent_FinishedCopyWithImpl<$Res>
+    implements $RsFsUploadEvent_FinishedCopyWith<$Res> {
+  _$RsFsUploadEvent_FinishedCopyWithImpl(this._self, this._then);
+
+  final RsFsUploadEvent_Finished _self;
+  final $Res Function(RsFsUploadEvent_Finished) _then;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? path = null,Object? size = null,}) {
+  return _then(RsFsUploadEvent_Finished(
+path: null == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
+as String,size: null == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class RsFsUploadEvent_Cancelled extends RsFsUploadEvent {
+  const RsFsUploadEvent_Cancelled(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsUploadEvent_Cancelled);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'RsFsUploadEvent.cancelled()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class RsFsUploadEvent_Failed extends RsFsUploadEvent {
+  const RsFsUploadEvent_Failed({required this.error}): super._();
+  
+
+ final  RsHttpClientError error;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RsFsUploadEvent_FailedCopyWith<RsFsUploadEvent_Failed> get copyWith => _$RsFsUploadEvent_FailedCopyWithImpl<RsFsUploadEvent_Failed>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RsFsUploadEvent_Failed&&(identical(other.error, error) || other.error == error));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,error);
+
+@override
+String toString() {
+  return 'RsFsUploadEvent.failed(error: $error)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RsFsUploadEvent_FailedCopyWith<$Res> implements $RsFsUploadEventCopyWith<$Res> {
+  factory $RsFsUploadEvent_FailedCopyWith(RsFsUploadEvent_Failed value, $Res Function(RsFsUploadEvent_Failed) _then) = _$RsFsUploadEvent_FailedCopyWithImpl;
+@useResult
+$Res call({
+ RsHttpClientError error
+});
+
+
+$RsHttpClientErrorCopyWith<$Res> get error;
+
+}
+/// @nodoc
+class _$RsFsUploadEvent_FailedCopyWithImpl<$Res>
+    implements $RsFsUploadEvent_FailedCopyWith<$Res> {
+  _$RsFsUploadEvent_FailedCopyWithImpl(this._self, this._then);
+
+  final RsFsUploadEvent_Failed _self;
+  final $Res Function(RsFsUploadEvent_Failed) _then;
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+  return _then(RsFsUploadEvent_Failed(
+error: null == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
+as RsHttpClientError,
+  ));
+}
+
+/// Create a copy of RsFsUploadEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RsHttpClientErrorCopyWith<$Res> get error {
+  
+  return $RsHttpClientErrorCopyWith<$Res>(_self.error, (value) {
+    return _then(_self.copyWith(error: value));
+  });
+}
+}
+
+/// @nodoc
 mixin _$RsHttpClientError {
 
 

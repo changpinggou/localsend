@@ -54,6 +54,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   @override
   late final Translations$fsDownload$zh_CN fsDownload = Translations$fsDownload$zh_CN.internal(_root);
   @override
+  late final Translations$fsUpload$zh_CN fsUpload = Translations$fsUpload$zh_CN.internal(_root);
+  @override
   late final Translations$settingsTab$zh_CN settingsTab = Translations$settingsTab$zh_CN.internal(_root);
   @override
   late final Translations$troubleshootPage$zh_CN troubleshootPage = Translations$troubleshootPage$zh_CN.internal(_root);
@@ -345,6 +347,81 @@ class Translations$fsDownload$zh_CN extends Translations$fsDownload$en {
   String savedToFiles({required Object path}) => '已保存到 ${path}';
   @override
   String get previewLoading => '正在加载预览…';
+}
+
+// Path: fsUpload
+class Translations$fsUpload$zh_CN extends Translations$fsUpload$en {
+  Translations$fsUpload$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => '上传';
+  @override
+  String get fromPhotos => '从相册选择';
+  @override
+  String get fromFiles => '从文件选择';
+  @override
+  String get newFolder => '新建文件夹';
+  @override
+  String get newFolderName => '文件夹名称';
+  @override
+  String get newFolderHint => '请输入新文件夹的名称';
+  @override
+  String get createFolder => '创建';
+  @override
+  String get creatingFolder => '正在创建文件夹…';
+  @override
+  String get folderCreated => '文件夹已创建';
+  @override
+  String get uploadFailed => '上传失败';
+  @override
+  String get uploadCancelled => '上传已取消';
+  @override
+  String get uploadComplete => '上传完成';
+  @override
+  String uploadingFiles({required Object count}) => '正在上传 ${count} 个文件…';
+  @override
+  String get queued => '排队中';
+  @override
+  String get uploading => '上传中';
+  @override
+  String get paused => '已暂停';
+  @override
+  String get failed => '失败';
+  @override
+  String get complete => '完成';
+  @override
+  String get cancel => '取消';
+  @override
+  String get pause => '暂停';
+  @override
+  String get resume => '继续';
+  @override
+  String get retry => '重试';
+  @override
+  String get remove => '移除';
+  @override
+  String get clearCompleted => '清除已完成';
+  @override
+  String get noUploads => '没有正在进行的上传';
+  @override
+  String progressPercent({required Object percent}) => '${percent}%';
+  @override
+  String bytesProgress({required Object transferred, required Object total}) => '${transferred} / ${total}';
+  @override
+  String eta({required Object time}) => '预计剩余：${time}';
+  @override
+  String speed({required Object speed}) => '${speed}/秒';
+  @override
+  String get confirmCancel => '确定要取消此上传吗？';
+  @override
+  String get confirmCancelAll => '确定要取消所有上传吗？';
+  @override
+  String get yes => '是';
+  @override
+  String get no => '否';
 }
 
 // Path: settingsTab

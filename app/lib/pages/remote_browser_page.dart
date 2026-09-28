@@ -6,13 +6,19 @@ import 'package:localsend_app/pages/remote_browser/widgets/empty_state.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/file_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/grid_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/list_view.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/mkdir_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/upload_action_sheet.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/upload_queue_bar.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart';
+import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
-import 'package:localsend_app/provider/device_info_provider.dart';
+import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
+import 'package:localsend_app/util/native/pick_for_upload.dart';
 import 'package:localsend_isolates/model/device.dart';
+import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
 import 'package:refena_flutter/refena_flutter.dart';
 
@@ -142,8 +148,15 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
           ),
           const Divider(height: 1),
           Expanded(child: _buildBody(device, fsState)),
+          const FsUploadQueueBar(),
         ],
       ),
+      floatingActionButton: fsState.currentPath.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: () => _showUploadMenu(device),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
@@ -284,6 +297,130 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
             localPath: result.savedPath!,
             title: entry.name,
           ),
+        ),
+      );
+    }
+  }
+
+  /// T-012: show upload action sheet and handle the selected action.
+  Future<void> _showUploadMenu(Device device) async {
+    final action = await showUploadActionSheet(context);
+    if (action == null || !mounted) return;
+
+    final currentPath = ref.read(fsListProvider).currentPath;
+    if (currentPath.isEmpty) {
+      // Cannot upload to root view
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t.remoteBrowser.emptyFolder)),
+      );
+      return;
+    }
+
+    switch (action) {
+      case FsUploadAction.fromPhotos:
+        await _handlePickMedia(device, currentPath);
+        break;
+      case FsUploadAction.fromFiles:
+        await _handlePickFiles(device, currentPath);
+        break;
+      case FsUploadAction.newFolder:
+        await _handleMkdir(device, currentPath);
+        break;
+    }
+  }
+
+  /// T-012: handle picking media files for upload.
+  Future<void> _handlePickMedia(Device device, String remotePath) async {
+    final paths = await pickMediaForUpload(context);
+    if (paths == null || paths.isEmpty || !mounted) return;
+
+    // Enqueue files for upload
+    await ref.notifier(fsUploadProvider).enqueueFiles(
+          device: device,
+          localPaths: paths,
+          remotePath: remotePath,
+        );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.fsUpload.uploadingFiles(count: paths.length)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// T-012: handle picking files for upload.
+  Future<void> _handlePickFiles(Device device, String remotePath) async {
+    final paths = await pickFilesForUpload();
+    if (paths == null || paths.isEmpty || !mounted) return;
+
+    // Enqueue files for upload
+    await ref.notifier(fsUploadProvider).enqueueFiles(
+          device: device,
+          localPaths: paths,
+          remotePath: remotePath,
+        );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.fsUpload.uploadingFiles(count: paths.length)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// T-012: handle creating a new folder.
+  Future<void> _handleMkdir(Device device, String remotePath) async {
+    final folderName = await showMkdirDialog(context);
+    if (folderName == null || !mounted) return;
+
+    // Build full remote path
+    final newFolderPath = '$remotePath/$folderName';
+
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.fsUpload.creatingFolder),
+        duration: const Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      // Call mkdir via Rust client
+      final protocol = device.https ? rust.ProtocolType.https : rust.ProtocolType.http;
+      final ip = device.ip;
+      if (ip == null) {
+        throw Exception('Device has no IP address');
+      }
+
+      final client = rust_http.createHttpOnlyClient();
+      await client.fsMkdir(
+        protocol: protocol,
+        ip: ip,
+        port: device.port,
+        path: newFolderPath,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t.fsUpload.folderCreated),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Refresh the file list
+      ref.notifier(fsListProvider).refresh(device);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t.fsUpload.uploadFailed),
+          duration: const Duration(seconds: 2),
         ),
       );
     }

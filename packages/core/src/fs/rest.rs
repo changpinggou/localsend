@@ -28,6 +28,7 @@
 //! this is the seed of the N-SEC-5 audit trail (T-025 will
 //! persist it).
 
+use std::collections::HashMap;
 use std::io::SeekFrom;
 use std::path::Path;
 use std::sync::Arc;
@@ -44,6 +45,7 @@ use tokio_util::io::ReaderStream;
 use super::config::FsConfig;
 use super::mount::{FsRoot, MountTable};
 use super::path::{FsError, PathGuard};
+use super::upload::UploadSession;
 use crate::http::server::common::query::parse_query;
 use crate::http::server::common::response::{full_body, BoxedBody};
 
@@ -113,6 +115,9 @@ pub struct FsState {
     pub mounts: Arc<MountTable>,
     /// Sandbox used to validate every incoming path.
     pub guard: Arc<PathGuard>,
+    /// Live upload sessions (T-011). Keyed by session id; a
+    /// session is removed on `finish`, `cancel`, or GC.
+    pub sessions: Arc<tokio::sync::Mutex<HashMap<String, UploadSession>>>,
 }
 
 impl FsState {
@@ -121,7 +126,12 @@ impl FsState {
     /// only has to clone the resulting `Arc`.
     pub fn new(config: FsConfig, mounts: MountTable) -> Self {
         let guard = PathGuard::new(&mounts);
-        Self { config: Arc::new(config), mounts: Arc::new(mounts), guard: Arc::new(guard) }
+        Self {
+            config: Arc::new(config),
+            mounts: Arc::new(mounts),
+            guard: Arc::new(guard),
+            sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
+        }
     }
 }
 
@@ -150,14 +160,29 @@ pub async fn handle_request(
     // `FS_PREFIX` because the dispatcher matched on it; the
     // `strip_prefix` is defensive in case the dispatcher is
     // ever refactored to use a less strict match.
-    let path = req.uri().path();
-    let sub = path.strip_prefix(FS_PREFIX).unwrap_or(path);
+    let path = req.uri().path().to_owned();
+    let sub = path.strip_prefix(FS_PREFIX).unwrap_or(&path).to_owned();
 
-    let method = req.method();
-    let result: Result<Response<BoxedBody>, FsError> = match (method, sub) {
+    let method = req.method().clone();
+    let result: Result<Response<BoxedBody>, FsError> = match (&method, sub.as_str()) {
         (&hyper::Method::GET, "/roots") => Ok(handle_roots(&state)),
         (&hyper::Method::GET, "/list") => handle_list(&state, &req).await,
         (&hyper::Method::GET, "/download") => handle_download(&state, &req).await,
+        // T-010 + T-011 write endpoints.
+        (&hyper::Method::POST, "/mkdir") => super::upload::handle_mkdir(&state, req).await,
+        (&hyper::Method::POST, "/upload/init") => super::upload::handle_upload_init(&state, req).await,
+        (&hyper::Method::POST, p) if p.starts_with("/upload/") && p.ends_with("/finish") => {
+            let sid = p.trim_start_matches("/upload/").trim_end_matches("/finish");
+            super::upload::handle_upload_finish(&state, sid).await
+        }
+        (&hyper::Method::POST, p) if p.starts_with("/upload/") => {
+            let sid = p.trim_start_matches("/upload/");
+            super::upload::handle_upload_chunk(&state, sid, req).await
+        }
+        (&hyper::Method::DELETE, p) if p.starts_with("/upload/") => {
+            let sid = p.trim_start_matches("/upload/");
+            super::upload::handle_upload_cancel(&state, sid).await
+        }
         _ => Err(FsError::BadRequest(format!("unknown fs route: {} {}", method, sub))),
     };
 
@@ -451,7 +476,9 @@ fn error_response(e: FsError) -> Response<BoxedBody> {
 }
 
 /// Build a `200 OK` JSON response from any `Serialize` value.
-fn json_response<T: Serialize>(status: StatusCode, value: &T) -> Response<BoxedBody> {
+/// Shared with sibling modules (`upload`) so every endpoint
+/// emits the same envelope.
+pub(crate) fn json_response<T: Serialize>(status: StatusCode, value: &T) -> Response<BoxedBody> {
     let body = serde_json::to_string(value).unwrap_or_else(|_| "{}".to_string());
     Response::builder()
         .status(status)
@@ -497,6 +524,7 @@ fn guess_mime(filename: &str) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fs::PathDeniedReason;
     use http_body_util::{BodyExt, Empty};
     use hyper::body::Bytes;
     use std::path::PathBuf;
@@ -505,7 +533,8 @@ mod tests {
     /// state and the tempdir path.
     fn fixture() -> (FsState, PathBuf) {
         let dir = tempfile_subdir("rest");
-        let root = FsRoot::new(dir.to_string_lossy(), "Photos", &dir);
+        let dir_str = dir.to_string_lossy().into_owned();
+        let root = FsRoot::new(dir_str.clone(), "Photos", dir_str);
         let table = MountTable::from_config(vec![root]);
         let config = FsConfig::default();
         (FsState::new(config, table), dir)

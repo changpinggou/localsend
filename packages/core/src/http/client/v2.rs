@@ -609,4 +609,234 @@ impl LsHttpClientV2 {
         }
         Ok(res)
     }
+
+    /// POST /api/localsend/v2/fs/mkdir — create a directory on the remote
+    /// device's whitelisted mount point. T-010: returns the created path
+    /// (server may canonicalize it).
+    #[cfg(feature = "fs")]
+    pub async fn fs_mkdir(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/fs/mkdir",
+            params: &[],
+        }
+        .to_string();
+
+        tracing::info!(
+            event = "fs.mkdir.request",
+            url = %url,
+            remote_path = %path,
+            "fs mkdir request"
+        );
+
+        let body = serde_json::json!({ "path": path });
+        let res = self.client.post(&url).json(&body).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.mkdir.response",
+            status = %status,
+            url = %url,
+            "fs mkdir response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
+
+    /// POST /api/localsend/v2/fs/upload/init — initialize an upload session.
+    /// T-011: returns session_id, etag, and received offset (for resume).
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_init(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        dir: &str,
+        filename: &str,
+        total_size: u64,
+    ) -> Result<serde_json::Value, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/fs/upload/init",
+            params: &[("path", dir), ("filename", filename)],
+        }
+        .to_string();
+
+        tracing::info!(
+            event = "fs.upload.init.request",
+            url = %url,
+            total_size,
+            "fs upload init request"
+        );
+
+        let body = serde_json::json!({ "total": total_size });
+        let res = self.client.post(&url).json(&body).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.upload.init.response",
+            status = %status,
+            url = %url,
+            "fs upload init response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
+
+    /// POST /api/localsend/v2/fs/upload/:session_id — upload a chunk of data.
+    /// T-011: sends raw bytes with Content-Range header for resume support.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_chunk(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        session_id: &str,
+        chunk: bytes::Bytes,
+        offset: u64,
+        total_size: u64,
+    ) -> Result<serde_json::Value, ClientError> {
+        // TargetUrl.path is `&'static str`, so build the URL manually when
+        // the path contains a dynamic session id.
+        let url = format!(
+            "{}://{}:{}/api/localsend/v2/fs/upload/{}",
+            protocol.as_str(),
+            ip,
+            port,
+            session_id
+        );
+
+        let chunk_len = chunk.len() as u64;
+        let end = offset + chunk_len - 1;
+        let content_range = format!("bytes {offset}-{end}/{total_size}");
+
+        tracing::debug!(
+            event = "fs.upload.chunk.request",
+            url = %url,
+            offset,
+            chunk_len,
+            total_size,
+            "fs upload chunk request"
+        );
+
+        let res = self
+            .client
+            .post(&url)
+            .header(reqwest::header::CONTENT_RANGE, content_range)
+            .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
+            .body(chunk)
+            .send()
+            .await?;
+        let status = res.status();
+
+        tracing::debug!(
+            event = "fs.upload.chunk.response",
+            status = %status,
+            url = %url,
+            "fs upload chunk response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
+
+    /// POST /api/localsend/v2/fs/upload/:session_id/finish — finalize the upload.
+    /// T-011: server fsyncs and renames the temp file to the final path.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_finish(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        session_id: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        let url = format!(
+            "{}://{}:{}/api/localsend/v2/fs/upload/{}/finish",
+            protocol.as_str(),
+            ip,
+            port,
+            session_id
+        );
+
+        tracing::info!(
+            event = "fs.upload.finish.request",
+            url = %url,
+            "fs upload finish request"
+        );
+
+        let res = self.client.post(&url).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.upload.finish.response",
+            status = %status,
+            url = %url,
+            "fs upload finish response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
+
+    /// DELETE /api/localsend/v2/fs/upload/:session_id — cancel the upload.
+    /// T-011: server removes the temp file and session state.
+    #[cfg(feature = "fs")]
+    pub async fn fs_upload_cancel(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        session_id: &str,
+    ) -> Result<(), ClientError> {
+        let url = format!(
+            "{}://{}:{}/api/localsend/v2/fs/upload/{}",
+            protocol.as_str(),
+            ip,
+            port,
+            session_id
+        );
+
+        tracing::info!(
+            event = "fs.upload.cancel.request",
+            url = %url,
+            "fs upload cancel request"
+        );
+
+        let res = self.client.delete(&url).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.upload.cancel.response",
+            status = %status,
+            url = %url,
+            "fs upload cancel response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(())
+    }
 }
