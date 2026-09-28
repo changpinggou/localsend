@@ -738,12 +738,14 @@ async fn handle_request_inner(mut req: Request<Incoming>) -> Result<Response<Box
         // returns 400 for anything else.
         #[cfg(feature = "fs")]
         (&Method::GET, path) if path.starts_with(crate::fs::FS_PREFIX) => {
+            tracing::info!(
+                "fs request: path={}, state.fs.is_some()={}, client_cert={:?}",
+                path,
+                state.fs.is_some(),
+                client_info.cert_fingerprint()
+            );
             let Some(fs) = state.fs.clone() else {
-                // The fs module is feature-compiled but the
-                // user didn't pass an `fs_config` — the routes
-                // simply do not exist on this server. 404 is
-                // the right answer: it matches the rest of
-                // the route table's "not configured" behaviour.
+                tracing::warn!("fs request rejected: state.fs is None (fs_config was not passed at startup)");
                 return Err(AppError::Status(StatusCode::NOT_FOUND));
             };
             let fingerprint = client_info.cert_fingerprint();
