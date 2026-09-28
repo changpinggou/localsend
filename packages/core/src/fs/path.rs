@@ -365,19 +365,83 @@ impl PathGuard {
     }
 
     fn check_inner(&self, input: &str) -> Result<PathBuf, FsError> {
+        tracing::info!(
+            event = "fs.path.check",
+            input = input,
+            canonical_roots_count = self.canonical_roots.len(),
+            "PathGuard check called"
+        );
+
         // 0. If input matches a root id exactly, return that root's
         //    canonical path directly. This lets the client request a
         //    root's contents by passing `root.id` (e.g. "D:" on Windows,
         //    "/Volumes/Photos" on macOS).
         if let Some(canonical_root) = self.canonical_roots.get(input) {
+            tracing::info!(
+                event = "fs.path.root_match",
+                input = input,
+                canonical_root = ?canonical_root,
+                "Matched root id directly"
+            );
             return Ok(canonical_root.clone());
+        }
+
+        // 0.5. Check if input starts with "root_id/" pattern (e.g., "D:/file.txt")
+        // This allows clients to specify files within a root using "root_id/relative_path" format.
+        for root in self.table.roots() {
+            let prefix = format!("{}/", root.id);
+            if input.starts_with(&prefix) {
+                let relative = &input[prefix.len()..];
+                tracing::info!(
+                    event = "fs.path.root_prefix_match",
+                    input = input,
+                    root_id = %root.id,
+                    relative = relative,
+                    "Matched root id prefix"
+                );
+
+                let Some(canonical_root) = self.canonical_roots.get(&root.id) else {
+                    continue;
+                };
+
+                let fs_path = FsPath::new(relative)?;
+                let normalized = fs_path.as_str();
+                let candidate = canonical_root.join(normalized);
+
+                match std::fs::canonicalize(&candidate) {
+                    Ok(c) => {
+                        if c.starts_with(canonical_root) {
+                            tracing::info!(
+                                event = "fs.path.allowed",
+                                result = ?c,
+                                "Path allowed via root prefix"
+                            );
+                            return Ok(c);
+                        }
+                    }
+                    Err(_) => {}
+                }
+            }
         }
 
         let fs_path = FsPath::new(input)?;
         let normalized = fs_path.as_str();
 
+        tracing::info!(
+            event = "fs.path.normalized",
+            input = input,
+            normalized = normalized,
+            "Path normalized"
+        );
+
         // 2. absolute paths have no root to be joined to.
         if is_absolute_path(normalized) {
+            tracing::warn!(
+                event = "fs.path.denied",
+                reason = "absolute",
+                path = input,
+                "Absolute path rejected"
+            );
             return Err(FsError::PathDenied {
                 reason: PathDeniedReason::Absolute,
                 path: input.into(),
@@ -388,14 +452,37 @@ impl PathGuard {
         let mut found_escape = false;
         let mut found_not_found = false;
 
+        tracing::info!(
+            event = "fs.path.checking_roots",
+            roots_count = self.table.roots().len(),
+            "Checking whitelisted roots"
+        );
+
         for root in self.table.roots() {
             let Some(canonical_root) = self.canonical_roots.get(&root.id) else {
+                tracing::debug!(
+                    event = "fs.path.root_missing",
+                    root_id = %root.id,
+                    "Root id not in canonical map, skipping"
+                );
                 continue;
             };
             let candidate = canonical_root.join(normalized);
+            tracing::debug!(
+                event = "fs.path.trying_root",
+                root_id = %root.id,
+                root_path = ?canonical_root,
+                candidate = ?candidate,
+                "Trying path under root"
+            );
             match std::fs::canonicalize(&candidate) {
                 Ok(c) => {
                     if c.starts_with(canonical_root) {
+                        tracing::info!(
+                            event = "fs.path.allowed",
+                            result = ?c,
+                            "Path allowed"
+                        );
                         return Ok(c);
                     }
                     // Symlink chain resolved to something outside

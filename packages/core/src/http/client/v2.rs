@@ -578,10 +578,17 @@ impl LsHttpClientV2 {
             protocol: protocol.as_str(),
             host: ip.to_string(),
             port,
-            path: "/api/localsend/v2/fs/download",
+            path: "/fs/download",
             params: &[("path", path)],
         }
         .to_string();
+
+        tracing::info!(
+            event = "fs.download.request",
+            url = %url,
+            range = ?range,
+            "fs download request"
+        );
 
         let mut req = self.client.get(&url);
         if let Some((start, end)) = range {
@@ -589,6 +596,14 @@ impl LsHttpClientV2 {
             req = req.header(reqwest::header::RANGE, format!("bytes={start}-{end_str}"));
         }
         let res = req.send().await?;
+
+        tracing::info!(
+            event = "fs.download.response",
+            status = %res.status(),
+            url = %url,
+            "fs download response"
+        );
+
         if !res.status().is_success() && res.status() != reqwest::StatusCode::PARTIAL_CONTENT {
             return res.into_error().await;
         }
