@@ -42,6 +42,20 @@ pub fn create_client(
     Ok(RsHttpClient { inner })
 }
 
+/// Creates a plain HTTP client without any TLS or client certificate.
+///
+/// Used for `fs/roots` and `fs/list` which are served on the same port as
+/// the HTTPS server but accept plain HTTP. The client does not send a
+/// certificate and does not verify the server certificate.
+#[frb(sync)]
+pub fn create_http_only_client() -> Result<RsHttpClient, RsHttpClientError> {
+    let inner = localsend::http::client::LsHttpClient::V2(
+        localsend::http::client::LsHttpClientV2::try_new_without_cert()
+            .map_err(RsHttpClientError::from)?,
+    );
+    Ok(RsHttpClient { inner })
+}
+
 impl RsHttpClient {
     pub async fn register(
         &self,

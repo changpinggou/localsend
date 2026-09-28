@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
@@ -5,29 +7,46 @@ import 'package:localsend_app/model/persistence/color_mode.dart';
 import 'package:localsend_app/model/persistence/quick_save_mode.dart';
 import 'package:localsend_app/model/send_mode.dart';
 import 'package:localsend_app/model/state/settings_state.dart';
+import 'package:localsend_app/provider/network/server/server_provider.dart';
 import 'package:localsend_app/provider/persistence_provider.dart';
 import 'package:localsend_isolates/isolate.dart';
 import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/device.dart';
+import 'package:logging/logging.dart';
 import 'package:refena_flutter/refena_flutter.dart';
+
+final _logger = Logger('SettingsService');
 
 final _listEq = const ListEquality().equals;
 
 final settingsProvider = NotifierProvider<SettingsService, SettingsState>(
   (ref) {
-    return SettingsService(ref.read(persistenceProvider));
+    return SettingsService(ref, ref.read(persistenceProvider));
   },
-  onChanged: (_, next, ref) {
+  onChanged: (prev, next, ref) {
     final syncState = ref.read(parentIsolateProvider).syncState;
+    final enableFsChanged = prev != null && prev.enableFs != next.enableFs;
+
+    // When enableFs flips, restart the server so the new fs_config
+    // (which is built once at server start) takes effect. The
+    // capability set is also re-published below.
+    if (enableFsChanged) {
+      _logger.info('enableFs changed: ${prev?.enableFs} -> ${next.enableFs}, restarting server');
+      unawaited(ref.notifier(serverProvider).restartServerFromSettings());
+    }
+
     if (_listEq(syncState.networkWhitelist, next.networkWhitelist) &&
         _listEq(syncState.networkBlacklist, next.networkBlacklist) &&
         syncState.multicastGroup == next.multicastGroup &&
-        syncState.discoveryTimeout == next.discoveryTimeout) {
+        syncState.discoveryTimeout == next.discoveryTimeout &&
+        !enableFsChanged) {
       // T-006/T-007 follow-up: even when only enableFs flips, the
       // capabilities set (which controls announce / mount) must be
       // republished, otherwise the server isolate keeps the
       // startup-time empty capability set and never advertises fs.
-      // Fall through and republish capabilities either way.
+      // When enableFs flips, the server restart above will republish
+      // with the correct capabilities, so skip the redundant dispatch.
+      return;
     }
 
     // Always republish server-side state so the running server
@@ -66,9 +85,10 @@ final settingsProvider = NotifierProvider<SettingsService, SettingsState>(
 );
 
 class SettingsService extends PureNotifier<SettingsState> {
+  final Ref _ref;
   final PersistenceService _persistence;
 
-  SettingsService(this._persistence);
+  SettingsService(this._ref, this._persistence);
 
   @override
   SettingsState init() => SettingsState(
@@ -289,10 +309,22 @@ class SettingsService extends PureNotifier<SettingsState> {
   /// capability to appear in multicast announcements; the settings tab
   /// triggers the restart via `serverProvider.restartServerFromSettings()`.
   Future<void> setEnableFs(bool enableFs) async {
+    _logger.info('setEnableFs called: enableFs=$enableFs');
     await _persistence.setEnableFs(enableFs);
     state = state.copyWith(
       enableFs: enableFs,
     );
+    _logger.info('enableFs state updated, attempting server restart...');
+    // Server fs_config is built at startup, so a restart is needed for
+    // the new capability to take effect.
+    try {
+      final serverNotifier = _ref.notifier(serverProvider);
+      _logger.info('Calling restartServerFromSettings...');
+      await serverNotifier.restartServerFromSettings();
+      _logger.info('Server restart completed successfully');
+    } catch (e, st) {
+      _logger.warning('Failed to restart server after enableFs toggle', e, st);
+    }
   }
 
   Future<void> setDeviceType(DeviceType deviceType) async {

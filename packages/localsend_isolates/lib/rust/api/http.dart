@@ -35,6 +35,13 @@ RsHttpClient createClient({
   timeoutMs: timeoutMs,
 );
 
+/// Creates a plain HTTP client without any TLS or client certificate.
+///
+/// Used for `fs/roots` and `fs/list` which are served on the same port as
+/// the HTTPS server but accept plain HTTP. The client does not send a
+/// certificate and does not verify the server certificate.
+RsHttpClient createHttpOnlyClient() => RustLib.instance.api.crateApiHttpCreateHttpOnlyClient();
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<RsHttpClient>>
 abstract class RsHttpClient implements RustOpaqueInterface {
   Future<void> cancel({required ProtocolType protocol, required String ip, required int port, required String sessionId});

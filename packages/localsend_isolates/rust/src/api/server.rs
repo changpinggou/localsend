@@ -275,6 +275,11 @@ pub async fn start_server(
     // single existing listener keeps the dispatch code path simple
     // and matches the "capabilities drive the wire surface" goal.
     let enable_fs = capabilities.contains(&Capability::Fs);
+    tracing::info!(
+        "start_server: capabilities={:?}, enable_fs={}",
+        capabilities,
+        enable_fs
+    );
     let fs_config = if enable_fs {
         #[cfg(feature = "fs")]
         {
