@@ -365,6 +365,14 @@ impl PathGuard {
     }
 
     fn check_inner(&self, input: &str) -> Result<PathBuf, FsError> {
+        // 0. If input matches a root id exactly, return that root's
+        //    canonical path directly. This lets the client request a
+        //    root's contents by passing `root.id` (e.g. "D:" on Windows,
+        //    "/Volumes/Photos" on macOS).
+        if let Some(canonical_root) = self.canonical_roots.get(input) {
+            return Ok(canonical_root.clone());
+        }
+
         let fs_path = FsPath::new(input)?;
         let normalized = fs_path.as_str();
 

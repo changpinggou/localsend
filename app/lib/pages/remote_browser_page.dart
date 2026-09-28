@@ -180,7 +180,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
               .notifier(fsListProvider)
               .enterPath(
                 device: device,
-                path: root.path,
+                path: root.id,
               ),
         );
       }
@@ -190,7 +190,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
             .notifier(fsListProvider)
             .enterPath(
               device: device,
-              path: root.path,
+              path: root.id,
             ),
       );
     }
