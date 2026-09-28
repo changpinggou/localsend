@@ -360,7 +360,7 @@ impl LsHttpClientV2 {
             protocol: protocol.as_str(),
             host: ip.to_string(),
             port,
-            path: "/api/localsend/v2/fs/roots",
+            path: "/fs/roots",
             params: &[],
         }
         .to_string();
@@ -397,7 +397,7 @@ impl LsHttpClientV2 {
             protocol: protocol.as_str(),
             host: ip.to_string(),
             port,
-            path: "/api/localsend/v2/fs/list",
+            path: "/fs/list",
             params: &[
                 ("path", path),
                 ("page", &page_str),
