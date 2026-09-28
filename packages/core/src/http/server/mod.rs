@@ -752,6 +752,12 @@ async fn handle_request_inner(mut req: Request<Incoming>) -> Result<Response<Box
             Ok(crate::fs::handle_request(fs, req, fingerprint).await?)
         }
         _ => {
+            tracing::warn!(
+                "unmatched request: {} {} (fs_feature_enabled: {})",
+                req.method(),
+                req.uri().path(),
+                cfg!(feature = "fs"),
+            );
             let mut res = Response::new(response::empty_body());
             *res.status_mut() = StatusCode::NOT_FOUND;
             Ok(res)

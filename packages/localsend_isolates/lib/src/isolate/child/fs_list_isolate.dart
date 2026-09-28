@@ -93,10 +93,10 @@ Future<void> setupFsListIsolate(
         FsListDirTask(:final request) => request,
       };
 
-      // Use plain HTTP (no TLS, no client cert) for fs endpoints.
-      // The fs namespace is served on the same port as the HTTPS server but
-      // accepts plain HTTP connections.
-      final client = ref.read(httpProvider).httpOnly;
+      // Use pinned HTTPS client for fs endpoints.
+      // The CustomClientCertVerifier on the server side accepts any valid
+      // self-signed certificate, so mTLS works across different devices.
+      final client = ref.read(httpProvider).pinnedTo(request.device.fingerprint);
 
       final device = request.device;
       final ip = device.ip;
@@ -111,12 +111,12 @@ Future<void> setupFsListIsolate(
         // from 'we ended up on the same Mac (404 from the older
         // isolates crate that didn't have the fs feature on)'.
         _logger.info(
-          'fs_list_roots -> http://$ip:${device.port}/api/localsend/v2/fs/roots '
+          'fs_list_roots -> https://$ip:${device.port}/api/localsend/v2/fs/roots '
           '(device fingerprint ${device.fingerprint.substring(0, 16)}...)',
         );
         try {
           final roots = await client.listRoots(
-            protocol: rust_model.ProtocolType.http,
+            protocol: rust_model.ProtocolType.https,
             ip: ip,
             port: device.port,
           );
@@ -138,7 +138,7 @@ Future<void> setupFsListIsolate(
       } else {
         try {
           final response = await client.listDir(
-            protocol: rust_model.ProtocolType.http,
+            protocol: rust_model.ProtocolType.https,
             ip: ip,
             port: device.port,
             path: request.path,
