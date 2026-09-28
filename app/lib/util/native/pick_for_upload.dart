@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:localsend_app/util/ui/asset_picker_translated_text_delegate.dart';
@@ -12,29 +10,13 @@ final _logger = Logger('PickForUpload');
 /// T-012: picks media files (photos/videos) from gallery.
 ///
 /// Returns a list of file paths or null if cancelled.
-/// On iOS, requests photo library permission first.
-/// On Android, requests storage permission first.
 Future<List<String>?> pickMediaForUpload(BuildContext context) async {
   try {
-    // Request permission
-    if (Platform.isIOS) {
-      final status = await Permission.photos.request();
-      if (!status.isGranted) {
-        _logger.warning('Photo library permission denied');
-        return null;
-      }
-    } else if (Platform.isAndroid) {
-      final status = await Permission.photos.request();
-      if (!status.isGranted && !status.isLimited) {
-        _logger.warning('Storage permission denied');
-        return null;
-      }
-    }
-
-    // Pick assets
+    // Let wechat_assets_picker handle permission internally.
+    // It will trigger the native iOS permission dialog on first use.
     final assets = await AssetPicker.pickAssets(
       context,
-      pickerConfig: AssetPickerConfig(
+      pickerConfig: const AssetPickerConfig(
         maxAssets: 100,
         requestType: RequestType.common,
         textDelegate: TranslatedAssetPickerTextDelegate(),
@@ -61,6 +43,32 @@ Future<List<String>?> pickMediaForUpload(BuildContext context) async {
     return paths.isEmpty ? null : paths;
   } catch (e) {
     _logger.severe('Failed to pick media: $e');
+
+    // If permission was denied, show a dialog to guide user to settings
+    if (context.mounted && e.toString().contains('permission')) {
+      final shouldOpenSettings = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Permission Required'),
+          content: const Text('Photo library access is required. Please enable it in Settings.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldOpenSettings == true) {
+        await openAppSettings();
+      }
+    }
+
     return null;
   }
 }

@@ -339,6 +339,12 @@ impl RsHttpClient {
                 .await
                 .map_err(RsHttpClientError::from)?;
 
+            tracing::info!(
+                event = "fs.upload.client.init_response",
+                "Upload init response: {:?}",
+                init_response
+            );
+
             let session_id = init_response["sessionId"]
                 .as_str()
                 .ok_or_else(|| RsHttpClientError::Other("Missing sessionId in init response".into()))?

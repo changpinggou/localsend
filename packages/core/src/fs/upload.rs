@@ -146,6 +146,7 @@ pub struct UploadInitBody {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UploadInitResponse {
     pub session_id: String,
     pub etag: String,
@@ -297,10 +298,15 @@ pub async fn handle_upload_init(
     };
     state.sessions.lock().await.insert(session_id.clone(), session);
 
-    Ok(json_response(
-        StatusCode::OK,
-        &UploadInitResponse { session_id, etag, received: 0 },
-    ))
+    let response = UploadInitResponse { session_id: session_id.clone(), etag, received: 0 };
+    tracing::info!(
+        event = "fs.upload.init.response",
+        session_id = %session_id,
+        "Upload init response: {:?}",
+        response
+    );
+
+    Ok(json_response(StatusCode::OK, &response))
 }
 
 // =====================================================================
