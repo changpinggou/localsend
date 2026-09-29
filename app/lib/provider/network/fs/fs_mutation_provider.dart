@@ -1,3 +1,5 @@
+import 'package:localsend_app/provider/http_provider.dart';
+import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
 import 'package:localsend_isolates/rust/api/model.dart' as rust_model;
@@ -124,7 +126,15 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
           : '';
       final newPath = parentPath.isEmpty ? newName : '$parentPath/$newName';
 
-      final client = rust_http.createHttpOnlyClient();
+      // 使用带证书的 HTTPS 客户端
+      final securityContext = ref.read(securityProvider);
+      final client = rust_http.createClient(
+        privateKey: securityContext.privateKey,
+        cert: securityContext.certificate,
+        version: rust_http.LsHttpClientVersion.v2,
+        expectedFingerprint: device.fingerprint,
+        timeoutMs: 30000,
+      );
       final protocol = device.https
           ? rust_model.ProtocolType.https
           : rust_model.ProtocolType.http;
@@ -171,7 +181,15 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
     );
 
     try {
-      final client = rust_http.createHttpOnlyClient();
+      // 使用带证书的 HTTPS 客户端
+      final securityContext = ref.read(securityProvider);
+      final client = rust_http.createClient(
+        privateKey: securityContext.privateKey,
+        cert: securityContext.certificate,
+        version: rust_http.LsHttpClientVersion.v2,
+        expectedFingerprint: device.fingerprint,
+        timeoutMs: 30000,
+      );
       final protocol =
           device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
       final ip = device.ip;
@@ -225,7 +243,15 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
     );
 
     try {
-      final client = rust_http.createHttpOnlyClient();
+      // 使用带证书的 HTTPS 客户端
+      final securityContext = ref.read(securityProvider);
+      final client = rust_http.createClient(
+        privateKey: securityContext.privateKey,
+        cert: securityContext.certificate,
+        version: rust_http.LsHttpClientVersion.v2,
+        expectedFingerprint: device.fingerprint,
+        timeoutMs: 30000,
+      );
       final protocol =
           device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
       final ip = device.ip;

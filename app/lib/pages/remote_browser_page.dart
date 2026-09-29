@@ -22,6 +22,7 @@ import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_mutation_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
+import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/util/native/pick_for_upload.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
@@ -459,14 +460,21 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     );
 
     try {
-      // Call mkdir via Rust client
+      // Call mkdir via Rust client with certificate
       final protocol = device.https ? rust.ProtocolType.https : rust.ProtocolType.http;
       final ip = device.ip;
       if (ip == null) {
         throw Exception('Device has no IP address');
       }
 
-      final client = rust_http.createHttpOnlyClient();
+      final securityContext = ref.read(securityProvider);
+      final client = rust_http.createClient(
+        privateKey: securityContext.privateKey,
+        cert: securityContext.certificate,
+        version: rust_http.LsHttpClientVersion.v2,
+        expectedFingerprint: device.fingerprint,
+        timeoutMs: 30000,
+      );
       await client.fsMkdir(
         protocol: protocol,
         ip: ip,
