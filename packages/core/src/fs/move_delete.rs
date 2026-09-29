@@ -139,6 +139,7 @@ pub async fn handle_move(
                 },
             ))
         }
+        #[cfg(unix)]
         Err(e) if e.raw_os_error() == Some(libc::EXDEV) => {
             // Cross-device link: fall back to copy + delete
             tracing::info!(
