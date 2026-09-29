@@ -311,6 +311,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ClientInfoWithoutId dco_decode_client_info_without_id(dynamic raw);
 
   @protected
+  DeleteFailure dco_decode_delete_failure(dynamic raw);
+
+  @protected
+  DeleteResponse dco_decode_delete_response(dynamic raw);
+
+  @protected
   DeviceLogKind dco_decode_device_log_kind(dynamic raw);
 
   @protected
@@ -356,6 +362,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<ClientInfo> dco_decode_list_client_info(dynamic raw);
 
   @protected
+  List<DeleteFailure> dco_decode_list_delete_failure(dynamic raw);
+
+  @protected
   List<FileDto> dco_decode_list_file_dto(dynamic raw);
 
   @protected
@@ -387,6 +396,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   LsHttpClientVersion dco_decode_ls_http_client_version(dynamic raw);
+
+  @protected
+  MoveResponse dco_decode_move_response(dynamic raw);
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
@@ -517,6 +529,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SessionEndReasonV2 dco_decode_session_end_reason_v_2(dynamic raw);
+
+  @protected
+  StatResponse dco_decode_stat_response(dynamic raw);
 
   @protected
   TlsConfig dco_decode_tls_config(dynamic raw);
@@ -823,6 +838,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ClientInfoWithoutId sse_decode_client_info_without_id(SseDeserializer deserializer);
 
   @protected
+  DeleteFailure sse_decode_delete_failure(SseDeserializer deserializer);
+
+  @protected
+  DeleteResponse sse_decode_delete_response(SseDeserializer deserializer);
+
+  @protected
   DeviceLogKind sse_decode_device_log_kind(SseDeserializer deserializer);
 
   @protected
@@ -868,6 +889,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<ClientInfo> sse_decode_list_client_info(SseDeserializer deserializer);
 
   @protected
+  List<DeleteFailure> sse_decode_list_delete_failure(SseDeserializer deserializer);
+
+  @protected
   List<FileDto> sse_decode_list_file_dto(SseDeserializer deserializer);
 
   @protected
@@ -899,6 +923,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   LsHttpClientVersion sse_decode_ls_http_client_version(SseDeserializer deserializer);
+
+  @protected
+  MoveResponse sse_decode_move_response(SseDeserializer deserializer);
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
@@ -1031,6 +1058,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SessionEndReasonV2 sse_decode_session_end_reason_v_2(SseDeserializer deserializer);
+
+  @protected
+  StatResponse sse_decode_stat_response(SseDeserializer deserializer);
 
   @protected
   TlsConfig sse_decode_tls_config(SseDeserializer deserializer);
@@ -1382,6 +1412,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_client_info_without_id(ClientInfoWithoutId self, SseSerializer serializer);
 
   @protected
+  void sse_encode_delete_failure(DeleteFailure self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_delete_response(DeleteResponse self, SseSerializer serializer);
+
+  @protected
   void sse_encode_device_log_kind(DeviceLogKind self, SseSerializer serializer);
 
   @protected
@@ -1427,6 +1463,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_client_info(List<ClientInfo> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_delete_failure(List<DeleteFailure> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_file_dto(List<FileDto> self, SseSerializer serializer);
 
   @protected
@@ -1458,6 +1497,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_ls_http_client_version(LsHttpClientVersion self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_move_response(MoveResponse self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
@@ -1591,6 +1633,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_session_end_reason_v_2(SessionEndReasonV2 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_stat_response(StatResponse self, SseSerializer serializer);
 
   @protected
   void sse_encode_tls_config(TlsConfig self, SseSerializer serializer);

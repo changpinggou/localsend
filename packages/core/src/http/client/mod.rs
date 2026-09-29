@@ -334,6 +334,62 @@ impl LsHttpClient {
             ))),
         }
     }
+
+    /// `GET /api/localsend/v2/fs/stat` — get file/directory metadata.
+    /// T-014: returns size, mtime, etag for resume support.
+    #[cfg(feature = "fs")]
+    pub async fn fs_stat(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_stat(protocol, ip, port, path).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `POST /api/localsend/v2/fs/move` — move/rename file or directory.
+    /// T-014: requires confirm=true to prevent accidental moves.
+    #[cfg(feature = "fs")]
+    pub async fn fs_move(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        from: &str,
+        to: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_move(protocol, ip, port, from, to).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
+
+    /// `POST /api/localsend/v2/fs/delete` — delete files/directories.
+    /// T-014: supports batch delete with recycle bin option.
+    #[cfg(feature = "fs")]
+    pub async fn fs_delete(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        paths: &[&str],
+        recycle: bool,
+    ) -> Result<serde_json::Value, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_delete(protocol, ip, port, paths, recycle).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
 }
 
 /// Builds a streaming request body from the file content, invoking `progress`

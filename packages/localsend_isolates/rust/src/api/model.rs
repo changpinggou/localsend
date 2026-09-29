@@ -6,7 +6,10 @@ pub use localsend::model::capability::Capability;
 pub use localsend::model::discovery::DeviceType;
 pub use localsend::model::discovery::ProtocolType;
 pub use localsend::model::transfer::{FileDto, FileMetadata};
-pub use localsend::fs::{FsEntry, FsRoot, ListResponse, RootsResponse};
+pub use localsend::fs::{
+    DeleteFailure, DeleteResponse, FsEntry, FsRoot, ListResponse, MoveResponse, RootsResponse,
+    StatResponse,
+};
 use std::collections::HashMap;
 
 #[frb(mirror(RegisterDto))]
@@ -116,4 +119,32 @@ pub struct _ListResponse {
     pub entries: Vec<FsEntry>,
     pub total: usize,
     pub has_more: bool,
+}
+
+#[frb(mirror(StatResponse))]
+pub struct _StatResponse {
+    pub name: String,
+    pub is_dir: bool,
+    pub size: u64,
+    pub mtime: i64,
+    pub mime: Option<String>,
+    pub supports_range: bool,
+    pub etag: String,
+}
+
+#[frb(mirror(MoveResponse))]
+pub struct _MoveResponse {
+    pub path: String,
+}
+
+#[frb(mirror(DeleteResponse))]
+pub struct _DeleteResponse {
+    pub deleted: Vec<String>,
+    pub failed: Vec<DeleteFailure>,
+}
+
+#[frb(mirror(DeleteFailure))]
+pub struct _DeleteFailure {
+    pub path: String,
+    pub reason: String,
 }

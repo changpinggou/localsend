@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0.104"
 base64 = "0.23.0"
 bytes = "1.12.1"
+chrono = { version = "0.4", features = ["serde"] }
 ed25519-dalek = { version = "3.0.0", features = ["pem", "rand_core"], optional = true }
 flate2 = { version = "1.1.9", optional = true }
 form_urlencoded = { version = "1.2.2", optional = true }
@@ -53,6 +54,9 @@ libc = "0.2"
 # GetVolumeInformationW). Kept on the windows target only so
 # macOS / Linux builds don't pay for it.
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Ioctl", "Win32_System_Com"] }
+
+[dev-dependencies]
+filetime = "0.2"
 
 [[example]]
 name = "stress_send"

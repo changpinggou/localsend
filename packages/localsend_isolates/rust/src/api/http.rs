@@ -10,7 +10,10 @@ pub use localsend::http::dto::{
 use localsend::model::discovery::ProtocolType;
 use localsend::util::error::ErrorChain;
 
-pub use localsend::fs::{FsEntry, FsRoot, ListResponse, RootsResponse};
+pub use localsend::fs::{
+    DeleteFailure, DeleteResponse, FsEntry, FsRoot, ListResponse, MoveResponse, RootsResponse,
+    StatResponse,
+};
 
 pub struct RsHttpClient {
     inner: localsend::http::client::LsHttpClient,
@@ -436,6 +439,60 @@ impl RsHttpClient {
             .await
             .map_err(RsHttpClientError::from)?;
         Ok(())
+    }
+
+    /// `GET /api/localsend/v2/fs/stat` — get file/directory metadata.
+    pub async fn fs_stat(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: String,
+    ) -> Result<StatResponse, RsHttpClientError> {
+        let response = self
+            .inner
+            .fs_stat(protocol, ip, port, &path)
+            .await
+            .map_err(RsHttpClientError::from)?;
+
+        Ok(StatResponse::from_json(response))
+    }
+
+    /// `POST /api/localsend/v2/fs/move` — move/rename file or directory.
+    pub async fn fs_move(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        from: String,
+        to: String,
+    ) -> Result<MoveResponse, RsHttpClientError> {
+        let response = self
+            .inner
+            .fs_move(protocol, ip, port, &from, &to)
+            .await
+            .map_err(RsHttpClientError::from)?;
+
+        Ok(MoveResponse::from_json(response))
+    }
+
+    /// `POST /api/localsend/v2/fs/delete` — delete files/directories.
+    pub async fn fs_delete(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        paths: Vec<String>,
+        recycle: bool,
+    ) -> Result<DeleteResponse, RsHttpClientError> {
+        let paths_refs: Vec<&str> = paths.iter().map(|s| s.as_str()).collect();
+        let response = self
+            .inner
+            .fs_delete(protocol, ip, port, &paths_refs, recycle)
+            .await
+            .map_err(RsHttpClientError::from)?;
+
+        Ok(DeleteResponse::from_json(response))
     }
 }
 

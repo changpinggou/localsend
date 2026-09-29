@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/pages/media_preview/image_preview_page.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/breadcrumb.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/delete_confirm_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/empty_state.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/file_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/grid_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/list_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/mkdir_dialog.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/move_target_picker.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/multi_select_bar.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/rename_dialog.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/selection_list_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/upload_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/upload_queue_bar.dart';
@@ -14,6 +19,7 @@ import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart
 import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
+import 'package:localsend_app/provider/network/fs/fs_mutation_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
 import 'package:localsend_app/util/native/pick_for_upload.dart';
@@ -103,6 +109,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       }),
     );
     final fsState = ref.watch(fsListProvider);
+    final mutationState = ref.watch(fsMutationProvider);
 
     // Detect a device swap (different fingerprint) and re-fetch.
     if (device != null && _lastDeviceFingerprint != device.fingerprint) {
@@ -120,38 +127,66 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       );
     }
 
+    // T-016: 多选模式时显示不同的 AppBar
+    final isMultiSelect = mutationState.isMultiSelectMode;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${t.remoteBrowser.title} · ${device.alias}'),
-        actions: [
-          FsSortMenu(
-            current: fsState.sort,
-            onChanged: (s) => ref.notifier(fsListProvider).changeSort(device: device, sort: s),
-          ),
-          FsViewModeToggle(
-            current: fsState.viewMode,
-            onChanged: (m) => ref.notifier(fsListProvider).changeView(m),
-          ),
-        ],
+        title: isMultiSelect
+            ? Text('已选择 ${mutationState.selectedPaths.length} 项')
+            : Text('${t.remoteBrowser.title} · ${device.alias}'),
+        leading: isMultiSelect
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => ref.notifier(fsMutationProvider).exitMultiSelect(),
+              )
+            : null,
+        actions: isMultiSelect
+            ? [
+                // 全选按钮
+                IconButton(
+                  icon: const Icon(Icons.select_all),
+                  onPressed: () => _selectAll(device, fsState),
+                ),
+              ]
+            : [
+                FsSortMenu(
+                  current: fsState.sort,
+                  onChanged: (s) => ref.notifier(fsListProvider).changeSort(device: device, sort: s),
+                ),
+                FsViewModeToggle(
+                  current: fsState.viewMode,
+                  onChanged: (m) => ref.notifier(fsListProvider).changeView(m),
+                ),
+              ],
       ),
       body: Column(
         children: [
-          FsBreadcrumb(
-            path: fsState.currentPath,
-            onNavigate: (path) {
-              if (path.isEmpty) {
-                ref.notifier(fsListProvider).enterRoots(device);
-              } else {
-                ref.notifier(fsListProvider).enterPath(device: device, path: path);
-              }
-            },
-          ),
+          if (!isMultiSelect)
+            FsBreadcrumb(
+              path: fsState.currentPath,
+              onNavigate: (path) {
+                if (path.isEmpty) {
+                  ref.notifier(fsListProvider).enterRoots(device);
+                } else {
+                  ref.notifier(fsListProvider).enterPath(device: device, path: path);
+                }
+              },
+            ),
           const Divider(height: 1),
-          Expanded(child: _buildBody(device, fsState)),
-          const FsUploadQueueBar(),
+          Expanded(child: _buildBody(device, fsState, mutationState)),
+          if (isMultiSelect)
+            FsMultiSelectBar(
+              selectedCount: mutationState.selectedPaths.length,
+              onMove: () => _showMoveDialog(device, mutationState),
+              onDelete: () => _showDeleteDialog(device, mutationState),
+              onCancel: () => ref.notifier(fsMutationProvider).exitMultiSelect(),
+            )
+          else
+            const FsUploadQueueBar(),
         ],
       ),
-      floatingActionButton: fsState.currentPath.isNotEmpty
+      floatingActionButton: !isMultiSelect && fsState.currentPath.isNotEmpty
           ? FloatingActionButton(
               onPressed: () => _showUploadMenu(device),
               child: const Icon(Icons.add),
@@ -160,7 +195,17 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     );
   }
 
-  Widget _buildBody(Device device, FsListState state) {
+  /// T-016: 全选当前目录的所有项
+  void _selectAll(Device device, FsListState fsState) {
+    for (final entry in fsState.entries) {
+      final fullPath = fsState.currentPath.isEmpty
+          ? entry.name
+          : '${fsState.currentPath}/${entry.name}';
+      ref.notifier(fsMutationProvider).toggleSelection(fullPath);
+    }
+  }
+
+  Widget _buildBody(Device device, FsListState state, FsMutationData mutationState) {
     if (state.error != null && state.entries.isEmpty && state.roots.isEmpty) {
       return FsErrorState(
         message: state.error,
@@ -215,18 +260,44 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       );
     }
 
+    // T-016: 多选模式使用可选择列表
+    if (mutationState.isMultiSelectMode) {
+      return FsSelectableListBody(
+        entries: state.entries,
+        selectedPaths: mutationState.selectedPaths,
+        currentPath: state.currentPath,
+        hasMore: state.hasMore,
+        loading: state.loading,
+        onTapEntry: (entry) => _onTapEntryInMultiSelect(device, state, entry),
+        onLongPressEntry: (entry) {
+          debugPrint('[T-016 DEBUG] FsSelectableListBody onLongPressEntry triggered for: ${entry.name}');
+          _onLongPressEntry(device, state, entry);
+        },
+        onLoadMore: () => ref.notifier(fsListProvider).loadMore(device),
+      );
+    }
+
     if (state.viewMode == FsViewMode.grid) {
       return FsGridBody(
         entries: state.entries,
         onTapEntry: (entry) => _onTapEntry(device, entry),
+        onLongPressEntry: (entry) {
+          debugPrint('[T-016 DEBUG] FsGridBody onLongPressEntry triggered for: ${entry.name}');
+          _onLongPressEntry(device, state, entry);
+        },
       );
     }
 
+    debugPrint('[T-016 DEBUG] Building FsListBody with onLongPressEntry for ${state.entries.length} entries');
     return FsListBody(
       entries: state.entries,
       hasMore: state.hasMore,
       loading: state.loading,
       onTapEntry: (entry) => _onTapEntry(device, entry),
+      onLongPressEntry: (entry) {
+        debugPrint('[T-016 DEBUG] FsListBody onLongPressEntry triggered for: ${entry.name}');
+        _onLongPressEntry(device, state, entry);
+      },
       onLoadMore: () => ref.notifier(fsListProvider).loadMore(device),
     );
   }
@@ -421,6 +492,113 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
         SnackBar(
           content: Text(t.fsUpload.uploadFailed),
           duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// T-016: 多选模式下点击条目
+  void _onTapEntryInMultiSelect(Device device, FsListState state, rust.FsEntry entry) {
+    final fullPath = state.currentPath.isEmpty
+        ? entry.name
+        : '${state.currentPath}/${entry.name}';
+    ref.notifier(fsMutationProvider).toggleSelection(fullPath);
+  }
+
+  /// T-016: 长按条目进入多选模式
+  void _onLongPressEntry(Device device, FsListState state, rust.FsEntry entry) {
+    debugPrint('[T-016 DEBUG] _onLongPressEntry called for: ${entry.name}');
+    final fullPath = state.currentPath.isEmpty
+        ? entry.name
+        : '${state.currentPath}/${entry.name}';
+
+    final mutationState = ref.read(fsMutationProvider);
+    debugPrint('[T-016 DEBUG] Current multi-select mode: ${mutationState.isMultiSelectMode}');
+    debugPrint('[T-016 DEBUG] Full path: $fullPath');
+
+    if (!mutationState.isMultiSelectMode) {
+      // 进入多选模式
+      debugPrint('[T-016 DEBUG] Entering multi-select mode with: $fullPath');
+      ref.notifier(fsMutationProvider).enterMultiSelect(fullPath);
+    } else {
+      // 已经在多选模式，切换选择
+      debugPrint('[T-016 DEBUG] Toggling selection: $fullPath');
+      ref.notifier(fsMutationProvider).toggleSelection(fullPath);
+    }
+  }
+
+  /// T-016: 显示移动对话框
+  Future<void> _showMoveDialog(Device device, FsMutationData mutationState) async {
+    final targetPath = await showMoveTargetPicker(
+      context: context,
+      device: device,
+      excludedPaths: mutationState.selectedPaths.toList(),
+    );
+
+    if (targetPath == null || !mounted) return;
+
+    // 执行移动操作
+    await ref.notifier(fsMutationProvider).moveAsync(
+          device: device,
+          paths: mutationState.selectedPaths.toList(),
+          targetDir: targetPath,
+        );
+
+    // 检查操作结果
+    if (!mounted) return;
+    final newState = ref.read(fsMutationProvider);
+    if (newState.state == FsMutationState.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('移动成功'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // 刷新文件列表
+      ref.notifier(fsListProvider).refresh(device);
+    } else if (newState.state == FsMutationState.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('移动失败: ${newState.errorMessage}'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// T-016: 显示删除对话框
+  Future<void> _showDeleteDialog(Device device, FsMutationData mutationState) async {
+    final useRecycleBin = await showDeleteConfirmDialog(
+      context: context,
+      itemCount: mutationState.selectedPaths.length,
+    );
+
+    if (useRecycleBin == null || !mounted) return;
+
+    // 执行删除操作
+    await ref.notifier(fsMutationProvider).deleteAsync(
+          device: device,
+          paths: mutationState.selectedPaths.toList(),
+          useRecycleBin: useRecycleBin,
+        );
+
+    // 检查操作结果
+    if (!mounted) return;
+    final newState = ref.read(fsMutationProvider);
+    if (newState.state == FsMutationState.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('删除成功'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // 刷新文件列表
+      ref.notifier(fsListProvider).refresh(device);
+    } else if (newState.state == FsMutationState.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('删除失败: ${newState.errorMessage}'),
+          duration: const Duration(seconds: 3),
         ),
       );
     }

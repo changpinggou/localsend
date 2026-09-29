@@ -8,10 +8,12 @@ import 'package:localsend_isolates/rust/api/model.dart' as rust;
 class FsGridCell extends StatelessWidget {
   final rust.FsEntry entry;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const FsGridCell({
     required this.entry,
     required this.onTap,
+    this.onLongPress,
     super.key,
   });
 
@@ -27,6 +29,12 @@ class FsGridCell extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress != null
+          ? () {
+              debugPrint('[T-016 DEBUG] FsGridCell onLongPress triggered for: ${entry.name}');
+              onLongPress!();
+            }
+          : null,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -128,10 +136,12 @@ class _RootCell extends StatelessWidget {
 class FsGridBody extends StatelessWidget {
   final List<rust.FsEntry> entries;
   final void Function(rust.FsEntry entry) onTapEntry;
+  final void Function(rust.FsEntry entry)? onLongPressEntry;
 
   const FsGridBody({
     required this.entries,
     required this.onTapEntry,
+    this.onLongPressEntry,
     super.key,
   });
 
@@ -148,6 +158,9 @@ class FsGridBody extends StatelessWidget {
         return FsGridCell(
           entry: entries[index],
           onTap: () => onTapEntry(entries[index]),
+          onLongPress: onLongPressEntry != null
+              ? () => onLongPressEntry!(entries[index])
+              : null,
         );
       },
     );

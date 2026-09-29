@@ -12,6 +12,40 @@ enum Capability {
   fs,
 }
 
+class DeleteFailure {
+  final String path;
+  final String reason;
+
+  const DeleteFailure({
+    required this.path,
+    required this.reason,
+  });
+
+  @override
+  int get hashCode => path.hashCode ^ reason.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is DeleteFailure && runtimeType == other.runtimeType && path == other.path && reason == other.reason;
+}
+
+class DeleteResponse {
+  final List<String> deleted;
+  final List<DeleteFailure> failed;
+
+  const DeleteResponse({
+    required this.deleted,
+    required this.failed,
+  });
+
+  @override
+  int get hashCode => deleted.hashCode ^ failed.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is DeleteResponse && runtimeType == other.runtimeType && deleted == other.deleted && failed == other.failed;
+}
+
 enum DeviceType {
   mobile,
   desktop,
@@ -175,6 +209,20 @@ class ListResponse {
       other is ListResponse && runtimeType == other.runtimeType && entries == other.entries && total == other.total && hasMore == other.hasMore;
 }
 
+class MoveResponse {
+  final String path;
+
+  const MoveResponse({
+    required this.path,
+  });
+
+  @override
+  int get hashCode => path.hashCode;
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is MoveResponse && runtimeType == other.runtimeType && path == other.path;
+}
+
 class PrepareUploadRequestDto {
   final RegisterDto info;
   final Map<String, FileDto> files;
@@ -307,4 +355,40 @@ class RootsResponse {
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is RootsResponse && runtimeType == other.runtimeType && roots == other.roots;
+}
+
+class StatResponse {
+  final String name;
+  final bool isDir;
+  final BigInt size;
+  final PlatformInt64 mtime;
+  final String? mime;
+  final bool supportsRange;
+  final String etag;
+
+  const StatResponse({
+    required this.name,
+    required this.isDir,
+    required this.size,
+    required this.mtime,
+    this.mime,
+    required this.supportsRange,
+    required this.etag,
+  });
+
+  @override
+  int get hashCode => name.hashCode ^ isDir.hashCode ^ size.hashCode ^ mtime.hashCode ^ mime.hashCode ^ supportsRange.hashCode ^ etag.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StatResponse &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          isDir == other.isDir &&
+          size == other.size &&
+          mtime == other.mtime &&
+          mime == other.mime &&
+          supportsRange == other.supportsRange &&
+          etag == other.etag;
 }

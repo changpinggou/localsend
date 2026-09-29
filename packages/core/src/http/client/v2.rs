@@ -839,4 +839,148 @@ impl LsHttpClientV2 {
         }
         Ok(())
     }
+
+    /// GET /api/localsend/v2/fs/stat — get file/directory metadata.
+    /// T-014: returns size, mtime, etag for resume support.
+    #[cfg(feature = "fs")]
+    pub async fn fs_stat(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/fs/stat",
+            params: &[("path", path)],
+        }
+        .to_string();
+
+        tracing::info!(
+            event = "fs.stat.request",
+            url = %url,
+            "fs stat request"
+        );
+
+        let res = self.client.get(&url).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.stat.response",
+            status = %status,
+            url = %url,
+            "fs stat response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
+
+    /// POST /api/localsend/v2/fs/move — move/rename file or directory.
+    /// T-014: requires confirm=true to prevent accidental moves.
+    #[cfg(feature = "fs")]
+    pub async fn fs_move(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        from: &str,
+        to: &str,
+    ) -> Result<serde_json::Value, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/fs/move",
+            params: &[],
+        }
+        .to_string();
+
+        tracing::info!(
+            event = "fs.move.request",
+            url = %url,
+            from = %from,
+            to = %to,
+            "fs move request"
+        );
+
+        let body = serde_json::json!({
+            "from": from,
+            "to": to,
+            "confirm": true
+        });
+
+        let res = self.client.post(&url).json(&body).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.move.response",
+            status = %status,
+            url = %url,
+            "fs move response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
+
+    /// POST /api/localsend/v2/fs/delete — delete files/directories.
+    /// T-014: supports batch delete with recycle bin option.
+    #[cfg(feature = "fs")]
+    pub async fn fs_delete(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        paths: &[&str],
+        recycle: bool,
+    ) -> Result<serde_json::Value, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/fs/delete",
+            params: &[],
+        }
+        .to_string();
+
+        tracing::info!(
+            event = "fs.delete.request",
+            url = %url,
+            paths = ?paths,
+            recycle = recycle,
+            "fs delete request"
+        );
+
+        let body = serde_json::json!({
+            "paths": paths,
+            "recycle": recycle,
+            "confirm": true
+        });
+
+        let res = self.client.post(&url).json(&body).send().await?;
+        let status = res.status();
+
+        tracing::info!(
+            event = "fs.delete.response",
+            status = %status,
+            url = %url,
+            "fs delete response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+        Ok(res.json().await?)
+    }
 }

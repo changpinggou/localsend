@@ -46,6 +46,15 @@ RsHttpClient createHttpOnlyClient() => RustLib.instance.api.crateApiHttpCreateHt
 abstract class RsHttpClient implements RustOpaqueInterface {
   Future<void> cancel({required ProtocolType protocol, required String ip, required int port, required String sessionId});
 
+  /// `POST /api/localsend/v2/fs/delete` — delete files/directories.
+  Future<DeleteResponse> fsDelete({
+    required ProtocolType protocol,
+    required String ip,
+    required int port,
+    required List<String> paths,
+    required bool recycle,
+  });
+
   /// `GET /api/localsend/v2/fs/download?path=...` — stream a single
   /// file from a whitelisted root. Emits [RsFsDownloadEvent]s on [sink]:
   ///
@@ -76,6 +85,12 @@ abstract class RsHttpClient implements RustOpaqueInterface {
 
   /// `POST /api/localsend/v2/fs/mkdir` — create a directory on the remote device.
   Future<void> fsMkdir({required ProtocolType protocol, required String ip, required int port, required String path});
+
+  /// `POST /api/localsend/v2/fs/move` — move/rename file or directory.
+  Future<MoveResponse> fsMove({required ProtocolType protocol, required String ip, required int port, required String from, required String to});
+
+  /// `GET /api/localsend/v2/fs/stat` — get file/directory metadata.
+  Future<StatResponse> fsStat({required ProtocolType protocol, required String ip, required int port, required String path});
 
   /// `POST /api/localsend/v2/fs/upload` — upload a file to a remote directory.
   /// Implements the session-based upload protocol (init → chunk → finish).

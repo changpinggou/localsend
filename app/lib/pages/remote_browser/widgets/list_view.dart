@@ -204,11 +204,13 @@ class _RootRow extends StatelessWidget {
 /// T-008: the scrollable list body. Wraps a [ListView.builder] with a
 /// scroll-end listener that fires [onLoadMore] when the user reaches the
 /// bottom of the loaded entries, but only if [hasMore] is true.
+/// T-016: 支持长按手势进入多选模式
 class FsListBody extends StatefulWidget {
   final List<rust.FsEntry> entries;
   final bool hasMore;
   final bool loading;
   final void Function(rust.FsEntry entry) onTapEntry;
+  final void Function(rust.FsEntry entry)? onLongPressEntry;
   final VoidCallback onLoadMore;
 
   const FsListBody({
@@ -216,6 +218,7 @@ class FsListBody extends StatefulWidget {
     required this.hasMore,
     required this.loading,
     required this.onTapEntry,
+    this.onLongPressEntry,
     required this.onLoadMore,
     super.key,
   });
@@ -270,10 +273,19 @@ class _FsListBodyState extends State<FsListBody> {
           );
         }
         final entry = widget.entries[index];
-        return FsListRow(
-          entry: entry,
-          isLast: index == count - 1,
-          onTap: () => widget.onTapEntry(entry),
+        // T-016: 支持长按手势
+        return GestureDetector(
+          onLongPress: widget.onLongPressEntry != null
+              ? () {
+                  debugPrint('[T-016 DEBUG] Long press detected on: ${entry.name}');
+                  widget.onLongPressEntry!(entry);
+                }
+              : null,
+          child: FsListRow(
+            entry: entry,
+            isLast: index == count - 1,
+            onTap: () => widget.onTapEntry(entry),
+          ),
         );
       },
     );

@@ -32,18 +32,26 @@
 //! makes the symbol disappear entirely (the `#[cfg(feature = "fs")]`
 //! declarations in `lib.rs` are the only place that has to know).
 
+mod audit;
 mod config;
 mod events;
 mod mount;
+mod move_delete;
 mod path;
+mod recycle;
 mod rest;
+mod stat;
 pub(crate) mod upload;
 
+pub use audit::{AuditEntry, AuditLog};
 pub use config::FsConfig;
 pub use events::FsEvent;
 pub use mount::{FsMount, FsRoot, MountTable};
+pub use move_delete::{DeleteBody, DeleteFailure, DeleteResponse, MoveBody, MoveResponse};
 pub use path::{FsError, FsPath, PathDeniedReason, PathGuard};
+pub use recycle::recycle;
 pub use rest::{handle_request, register, FsEntry, FsState, ListResponse, RootsResponse, FS_PREFIX};
+pub use stat::{StatParams, StatResponse};
 pub use upload::{UploadSession, SESSION_TTL};
 
 #[cfg(test)]

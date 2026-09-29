@@ -118,6 +118,9 @@ pub struct FsState {
     /// Live upload sessions (T-011). Keyed by session id; a
     /// session is removed on `finish`, `cancel`, or GC.
     pub sessions: Arc<tokio::sync::Mutex<HashMap<String, UploadSession>>>,
+    /// Audit logger (T-015). Records all write operations for compliance.
+    /// Optional because audit logging can be disabled via config.
+    pub audit: Option<Arc<super::audit::AuditLog>>,
 }
 
 impl FsState {
@@ -131,6 +134,23 @@ impl FsState {
             mounts: Arc::new(mounts),
             guard: Arc::new(guard),
             sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
+            audit: None,
+        }
+    }
+
+    /// Build a fresh `FsState` with audit logging enabled.
+    ///
+    /// The `config_dir` is where the audit log file will be stored.
+    /// If audit logging fails to initialize, the state is created without it.
+    pub fn with_audit(config: FsConfig, mounts: MountTable, config_dir: &std::path::Path) -> Self {
+        let guard = PathGuard::new(&mounts);
+        let audit = super::audit::AuditLog::new(config_dir).ok().map(Arc::new);
+        Self {
+            config: Arc::new(config),
+            mounts: Arc::new(mounts),
+            guard: Arc::new(guard),
+            sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
+            audit,
         }
     }
 }
@@ -168,6 +188,8 @@ pub async fn handle_request(
         (&hyper::Method::GET, "/roots") => Ok(handle_roots(&state)),
         (&hyper::Method::GET, "/list") => handle_list(&state, &req).await,
         (&hyper::Method::GET, "/download") => handle_download(&state, &req).await,
+        // T-014: stat endpoint
+        (&hyper::Method::GET, "/stat") => super::stat::handle_stat(&state, &req).await,
         // T-010 + T-011 write endpoints.
         (&hyper::Method::POST, "/mkdir") => super::upload::handle_mkdir(&state, req).await,
         (&hyper::Method::POST, "/upload/init") => super::upload::handle_upload_init(&state, req).await,
@@ -182,6 +204,13 @@ pub async fn handle_request(
         (&hyper::Method::DELETE, p) if p.starts_with("/upload/") => {
             let sid = p.trim_start_matches("/upload/");
             super::upload::handle_upload_cancel(&state, sid).await
+        }
+        // T-014: move + delete endpoints
+        (&hyper::Method::POST, "/move") => {
+            super::move_delete::handle_move(&state, req, fingerprint.as_deref()).await
+        }
+        (&hyper::Method::POST, "/delete") => {
+            super::move_delete::handle_delete(&state, req, fingerprint.as_deref()).await
         }
         _ => Err(FsError::BadRequest(format!("unknown fs route: {} {}", method, sub))),
     };
@@ -495,7 +524,7 @@ fn io_to_fs(e: std::io::Error) -> FsError {
 /// Tiny extension-based MIME guess table. Deliberately not
 /// `mime_guess`: pulling in a 50-kLOC crate for 20 entries is
 /// not worth it. Falls back to `application/octet-stream`.
-fn guess_mime(filename: &str) -> &'static str {
+pub(crate) fn guess_mime(filename: &str) -> &'static str {
     let ext = Path::new(filename).extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
     match ext.as_str() {
         "txt" | "log" | "md" => "text/plain; charset=utf-8",
