@@ -275,16 +275,73 @@ pub async fn handle_upload_init(
     // can detect "the destination already has this exact file".
     let etag = compute_etag(&final_path, body.total).await;
 
-    // Ensure .tmp/ exists inside the target dir.
-    let tmp_dir = dir_abs.join(TMP_DIR);
-    tokio::fs::create_dir_all(&tmp_dir).await.map_err(io_to_fs)?;
+    // Choose a staging directory for the upload temp file.
+    //
+    // Ideal: `<target_dir>/.tmp/` — same volume, so rename is atomic.
+    // Fallback: system temp dir — needed on Windows when target is a
+    // drive root (e.g., `D:\`) where creating `.tmp` often fails with
+    // "Access Denied" (os error 5) due to permissions or antivirus.
+    // The finish handler's copy fallback handles cross-volume moves.
+    let (tmp_dir, _using_fallback_tmp) = {
+        let preferred = dir_abs.join(TMP_DIR);
+        match try_create_dir_with_retries(&preferred, 2).await {
+            Ok(()) => (preferred, false),
+            Err(e) => {
+                tracing::warn!(
+                    event = "fs.upload.preferred_tmp_failed",
+                    preferred = %preferred.display(),
+                    error = %e,
+                    "preferred .tmp dir not writable, falling back to system temp"
+                );
+                let sys_tmp = std::env::temp_dir().join("localsend-uploads");
+                try_create_dir_with_retries(&sys_tmp, 2).await.map_err(|e2| {
+                    FsError::Io(format!(
+                        "failed to create temp directory in both {} and {}: {}",
+                        preferred.display(),
+                        sys_tmp.display(),
+                        e2
+                    ))
+                })?;
+                (sys_tmp, true)
+            }
+        }
+    };
 
     let session_id = Uuid::new_v4().to_string();
     let tmp_path = tmp_dir.join(&session_id);
 
     // Create the staging file so subsequent chunks have
     // something to append to.
-    tokio::fs::File::create(&tmp_path).await.map_err(io_to_fs)?;
+    // Retry on Windows to handle antivirus/defender scanning delays.
+    let mut create_file_err: Option<std::io::Error> = None;
+    for attempt in 0..3 {
+        match tokio::fs::File::create(&tmp_path).await {
+            Ok(_) => {
+                create_file_err = None;
+                break;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    event = "fs.upload.create_staging_file_failed",
+                    attempt = attempt,
+                    tmp_path = %tmp_path.display(),
+                    error = %e,
+                    "failed to create staging file"
+                );
+                create_file_err = Some(e);
+                if attempt < 2 {
+                    tokio::time::sleep(std::time::Duration::from_millis(100 * (attempt + 1) as u64)).await;
+                }
+            }
+        }
+    }
+    if let Some(e) = create_file_err {
+        return Err(FsError::Io(format!(
+            "failed to create staging file {}: {}",
+            tmp_path.display(),
+            e
+        )));
+    }
 
     let session = UploadSession {
         id: session_id.clone(),
@@ -369,11 +426,43 @@ pub async fn handle_upload_chunk(
     })?;
 
     // Stream the body into the tmp file.
-    let mut file = tokio::fs::OpenOptions::new()
-        .append(true)
-        .open(&session.tmp_path)
-        .await
-        .map_err(io_to_fs)?;
+    // On Windows, file opens can fail transiently due to antivirus scanning.
+    // Retry with backoff.
+    let mut file = {
+        let mut last_err: Option<std::io::Error> = None;
+        let mut file_opt: Option<tokio::fs::File> = None;
+        for attempt in 0..3 {
+            match tokio::fs::OpenOptions::new()
+                .append(true)
+                .open(&session.tmp_path)
+                .await
+            {
+                Ok(f) => {
+                    file_opt = Some(f);
+                    last_err = None;
+                    break;
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        event = "fs.upload.chunk.open_failed",
+                        attempt = attempt,
+                        tmp_path = %session.tmp_path.display(),
+                        error = %e,
+                        "failed to open staging file for append"
+                    );
+                    last_err = Some(e);
+                    if attempt < 2 {
+                        tokio::time::sleep(std::time::Duration::from_millis(100 * (attempt + 1) as u64)).await;
+                    }
+                }
+            }
+        }
+        match (file_opt, last_err) {
+            (Some(f), _) => f,
+            (_, Some(e)) => return Err(FsError::Io(format!("failed to open staging file: {}", e))),
+            _ => return Err(FsError::Io("failed to open staging file: unknown error".into())),
+        }
+    };
 
     let mut body = req.into_body();
     let mut written: u64 = 0;
@@ -437,24 +526,153 @@ pub async fn handle_upload_finish(
 
     // fsync the tmp file before rename so a crash mid-rename
     // doesn't leave a zero-length destination.
-    {
-        let f = tokio::fs::File::open(&session.tmp_path).await.map_err(io_to_fs)?;
-        f.sync_all().await.map_err(io_to_fs)?;
+    // On Windows, fsync can fail spuriously (antivirus, filesystem
+    // quirks), so we treat it as best-effort rather than fatal.
+    match tokio::fs::File::open(&session.tmp_path).await {
+        Ok(f) => {
+            if let Err(e) = f.sync_all().await {
+                tracing::warn!(
+                    event = "fs.upload.fsync_failed",
+                    tmp = %session.tmp_path.display(),
+                    error = %e,
+                    "fsync failed (best-effort, continuing)"
+                );
+            }
+        }
+        Err(e) => {
+            tracing::warn!(
+                event = "fs.upload.fsync_open_failed",
+                tmp = %session.tmp_path.display(),
+                error = %e,
+                "failed to open tmp file for fsync (continuing)"
+            );
+        }
+    }
+
+    // On Windows, if the destination already exists, rename may
+    // fail with "access denied". Try removing it first.
+    if tokio::fs::metadata(&session.final_path).await.is_ok() {
+        tracing::info!(
+            event = "fs.upload.dest_exists",
+            final = %session.final_path.display(),
+            "destination file exists, removing before rename"
+        );
+        if let Err(e) = tokio::fs::remove_file(&session.final_path).await {
+            tracing::warn!(
+                event = "fs.upload.remove_dest_failed",
+                final = %session.final_path.display(),
+                error = %e,
+                "failed to remove existing destination file"
+            );
+        }
     }
 
     // Atomic rename. Fall back to copy+delete if the rename
     // fails for any reason (EXDEV cross-device, permissions,
-    // etc.) — the tmp file still exists so we can recover.
-    if let Err(e) = tokio::fs::rename(&session.tmp_path, &session.final_path).await {
-        tracing::warn!(
-            event = "fs.upload.rename_fallback",
-            tmp = %session.tmp_path.display(),
-            final = %session.final_path.display(),
-            error = %e,
-            "rename failed, falling back to copy+delete"
-        );
-        tokio::fs::copy(&session.tmp_path, &session.final_path).await.map_err(io_to_fs)?;
-        tokio::fs::remove_file(&session.tmp_path).await.ok();
+    // antivirus, etc.) — the tmp file still exists so we can recover.
+    // Retry once after a short delay to handle transient Windows locks.
+    let mut rename_err: Option<std::io::Error> = None;
+    for attempt in 0..2 {
+        match tokio::fs::rename(&session.tmp_path, &session.final_path).await {
+            Ok(()) => {
+                rename_err = None;
+                break;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    event = "fs.upload.rename_attempt_failed",
+                    attempt = attempt,
+                    tmp = %session.tmp_path.display(),
+                    final = %session.final_path.display(),
+                    error = %e,
+                    "rename attempt failed"
+                );
+                rename_err = Some(e);
+                if attempt == 0 {
+                    // Give Windows Defender / AV time to release the file
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                }
+            }
+        }
+    }
+
+    if let Some(rename_e) = rename_err {
+        // Check if this is a cross-volume scenario (tmp on different drive than final)
+        let is_cross_volume = {
+            let tmp_parent = session.tmp_path.parent();
+            let final_parent = session.final_path.parent();
+            match (tmp_parent, final_parent) {
+                (Some(tp), Some(fp)) => {
+                    // On Windows, check if drive letters differ
+                    // On Unix, check if they're on different mount points
+                    tp.to_string_lossy().chars().next() != fp.to_string_lossy().chars().next()
+                }
+                _ => false,
+            }
+        };
+
+        if is_cross_volume {
+            tracing::info!(
+                event = "fs.upload.cross_volume_move",
+                tmp = %session.tmp_path.display(),
+                final = %session.final_path.display(),
+                "cross-volume upload detected, using copy+delete (rename not possible)"
+            );
+        } else {
+            tracing::warn!(
+                event = "fs.upload.rename_fallback",
+                tmp = %session.tmp_path.display(),
+                final = %session.final_path.display(),
+                error = %rename_e,
+                "rename failed after retries, falling back to copy+delete"
+            );
+        }
+
+        // Retry copy+delete once as well
+        let mut copy_err: Option<std::io::Error> = None;
+        for attempt in 0..2 {
+            match tokio::fs::copy(&session.tmp_path, &session.final_path).await {
+                Ok(bytes_copied) => {
+                    tracing::info!(
+                        event = "fs.upload.copy_success",
+                        bytes = bytes_copied,
+                        "copy completed successfully"
+                    );
+                    copy_err = None;
+                    break;
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        event = "fs.upload.copy_attempt_failed",
+                        attempt = attempt,
+                        tmp = %session.tmp_path.display(),
+                        final = %session.final_path.display(),
+                        error = %e,
+                        "copy attempt failed"
+                    );
+                    copy_err = Some(e);
+                    if attempt == 0 {
+                        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    }
+                }
+            }
+        }
+        if let Some(e) = copy_err {
+            return Err(FsError::Io(format!(
+                "failed to move upload to destination {} -> {}: {} (hint: check write permissions to destination directory)",
+                session.tmp_path.display(),
+                session.final_path.display(),
+                e
+            )));
+        }
+        if let Err(e) = tokio::fs::remove_file(&session.tmp_path).await {
+            tracing::warn!(
+                event = "fs.upload.remove_tmp_failed",
+                tmp = %session.tmp_path.display(),
+                error = %e,
+                "failed to remove staging file after copy (non-fatal)"
+            );
+        }
     }
 
     // Re-verify the destination is under the whitelist (the
@@ -620,6 +838,37 @@ fn validate_filename(name: &str) -> Result<(), FsError> {
         return Err(FsError::BadRequest("filename contains NUL".into()));
     }
     Ok(())
+}
+
+/// Try to create a directory with retries and exponential backoff.
+///
+/// On Windows, directory creation at drive roots or in paths scanned
+/// by antivirus can fail transiently with "Access Denied" (os error 5).
+/// This helper retries up to `max_retries` times with delays of
+/// 100ms, 200ms, etc. to handle such transient failures.
+async fn try_create_dir_with_retries(path: &Path, max_retries: u32) -> Result<(), std::io::Error> {
+    let mut last_err: Option<std::io::Error> = None;
+    for attempt in 0..=max_retries {
+        match tokio::fs::create_dir_all(path).await {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                tracing::debug!(
+                    event = "fs.upload.create_dir_attempt",
+                    attempt = attempt,
+                    path = %path.display(),
+                    error = %e,
+                    "directory creation attempt"
+                );
+                last_err = Some(e);
+                if attempt < max_retries {
+                    // Exponential backoff: 100ms, 200ms, 400ms...
+                    let delay_ms = 100u64 * (1u64 << attempt);
+                    tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+                }
+            }
+        }
+    }
+    Err(last_err.unwrap())
 }
 
 /// Compute a resume etag for a destination path. The etag is
