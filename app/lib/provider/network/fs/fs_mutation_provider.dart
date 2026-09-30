@@ -113,6 +113,8 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
     required String oldPath,
     required String newName,
   }) async {
+    _logger.fine('[T-016 DEBUG] renameAsync called with oldPath=$oldPath, newName=$newName');
+
     state = state.copyWith(
       state: FsMutationState.loading,
       operationType: FsMutationType.rename,
@@ -125,6 +127,8 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
           ? oldPath.substring(0, oldPath.lastIndexOf('/'))
           : '';
       final newPath = parentPath.isEmpty ? newName : '$parentPath/$newName';
+
+      _logger.fine('[T-016 DEBUG] Constructed newPath=$newPath (parentPath=$parentPath)');
 
       // 使用带证书的 HTTPS 客户端
       final securityContext = ref.read(securityProvider);
@@ -142,6 +146,8 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
       if (ip == null) {
         throw Exception('Device has no IP address');
       }
+
+      _logger.fine('[T-016 DEBUG] Calling fsMove with from=$oldPath, to=$newPath');
 
       await client.fsMove(
         protocol: protocol,

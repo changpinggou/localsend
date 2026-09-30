@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/pages/media_preview/image_preview_page.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/breadcrumb.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/context_menu.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/delete_confirm_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/empty_state.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/file_action_sheet.dart';
@@ -513,25 +514,41 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     ref.notifier(fsMutationProvider).toggleSelection(fullPath);
   }
 
-  /// T-016: 长按条目进入多选模式
-  void _onLongPressEntry(Device device, FsListState state, rust.FsEntry entry) {
+  /// T-016: 长按条目弹上下文菜单
+  void _onLongPressEntry(Device device, FsListState state, rust.FsEntry entry) async {
     debugPrint('[T-016 DEBUG] _onLongPressEntry called for: ${entry.name}');
     final fullPath = state.currentPath.isEmpty
         ? entry.name
         : '${state.currentPath}/${entry.name}';
 
-    final mutationState = ref.read(fsMutationProvider);
-    debugPrint('[T-016 DEBUG] Current multi-select mode: ${mutationState.isMultiSelectMode}');
     debugPrint('[T-016 DEBUG] Full path: $fullPath');
 
-    if (!mutationState.isMultiSelectMode) {
-      // 进入多选模式
-      debugPrint('[T-016 DEBUG] Entering multi-select mode with: $fullPath');
-      ref.notifier(fsMutationProvider).enterMultiSelect(fullPath);
-    } else {
-      // 已经在多选模式，切换选择
-      debugPrint('[T-016 DEBUG] Toggling selection: $fullPath');
-      ref.notifier(fsMutationProvider).toggleSelection(fullPath);
+    // 显示上下文菜单
+    final action = await FsContextMenu.show(
+      context: context,
+      entry: entry,
+    );
+
+    if (action == null || !mounted) return;
+
+    debugPrint('[T-016 DEBUG] Selected action: $action');
+
+    switch (action) {
+      case FsContextAction.rename:
+        await _handleRename(device, fullPath, entry.name, entry.isDir);
+        break;
+      case FsContextAction.move:
+        await _handleMoveSingle(device, fullPath);
+        break;
+      case FsContextAction.delete:
+        await _handleDeleteSingle(device, fullPath);
+        break;
+      case FsContextAction.share:
+        _handleShare(entry);
+        break;
+      case FsContextAction.properties:
+        await _handleProperties(device, fullPath);
+        break;
     }
   }
 
@@ -610,5 +627,171 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
         ),
       );
     }
+  }
+
+  /// T-016: 处理重命名操作
+  Future<void> _handleRename(Device device, String fullPath, String currentName, bool isDir) async {
+    final newName = await showRenameDialog(
+      context: context,
+      currentName: currentName,
+      isDirectory: isDir,
+    );
+
+    if (newName == null || !mounted) return;
+
+    await ref.notifier(fsMutationProvider).renameAsync(
+          device: device,
+          oldPath: fullPath,
+          newName: newName,
+        );
+
+    if (!mounted) return;
+    final newState = ref.read(fsMutationProvider);
+    if (newState.state == FsMutationState.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('重命名成功'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      ref.notifier(fsListProvider).refresh(device);
+    } else if (newState.state == FsMutationState.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('重命名失败: ${newState.errorMessage}'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// T-016: 处理单个文件移动
+  Future<void> _handleMoveSingle(Device device, String fullPath) async {
+    await _showMoveDialog(device, FsMutationData(
+      state: FsMutationState.idle,
+      selectedPaths: {fullPath},
+      isMultiSelectMode: true,
+    ));
+  }
+
+  /// T-016: 处理单个文件删除
+  Future<void> _handleDeleteSingle(Device device, String fullPath) async {
+    await _showDeleteDialog(device, FsMutationData(
+      state: FsMutationState.idle,
+      selectedPaths: {fullPath},
+      isMultiSelectMode: true,
+    ));
+  }
+
+  /// T-016: 处理分享操作
+  void _handleShare(rust.FsEntry entry) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('分享功能开发中...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// T-016: 处理属性查看
+  Future<void> _handleProperties(Device device, String fullPath) async {
+    try {
+      final securityContext = ref.read(securityProvider);
+      final client = rust_http.createClient(
+        privateKey: securityContext.privateKey,
+        cert: securityContext.certificate,
+        version: rust_http.LsHttpClientVersion.v2,
+        expectedFingerprint: device.fingerprint,
+        timeoutMs: 30000,
+      );
+      final protocol = device.https ? rust.ProtocolType.https : rust.ProtocolType.http;
+      final ip = device.ip;
+      if (ip == null) {
+        throw Exception('Device has no IP address');
+      }
+
+      final stat = await client.fsStat(
+        protocol: protocol,
+        ip: ip,
+        port: device.port,
+        path: fullPath,
+      );
+
+      if (!mounted) return;
+
+      // 显示属性对话框
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('文件属性'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _propertyRow('名称', stat.name),
+              _propertyRow('类型', stat.isDir ? '文件夹' : '文件'),
+              _propertyRow('大小', stat.isDir ? '—' : _formatBytes(stat.size)),
+              _propertyRow('修改时间', _formatTime(stat.mtime)),
+              _propertyRow('MIME', stat.mime ?? '未知'),
+              _propertyRow('ETag', stat.etag),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('关闭'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('获取属性失败: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Widget _propertyRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatBytes(BigInt bytes) {
+    final kb = BigInt.from(1024);
+    final mb = kb * kb;
+    final gb = mb * kb;
+    if (bytes < kb) return '${bytes.toString()} B';
+    if (bytes < mb) return '${(bytes / kb).toStringAsFixed(1)} KB';
+    if (bytes < gb) return '${(bytes / mb).toStringAsFixed(1)} MB';
+    return '${(bytes / gb).toStringAsFixed(2)} GB';
+  }
+
+  String _formatTime(int epochSeconds) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000);
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
