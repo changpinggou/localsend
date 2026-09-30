@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:localsend_app/provider/network/fs/fs_thumbnail_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:refena_flutter/refena_flutter.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// Renders a thumbnail for a remote file by fetching
 /// `GET /api/localsend/v2/fs/thumbnail` through the FRB client.
@@ -57,11 +58,13 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_fetchStarted) {
+    if (!_fetchStarted && _isVisible) {
       _fetchStarted = true;
       _fetch();
     }
   }
+
+  bool _isVisible = false;
 
   @override
   void didUpdateWidget(covariant RemoteThumbnail oldWidget) {
@@ -70,8 +73,11 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
         oldWidget.device.fingerprint != widget.device.fingerprint) {
       _bytes = null;
       _loading = false;
-      _fetchStarted = true;
-      _fetch();
+      _fetchStarted = false;
+      if (_isVisible) {
+        _fetchStarted = true;
+        _fetch();
+      }
     }
   }
 
@@ -96,6 +102,20 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
 
   @override
   Widget build(BuildContext context) {
+    return VisibilityDetector(
+      key: ValueKey(widget.fullPath),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction > 0.1 && !_fetchStarted) {
+          _isVisible = true;
+          _fetchStarted = true;
+          _fetch();
+        }
+      },
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (_bytes != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
