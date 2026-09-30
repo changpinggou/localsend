@@ -184,6 +184,12 @@ pub struct ServerHandle {
     /// requested, the listeners have been dropped and all connections have
     /// been closed.
     task: Mutex<Option<tokio::task::JoinHandle<()>>>,
+
+    /// T-018: the `MountWatcher` polling task + the T-019
+    /// forwarder, if `fs` was enabled. Aborted on `wait_stopped`
+    /// so they can't outlive the server.
+    #[cfg(feature = "fs")]
+    hotplug_handles: Mutex<Option<(tokio::task::JoinHandle<()>, tokio::task::JoinHandle<()>)>>,
 }
 
 impl ServerHandle {
@@ -228,6 +234,20 @@ impl ServerHandle {
     pub async fn wait_stopped(&self) {
         if let Some(task) = self.task.lock().await.take() {
             let _ = task.await;
+        }
+        // T-018 / T-019: stop the hotplug watcher and forwarder
+        // too so they can't outlive the server and emit events
+        // into a torn-down broadcast channel.
+        #[cfg(feature = "fs")]
+        if let Some((forwarder, watcher)) = self.hotplug_handles.lock().await.take() {
+            // Abort the forwarder first so it stops receiving
+            // `RootsChanged` events; then stop the watcher so no
+            // new events are sent. `abort()` is safe to call on
+            // already-finished handles.
+            forwarder.abort();
+            watcher.abort();
+            let _ = forwarder.await;
+            let _ = watcher.await;
         }
     }
 
@@ -316,6 +336,42 @@ pub async fn start_with_port(
     let cancel = CancellationToken::new();
     let connections = TaskTracker::new();
 
+    // T-018 + T-019: start the mount-hotplug watcher in the
+    // background, and a forwarder that translates its
+    // `FsEvent::RootsChanged` emissions into
+    // `ServerEventV2::FsRootsChanged` on the application's
+    // `event_tx`.
+    #[cfg(feature = "fs")]
+    let hotplug_handle = if let Some(fs_state) = state.fs.as_ref() {
+        use crate::fs::hotplug::MountWatcher;
+        let v2_event_tx = state.v2.as_ref().map(|v2| v2.event_tx.clone());
+        let mounts_for_forwarder = fs_state.mounts.clone();
+        let fs_event_tx = fs_state.fs_event_tx.clone();
+        // Forwarder task: drains `fs_event_tx`, re-emits
+        // RootsChanged as ServerEventV2::FsRootsChanged.
+        let forwarder = tokio::spawn(async move {
+            let mut rx = fs_event_tx.subscribe();
+            if let Some(event_tx) = v2_event_tx {
+                while let Ok(event) = rx.recv().await {
+                    if matches!(event, crate::fs::FsEvent::RootsChanged { .. }) {
+                        let roots = mounts_for_forwarder.read().await.roots();
+                        let _ = event_tx.try_send(ServerEventV2::FsRootsChanged { roots });
+                    }
+                }
+            } else {
+                // No v2 to forward into — still drain so the
+                // watcher's sends don't backpressure.
+                while rx.recv().await.is_ok() {}
+            }
+        });
+        let watcher = MountWatcher::new(fs_state.mounts.clone(), fs_state.fs_event_tx.clone());
+        let watcher_handle = watcher.spawn();
+        // Keep both handles for clean shutdown.
+        Some((forwarder, watcher_handle))
+    } else {
+        None
+    };
+
     let task = tokio::spawn({
         let state = state.clone();
         let cancel = cancel.clone();
@@ -364,6 +420,8 @@ pub async fn start_with_port(
         port: bound_port,
         ipv6_bound,
         task: Mutex::new(Some(task)),
+        #[cfg(feature = "fs")]
+        hotplug_handles: Mutex::new(hotplug_handle),
     })
 }
 

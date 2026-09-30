@@ -114,7 +114,10 @@
     "pathDeniedTitle": "路径未被共享",
     "pathDeniedBody": "该路径不在对端的共享驱动器内。请让对方将其加入白名单。",
     "networkTitle": "无法连接设备",
-    "networkBody": "对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。"
+    "networkBody": "对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。",
+    "rootsChangedAdded": "新增了一个驱动器",
+    "rootsChangedRemoved": "一个驱动器已断开",
+    "rootsInvalidatedForcedToRoot": "当前驱动器已断开,已返回根目录"
   },
   "fsDownload": {
     "saveToGallery": "保存到相册",

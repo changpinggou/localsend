@@ -111,8 +111,10 @@ pub fn register(
 pub struct FsState {
     /// Server-side config (whitelist, size limits, …).
     pub config: Arc<FsConfig>,
-    /// Whitelist of allowed mount points.
-    pub mounts: Arc<MountTable>,
+    /// Whitelist of allowed mount points. Wrapped in a
+    /// `tokio::sync::RwLock` so the hotplug watcher (T-018) can
+    /// refresh the list while HTTP handlers are reading it.
+    pub mounts: Arc<tokio::sync::RwLock<MountTable>>,
     /// Sandbox used to validate every incoming path.
     pub guard: Arc<PathGuard>,
     /// Live upload sessions (T-011). Keyed by session id; a
@@ -121,6 +123,10 @@ pub struct FsState {
     /// Audit logger (T-015). Records all write operations for compliance.
     /// Optional because audit logging can be disabled via config.
     pub audit: Option<Arc<super::audit::AuditLog>>,
+    /// Broadcast channel for `FsEvent`s. T-018's `MountWatcher`
+    /// publishes `RootsChanged` events here; T-019 subscribes and
+    /// fans them out to every connected peer.
+    pub fs_event_tx: tokio::sync::broadcast::Sender<super::events::FsEvent>,
 }
 
 impl FsState {
@@ -129,12 +135,14 @@ impl FsState {
     /// only has to clone the resulting `Arc`.
     pub fn new(config: FsConfig, mounts: MountTable) -> Self {
         let guard = PathGuard::new(&mounts);
+        let (fs_event_tx, _) = tokio::sync::broadcast::channel(super::hotplug::EVENT_CHANNEL_CAPACITY);
         Self {
             config: Arc::new(config),
-            mounts: Arc::new(mounts),
+            mounts: Arc::new(tokio::sync::RwLock::new(mounts)),
             guard: Arc::new(guard),
             sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             audit: None,
+            fs_event_tx,
         }
     }
 
@@ -145,12 +153,14 @@ impl FsState {
     pub fn with_audit(config: FsConfig, mounts: MountTable, config_dir: &std::path::Path) -> Self {
         let guard = PathGuard::new(&mounts);
         let audit = super::audit::AuditLog::new(config_dir).ok().map(Arc::new);
+        let (fs_event_tx, _) = tokio::sync::broadcast::channel(super::hotplug::EVENT_CHANNEL_CAPACITY);
         Self {
             config: Arc::new(config),
-            mounts: Arc::new(mounts),
+            mounts: Arc::new(tokio::sync::RwLock::new(mounts)),
             guard: Arc::new(guard),
             sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             audit,
+            fs_event_tx,
         }
     }
 }
@@ -185,7 +195,7 @@ pub async fn handle_request(
 
     let method = req.method().clone();
     let result: Result<Response<BoxedBody>, FsError> = match (&method, sub.as_str()) {
-        (&hyper::Method::GET, "/roots") => Ok(handle_roots(&state)),
+        (&hyper::Method::GET, "/roots") => Ok(handle_roots(&state).await),
         (&hyper::Method::GET, "/list") => handle_list(&state, &req).await,
         (&hyper::Method::GET, "/download") => handle_download(&state, &req).await,
         // T-014: stat endpoint
@@ -252,8 +262,9 @@ pub struct RootsResponse {
 /// re-query the host with `FsMount::list()` because the contract
 /// is "what can I access?", not "what's plugged in right now?".
 /// Hotplug updates flow through T-019's `roots-changed` event.
-fn handle_roots(state: &FsState) -> Response<BoxedBody> {
-    let body = RootsResponse { roots: state.mounts.roots() };
+async fn handle_roots(state: &FsState) -> Response<BoxedBody> {
+    let roots = state.mounts.read().await.roots();
+    let body = RootsResponse { roots };
     json_response(StatusCode::OK, &body)
 }
 
@@ -611,13 +622,13 @@ mod tests {
     async fn roots_returns_whitelist_only() {
         // Empty whitelist → empty response.
         let empty = FsState::new(FsConfig::default(), MountTable::new());
-        let resp = super::handle_roots(&empty);
+        let resp = super::handle_roots(&empty).await;
         assert_eq!(status_of(&resp), StatusCode::OK);
         let body = body_to_string(resp).await;
         assert_eq!(body, r#"{"roots":[]}"#);
         // And the populated state returns the whitelisted root.
         let (state, dir) = fixture();
-        let resp = super::handle_roots(&state);
+        let resp = super::handle_roots(&state).await;
         let body = body_to_string(resp).await;
         let v: serde_json::Value = serde_json::from_str(&body).unwrap();
         let roots = v["roots"].as_array().unwrap();
@@ -636,7 +647,7 @@ mod tests {
     #[tokio::test]
     async fn roots_excludes_non_whitelisted() {
         let (state, _dir) = fixture();
-        let resp = super::handle_roots(&state);
+        let resp = super::handle_roots(&state).await;
         let body = body_to_string(resp).await;
         let v: serde_json::Value = serde_json::from_str(&body).unwrap();
         let roots = v["roots"].as_array().unwrap();
@@ -951,7 +962,7 @@ mod tests {
         // integration tests; here we keep a minimal sanity
         // check that the dispatch module compiles by calling
         // `handle_roots` once more.
-        let resp = super::handle_roots(&FsState::new(FsConfig::default(), MountTable::new()));
+        let resp = super::handle_roots(&FsState::new(FsConfig::default(), MountTable::new())).await;
         assert_eq!(status_of(&resp), StatusCode::OK);
     }
 

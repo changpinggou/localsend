@@ -314,6 +314,12 @@ class Translations$fsBrowser$zh_CN extends Translations$fsBrowser$en {
   String get networkTitle => '无法连接设备';
   @override
   String get networkBody => '对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。';
+  @override
+  String get rootsChangedAdded => '新增了一个驱动器';
+  @override
+  String get rootsChangedRemoved => '一个驱动器已断开';
+  @override
+  String get rootsInvalidatedForcedToRoot => '当前驱动器已断开,已返回根目录';
 }
 
 // Path: fsDownload

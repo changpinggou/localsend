@@ -330,6 +330,24 @@ class FsListService extends Notifier<FsListState> {
     unawaited(_enterPath(device: device, path: state.currentPath));
   }
 
+  /// T-020: reset `currentPath` to the root level without
+  /// triggering an isolate re-fetch. Used when the server pushes
+  /// a `FsRootsChanged` event and the user's current path is no
+  /// longer under any whitelisted root — they should bounce back
+  /// to the roots view immediately, and the (now-stale) entry
+  /// list should be cleared so we don't show ghost rows.
+  void forceToRoot() {
+    state = state.copyWith(
+      currentPath: '',
+      entries: <rust_model.FsEntry>[],
+      page: -1,
+      hasMore: false,
+      loading: false,
+      error: null,
+      errorReason: null,
+    );
+  }
+
   void changeView(FsViewMode viewMode) {
     state = state.copyWith(viewMode: viewMode);
   }

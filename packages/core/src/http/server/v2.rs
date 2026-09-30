@@ -15,6 +15,9 @@ use crate::http::server::PeerIp;
 use crate::http::server::{common, AppState, RequestClientInfo, V2State};
 use crate::model::discovery::PROTOCOL_VERSION_V2;
 use crate::model::transfer::FileDto;
+
+#[cfg(feature = "fs")]
+use crate::fs::FsRoot;
 use hyper::body::Incoming;
 use hyper::{Request, Response, StatusCode};
 use std::collections::{HashMap, HashSet};
@@ -133,6 +136,21 @@ pub enum ServerEventV2 {
     ListenerFailed {
         /// Description of the failure.
         error: String,
+    },
+
+    /// T-019: a mount point was added or removed on the host
+    /// (USB drive plugged in, network share unmounted, …).
+    /// Emitted whenever T-018's `MountWatcher` reports a diff.
+    /// Clients should refresh their local view and, if they're
+    /// currently browsing a path under a removed root, navigate
+    /// back to the roots list.
+    #[cfg(feature = "fs")]
+    FsRootsChanged {
+        /// Full snapshot of the current whitelist. Clients do
+        /// their own id diff so they can show "added" vs
+        /// "removed" toasts; we don't pre-broadcast a diff
+        /// because the whitelist is small (≤ a few dozen drives).
+        roots: Vec<FsRoot>,
     },
 }
 

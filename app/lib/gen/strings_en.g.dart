@@ -365,6 +365,15 @@ class Translations$fsBrowser$en {
 
   /// en: 'The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down.'
   String get networkBody => 'The peer didn\'t respond. It may have gone to sleep, lost Wi-Fi, or shut down.';
+
+  /// en: 'New drive available'
+  String get rootsChangedAdded => 'New drive available';
+
+  /// en: 'A drive was disconnected'
+  String get rootsChangedRemoved => 'A drive was disconnected';
+
+  /// en: 'Current drive was disconnected. Returned to drive list.'
+  String get rootsInvalidatedForcedToRoot => 'Current drive was disconnected. Returned to drive list.';
 }
 
 // Path: fsDownload

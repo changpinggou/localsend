@@ -185,7 +185,11 @@ fn handle_server_event(
         // rejects the requests.
         ServerEventV2::FileUpload { .. }
         | ServerEventV2::SessionEnd { .. }
-        | ServerEventV2::PrepareUploadAborted { .. } => {}
+        | ServerEventV2::PrepareUploadAborted { .. }
+        // CLI doesn't run an `fs` mount service so the hotplug
+        // event has nothing to do here. Drop it silently — the
+        // desktop/Flutter UI is the only consumer.
+        | ServerEventV2::FsRootsChanged { .. } => {}
     }
 }
 

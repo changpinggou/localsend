@@ -247,6 +247,11 @@ impl App {
                     &format!("Server stopped, no longer receiving: {error}"),
                 );
             }
+            // CLI doesn't run an `fs` mount service, so the
+            // hotplug event has nothing to surface here.
+            // Drop it silently — the desktop/Flutter UI is
+            // the only consumer of `FsRootsChanged`.
+            ServerEventV2::FsRootsChanged { .. } => {}
         }
     }
 

@@ -33,7 +33,7 @@
 //! additionally lowercase both sides because NTFS is
 //! case-insensitive but Rust's `Path::starts_with` is not.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -179,6 +179,39 @@ impl MountTable {
         for r in roots {
             self.roots.insert(r.id.clone(), r);
         }
+    }
+
+    /// Drop a single entry by id. No-op if the entry is absent.
+    /// Used by T-018's `MountWatcher` when a USB drive is ejected.
+    ///
+    /// The `Option<FsRoot>` return is intentional — `Some(_)` lets
+    /// the caller audit-log the removed root, `None` is the cheap
+    /// "wasn't there" case (idempotent retries).
+    pub fn remove(&mut self, id: &str) -> Option<FsRoot> {
+        self.roots.remove(id)
+    }
+
+    /// Insert or replace a single entry by id. Used by T-018's
+    /// `MountWatcher` when a newly-plugged drive needs to be added
+    /// to the table without disturbing the other entries.
+    pub fn update_single(&mut self, root: FsRoot) {
+        self.roots.insert(root.id.clone(), root);
+    }
+
+    /// Compute the `(added, removed)` diff against `new_roots`. The
+    /// caller (T-018's watcher) takes the lock, calls
+    /// `FsMount::list()`, calls `diff`, then decides whether to apply
+    /// changes — `diff` itself is pure and side-effect-free.
+    ///
+    /// Returns `(added_ids, removed_ids)` as `Vec<String>` so the
+    /// caller can put them on the wire without cloning the whole
+    /// [`FsRoot`] (most are unchanged).
+    pub fn diff(&self, new_roots: &[FsRoot]) -> (Vec<String>, Vec<String>) {
+        let new_ids: BTreeSet<&str> = new_roots.iter().map(|r| r.id.as_str()).collect();
+        let cur_ids: BTreeSet<&str> = self.roots.keys().map(|s| s.as_str()).collect();
+        let added: Vec<String> = new_ids.difference(&cur_ids).map(|s| s.to_string()).collect();
+        let removed: Vec<String> = cur_ids.difference(&new_ids).map(|s| s.to_string()).collect();
+        (added, removed)
     }
 
     /// `label` of the whitelisted root that contains `abs_path`, or
@@ -702,6 +735,45 @@ mod tests {
         assert!(t.get("/A").is_none());
         assert!(t.get("/X").is_some());
         assert!(t.get("/Y").is_some());
+    }
+
+    #[test]
+    fn remove_drops_entry_and_returns_it() {
+        let mut t = MountTable::from_config(vec![FsRoot::new("/A", "A", "/A")]);
+        let removed = t.remove("/A");
+        assert!(removed.is_some());
+        assert_eq!(t.len(), 0);
+        assert!(t.get("/A").is_none());
+
+        // idempotent: removing an absent id is a no-op, not a panic
+        assert!(t.remove("/A").is_none());
+    }
+
+    #[test]
+    fn diff_detects_added_and_removed() {
+        let t = MountTable::from_config(vec![
+            FsRoot::new("/A", "A", "/A"),
+            FsRoot::new("/B", "B", "/B"),
+        ]);
+        let new = vec![
+            FsRoot::new("/B", "B", "/B"),
+            FsRoot::new("/C", "C", "/C"),
+        ];
+        let (added, removed) = t.diff(&new);
+        assert_eq!(added, vec!["/C".to_string()]);
+        assert_eq!(removed, vec!["/A".to_string()]);
+    }
+
+    #[test]
+    fn diff_is_empty_when_unchanged() {
+        let t = MountTable::from_config(vec![FsRoot::new("/A", "A", "/A")]);
+        let new = vec![FsRoot::new("/A", "A-2", "/A")];
+        // Same id, different label — `diff` reports no structural
+        // change (it's id-only); the caller is expected to apply
+        // `update()` itself.
+        let (added, removed) = t.diff(&new);
+        assert!(added.is_empty());
+        assert!(removed.is_empty());
     }
 
     // -------- platform-specific enumeration tests -----------------

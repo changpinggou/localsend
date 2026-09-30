@@ -116,6 +116,17 @@ pub enum RsServerEvent {
         /// Description of the failure.
         error: String,
     },
+
+    /// T-019: a mount point was added or removed on the host.
+    /// Emitted when T-018's `MountWatcher` reports a diff. Clients
+    /// should refresh their local view and, if currently browsing
+    /// a path under a removed root, navigate back to the roots
+    /// list.
+    FsRootsChanged {
+        /// Full snapshot of the current whitelist (clients do
+        /// their own id-level diff for toasts).
+        roots: Vec<crate::api::model::FsRoot>,
+    },
 }
 
 pub struct RsHttpServer {
@@ -487,6 +498,9 @@ impl RsHttpServer {
                 .is_ok(),
             ServerEventV2::ListenerFailed { error } => {
                 sink.add(RsServerEvent::ListenerFailed { error }).is_ok()
+            }
+            ServerEventV2::FsRootsChanged { roots } => {
+                sink.add(RsServerEvent::FsRootsChanged { roots }).is_ok()
             }
         }
     }

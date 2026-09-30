@@ -114,7 +114,10 @@
     "pathDeniedTitle": "Path not shared",
     "pathDeniedBody": "This path is outside the peer's shared drives. Ask the owner to whitelist it.",
     "networkTitle": "Can't reach the device",
-    "networkBody": "The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down."
+    "networkBody": "The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down.",
+    "rootsChangedAdded": "New drive available",
+    "rootsChangedRemoved": "A drive was disconnected",
+    "rootsInvalidatedForcedToRoot": "Current drive was disconnected. Returned to drive list."
   },
   "fsDownload": {
     "saveToGallery": "Save to Photos",

@@ -21,10 +21,12 @@ import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_mutation_provider.dart';
+import 'package:localsend_app/provider/network/fs/fs_roots_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/util/native/pick_for_upload.dart';
+import 'package:localsend_app/util/ui/snackbar.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
@@ -57,6 +59,7 @@ class RemoteBrowserPage extends StatefulWidget {
 
 class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
   String? _lastDeviceFingerprint;
+  int? _lastRootsCount;
   bool _initialFetchKicked = false;
 
   @override
@@ -112,6 +115,11 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     );
     final fsState = ref.watch(fsListProvider);
     final mutationState = ref.watch(fsMutationProvider);
+    // T-020: also watch the per-device whitelist cache. The
+    // build is already triggered by `fsState`; the rebuild is
+    // cheap, and this gives us the diff we need to decide
+    // which toast to show.
+    final rootsState = ref.watch(fsRootsProvider);
 
     // Detect a device swap (different fingerprint) and re-fetch.
     if (device != null && _lastDeviceFingerprint != device.fingerprint) {
@@ -121,6 +129,33 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
         ref.notifier(fsListProvider).enterRoots(device);
       });
     }
+
+    // T-020: surface a snackbar whenever the per-device
+    // whitelist changed. Compare counts against the value
+    // captured in the previous frame (`_lastRootsCount`).
+    final nextEntry = rootsState.rootsByDevice[device?.fingerprint];
+    final nextCount = nextEntry?.roots.length;
+    if (_lastRootsCount != null && nextCount != null && nextCount != _lastRootsCount) {
+      // Schedule on the next frame so we don't show a snackbar
+      // during the build pass (which would race with the
+      // Scaffold's overlay tree).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (nextCount > _lastRootsCount!) {
+          context.showSnackBar(t.fsBrowser.rootsChangedAdded);
+        } else {
+          // If the user's path was invalidated by the removal,
+          // server_provider already called `forceToRoot()`; the
+          // snackbar confirms it.
+          if (fsState.currentPath.isEmpty) {
+            context.showSnackBar(t.fsBrowser.rootsInvalidatedForcedToRoot);
+          } else {
+            context.showSnackBar(t.fsBrowser.rootsChangedRemoved);
+          }
+        }
+      });
+    }
+    _lastRootsCount = nextCount;
 
     if (device == null) {
       return Scaffold(
@@ -134,9 +169,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
     return Scaffold(
       appBar: AppBar(
-        title: isMultiSelect
-            ? Text('已选择 ${mutationState.selectedPaths.length} 项')
-            : Text('${t.remoteBrowser.title} · ${device.alias}'),
+        title: isMultiSelect ? Text('已选择 ${mutationState.selectedPaths.length} 项') : Text('${t.remoteBrowser.title} · ${device.alias}'),
         leading: isMultiSelect
             ? IconButton(
                 icon: const Icon(Icons.close),
@@ -200,9 +233,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
   /// T-016: 全选当前目录的所有项
   void _selectAll(Device device, FsListState fsState) {
     for (final entry in fsState.entries) {
-      final fullPath = fsState.currentPath.isEmpty
-          ? entry.name
-          : '${fsState.currentPath}/${entry.name}';
+      final fullPath = fsState.currentPath.isEmpty ? entry.name : '${fsState.currentPath}/${entry.name}';
       ref.notifier(fsMutationProvider).toggleSelection(fullPath);
     }
   }
@@ -408,7 +439,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     if (paths == null || paths.isEmpty || !mounted) return;
 
     // Enqueue files for upload
-    await ref.notifier(fsUploadProvider).enqueueFiles(
+    await ref
+        .notifier(fsUploadProvider)
+        .enqueueFiles(
           device: device,
           localPaths: paths,
           remotePath: remotePath,
@@ -429,7 +462,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     if (paths == null || paths.isEmpty || !mounted) return;
 
     // Enqueue files for upload
-    await ref.notifier(fsUploadProvider).enqueueFiles(
+    await ref
+        .notifier(fsUploadProvider)
+        .enqueueFiles(
           device: device,
           localPaths: paths,
           remotePath: remotePath,
@@ -508,18 +543,14 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
   /// T-016: 多选模式下点击条目
   void _onTapEntryInMultiSelect(Device device, FsListState state, rust.FsEntry entry) {
-    final fullPath = state.currentPath.isEmpty
-        ? entry.name
-        : '${state.currentPath}/${entry.name}';
+    final fullPath = state.currentPath.isEmpty ? entry.name : '${state.currentPath}/${entry.name}';
     ref.notifier(fsMutationProvider).toggleSelection(fullPath);
   }
 
   /// T-016: 长按条目弹上下文菜单
   void _onLongPressEntry(Device device, FsListState state, rust.FsEntry entry) async {
     debugPrint('[T-016 DEBUG] _onLongPressEntry called for: ${entry.name}');
-    final fullPath = state.currentPath.isEmpty
-        ? entry.name
-        : '${state.currentPath}/${entry.name}';
+    final fullPath = state.currentPath.isEmpty ? entry.name : '${state.currentPath}/${entry.name}';
 
     debugPrint('[T-016 DEBUG] Full path: $fullPath');
 
@@ -563,7 +594,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     if (targetPath == null || !mounted) return;
 
     // 执行移动操作
-    await ref.notifier(fsMutationProvider).moveAsync(
+    await ref
+        .notifier(fsMutationProvider)
+        .moveAsync(
           device: device,
           paths: mutationState.selectedPaths.toList(),
           targetDir: targetPath,
@@ -601,7 +634,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     if (useRecycleBin == null || !mounted) return;
 
     // 执行删除操作
-    await ref.notifier(fsMutationProvider).deleteAsync(
+    await ref
+        .notifier(fsMutationProvider)
+        .deleteAsync(
           device: device,
           paths: mutationState.selectedPaths.toList(),
           useRecycleBin: useRecycleBin,
@@ -639,7 +674,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
     if (newName == null || !mounted) return;
 
-    await ref.notifier(fsMutationProvider).renameAsync(
+    await ref
+        .notifier(fsMutationProvider)
+        .renameAsync(
           device: device,
           oldPath: fullPath,
           newName: newName,
@@ -667,20 +704,26 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
   /// T-016: 处理单个文件移动
   Future<void> _handleMoveSingle(Device device, String fullPath) async {
-    await _showMoveDialog(device, FsMutationData(
-      state: FsMutationState.idle,
-      selectedPaths: {fullPath},
-      isMultiSelectMode: true,
-    ));
+    await _showMoveDialog(
+      device,
+      FsMutationData(
+        state: FsMutationState.idle,
+        selectedPaths: {fullPath},
+        isMultiSelectMode: true,
+      ),
+    );
   }
 
   /// T-016: 处理单个文件删除
   Future<void> _handleDeleteSingle(Device device, String fullPath) async {
-    await _showDeleteDialog(device, FsMutationData(
-      state: FsMutationState.idle,
-      selectedPaths: {fullPath},
-      isMultiSelectMode: true,
-    ));
+    await _showDeleteDialog(
+      device,
+      FsMutationData(
+        state: FsMutationState.idle,
+        selectedPaths: {fullPath},
+        isMultiSelectMode: true,
+      ),
+    );
   }
 
   /// T-016: 处理分享操作

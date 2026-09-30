@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:localsend_isolates/constants.dart';
 import 'package:localsend_isolates/model/dto/multicast_dto.dart';
 import 'package:localsend_isolates/model/file_type.dart';
-import 'package:localsend_isolates/rust/api/model.dart' show FileDto;
+import 'package:localsend_isolates/rust/api/model.dart' show FileDto, FsRoot;
 import 'package:localsend_isolates/rust/api/server.dart';
 import 'package:localsend_isolates/src/isolate/child/main.dart';
 import 'package:localsend_isolates/src/isolate/child/sync_provider.dart';
@@ -355,6 +355,20 @@ class HttpServerListenerFailedEvent extends HttpServerEvent {
   });
 }
 
+/// T-019: a mount point was added or removed on the host. Emitted
+/// when the host's `MountWatcher` reports a diff. Clients should
+/// refresh their local view and, if currently browsing a path
+/// under a removed root, navigate back to the roots list.
+class HttpServerFsRootsChangedEvent extends HttpServerEvent {
+  /// Full snapshot of the current whitelist. Clients do their own
+  /// id-level diff to drive "added" vs "removed" toasts.
+  final List<FsRoot> roots;
+
+  HttpServerFsRootsChangedEvent({
+    required this.roots,
+  });
+}
+
 class _ReceiveSession {
   final HttpServerReceiveConfig config;
 
@@ -553,6 +567,8 @@ Future<void> setupHttpServerIsolate(
                 case RsServerEvent_ListenerFailed(:final error):
                   ref.read(_receiveSessionProvider).session = null;
                   emit(HttpServerListenerFailedEvent(error: error));
+                case RsServerEvent_FsRootsChanged(:final roots):
+                  emit(HttpServerFsRootsChangedEvent(roots: roots));
               }
             }
           } finally {

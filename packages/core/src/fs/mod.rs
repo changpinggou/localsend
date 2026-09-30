@@ -35,6 +35,7 @@
 mod audit;
 mod config;
 mod events;
+pub(crate) mod hotplug;
 mod mount;
 mod move_delete;
 mod path;
@@ -149,15 +150,17 @@ mod tests {
         }
     }
 
-    #[test]
-    fn fs_state_can_be_built_from_config_and_mounts() {
+    #[tokio::test]
+    async fn fs_state_can_be_built_from_config_and_mounts() {
         // T-003 wiring smoke test: an FsState can be constructed
         // from a config + a mount table. The integration with the
         // v2 server (AppState.fs, dispatch arms) is exercised
-        // there.
+        // there. Now `async` because T-018 wraps `mounts` in a
+        // `tokio::sync::RwLock` and reading it (`.is_empty()`)
+        // needs an async context.
         let state = FsState::new(FsConfig::default(), MountTable::new());
         assert!(state.config.whitelist.is_empty());
-        assert!(state.mounts.is_empty());
+        assert!(state.mounts.read().await.is_empty());
         // The PathGuard is wired automatically by `FsState::new`.
         assert!(state.guard.table().is_empty());
     }

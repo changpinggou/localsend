@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/model/cross_file.dart';
 import 'package:localsend_app/model/state/server/server_state.dart';
-import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_app/model/state/server/web_share_state.dart';
+import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
+import 'package:localsend_app/provider/network/fs/fs_roots_provider.dart';
 import 'package:localsend_app/provider/network/server/controller/receive_controller.dart';
 import 'package:localsend_app/provider/network/server/controller/send_controller.dart';
 import 'package:localsend_app/provider/network/server/server_utils.dart';
@@ -14,6 +15,7 @@ import 'package:localsend_app/util/alias_generator.dart';
 import 'package:localsend_app/util/native/web_pages_loader.dart';
 import 'package:localsend_isolates/constants.dart';
 import 'package:localsend_isolates/isolate.dart';
+import 'package:localsend_isolates/model/capability.dart';
 import 'package:localsend_isolates/model/dto/multicast_dto.dart';
 import 'package:localsend_isolates/rust/api/server.dart' show WebI18n, WebMode, WebParams;
 import 'package:localsend_isolates/util/rust.dart';
@@ -395,6 +397,44 @@ class ServerService extends Notifier<ServerState?> {
       case HttpServerListenerFailedEvent():
         // ignore: discarded_futures
         _restartAfterListenerFailure(event.error);
+      case HttpServerFsRootsChangedEvent():
+        _onFsRootsChanged(event);
+    }
+  }
+
+  /// T-020: apply a server-pushed `FsRootsChanged` to the
+  /// per-device `fsRootsProvider`, and bounce the list back to
+  /// root if the user's current path is no longer under any
+  /// whitelisted mount.
+  ///
+  /// `ServerState` doesn't carry a `device` field directly —
+  /// the active peer's fingerprint is tracked on `fsListProvider`
+  /// (T-008). If the list is showing no remote device yet, we
+  /// have nothing to invalidate, so we just stash the latest
+  /// snapshot under `null` and let the next `enterRoots()` pick
+  /// it up.
+  void _onFsRootsChanged(HttpServerFsRootsChangedEvent event) {
+    final list = ref.read(fsListProvider);
+    final fp = list.deviceFingerprint;
+
+    // 1. Cache the new whitelist for this device (or under the
+    //    "no device yet" key if we don't know which peer sent
+    //    this). The latter case will be overwritten once the
+    //    user opens the browser page and `enterRoots()` runs.
+    ref.notifier(fsRootsProvider).update(fp ?? '__pending__', event.roots);
+
+    // 2. If the user is browsing a path that's no longer
+    //    reachable, force-bounce to the roots list. Only when
+    //    we have a known device and the list state matches it.
+    if (fp == null || list.deviceFingerprint != fp) {
+      return;
+    }
+    if (list.currentPath.isEmpty) {
+      return; // already at roots; the new whitelist just re-renders
+    }
+    final rootsState = ref.read(fsRootsProvider);
+    if (!rootsState.containsRootFor(fp, list.currentPath)) {
+      ref.notifier(fsListProvider).forceToRoot();
     }
   }
 

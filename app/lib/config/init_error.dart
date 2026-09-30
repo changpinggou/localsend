@@ -29,7 +29,20 @@ void showInitErrorApp({
     ),
   );
 
-  await showFromTray();
+  // `showFromTray()` is a no-op on platforms without a real
+  // tray (iOS / Android) but it still touches
+  // `window_manager.show()` which throws
+  // `MissingPluginException` on those platforms because
+  // `window_manager` ships no native channel there. Wrap in
+  // try/catch so the error-app fallback path itself doesn't
+  // throw on non-desktop runs.
+  if (checkPlatformIsDesktop()) {
+    try {
+      await showFromTray();
+    } catch (e, st) {
+      _logger.warning('showFromTray failed on desktop', e, st);
+    }
+  }
 }
 
 class _ErrorApp extends StatefulWidget {
