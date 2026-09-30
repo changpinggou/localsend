@@ -113,13 +113,24 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
     required String oldPath,
     required String newName,
   }) async {
-    _logger.fine('[T-016 DEBUG] renameAsync called with oldPath=$oldPath, newName=$newName');
+    _logger.info('renameAsync called with oldPath="$oldPath", newName="$newName"');
 
     state = state.copyWith(
       state: FsMutationState.loading,
       operationType: FsMutationType.rename,
       clearError: true,
     );
+
+    // 早退：空字符串会让服务端返回 "bad request: empty path"。
+    if (oldPath.isEmpty || newName.isEmpty) {
+      const msg = 'rename rejected: empty path';
+      _logger.warning(msg);
+      state = state.copyWith(
+        state: FsMutationState.error,
+        errorMessage: msg,
+      );
+      return;
+    }
 
     try {
       // 构建新路径
@@ -128,7 +139,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
           : '';
       final newPath = parentPath.isEmpty ? newName : '$parentPath/$newName';
 
-      _logger.fine('[T-016 DEBUG] Constructed newPath=$newPath (parentPath=$parentPath)');
+      _logger.info('Constructed newPath="$newPath" (parentPath="$parentPath")');
 
       // 使用带证书的 HTTPS 客户端
       final securityContext = ref.read(securityProvider);
@@ -147,7 +158,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
         throw Exception('Device has no IP address');
       }
 
-      _logger.fine('[T-016 DEBUG] Calling fsMove with from=$oldPath, to=$newPath');
+      _logger.info('Calling fsMove from="$oldPath" to="$newPath"');
 
       await client.fsMove(
         protocol: protocol,
@@ -186,6 +197,17 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
       clearError: true,
     );
 
+    // 早退：服务端会拒绝空 from/to ("bad request: empty path")。
+    if (paths.isEmpty || paths.any((p) => p.isEmpty) || targetDir.isEmpty) {
+      const msg = 'move rejected: empty path';
+      _logger.warning('$msg (paths=$paths, targetDir="$targetDir")');
+      state = state.copyWith(
+        state: FsMutationState.error,
+        errorMessage: msg,
+      );
+      return;
+    }
+
     try {
       // 使用带证书的 HTTPS 客户端
       final securityContext = ref.read(securityProvider);
@@ -202,6 +224,8 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
       if (ip == null) {
         throw Exception('Device has no IP address');
       }
+
+      _logger.info('moveAsync: ${paths.length} items -> "$targetDir"');
 
       // 逐个移动
       for (final path in paths) {

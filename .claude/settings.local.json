@@ -98,7 +98,8 @@
       "Bash(xcrun simctl *)",
       "Bash(flutter_rust_bridge_codegen generate *)",
       "Bash(python3 *)",
-      "Bash(cargo test *)"
+      "Bash(cargo test *)",
+      "Bash(fvm dart *)"
     ]
   }
 }

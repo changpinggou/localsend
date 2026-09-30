@@ -409,6 +409,27 @@ impl PathGuard {
             let prefix = format!("{}/", root.id);
             if input.starts_with(&prefix) {
                 let relative = &input[prefix.len()..];
+                let Some(canonical_root) = self.canonical_roots.get(&root.id) else {
+                    continue;
+                };
+
+                // Edge case: `input` is exactly the root id followed
+                // by `/` (e.g. "D:/"). There is no relative path, so
+                // `relative` is empty and `FsPath::new("")` would
+                // surface a misleading "empty path" BadRequest. Treat
+                // this as "input is the root itself" and return its
+                // canonical path directly (mirrors step 0 above).
+                if relative.is_empty() {
+                    tracing::info!(
+                        event = "fs.path.root_prefix_match",
+                        input = input,
+                        root_id = %root.id,
+                        relative = "",
+                        "Matched root id prefix (no relative path; treating as root)"
+                    );
+                    return Ok(canonical_root.clone());
+                }
+
                 tracing::info!(
                     event = "fs.path.root_prefix_match",
                     input = input,
@@ -416,10 +437,6 @@ impl PathGuard {
                     relative = relative,
                     "Matched root id prefix"
                 );
-
-                let Some(canonical_root) = self.canonical_roots.get(&root.id) else {
-                    continue;
-                };
 
                 let fs_path = FsPath::new(relative)?;
                 let normalized = fs_path.as_str();
