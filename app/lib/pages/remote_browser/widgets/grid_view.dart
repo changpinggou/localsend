@@ -1,19 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:localsend_app/widget/remote_thumbnail.dart';
+import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
 
-/// T-008: grid-mode cell. P5 will replace the [Icons.*] placeholder with
-/// a real `Thumbnail` widget that lazily fetches
-/// `/api/localsend/v2/fs/thumbnail?path=...&w=128&h=128`; for P1 we use a
-/// type icon so the layout is ready and the upgrade path is local.
+/// T-008: grid-mode cell. P5: image entries render a [RemoteThumbnail]
+/// fetched from `/api/localsend/v2/fs/thumbnail?path=...&w=128&h=128`;
+/// folders and non-image files keep type icons.
 class FsGridCell extends StatelessWidget {
   final rust.FsEntry entry;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
+  /// Present when the cell should render a real thumbnail for image
+  /// entries. When null, the cell falls back to type icons (e.g. at the
+  /// roots level or when thumbnails are disabled).
+  final Device? device;
+
+  /// The current directory path (relative to the mount root). Combined
+  /// with [entry.name] to form the full remote path for the thumbnail
+  /// request. Ignored when [device] is null.
+  final String currentPath;
+
   const FsGridCell({
     required this.entry,
     required this.onTap,
     this.onLongPress,
+    this.device,
+    this.currentPath = '',
     super.key,
   });
 
@@ -48,11 +61,7 @@ class FsGridCell extends StatelessWidget {
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  entry.isDir ? Icons.folder : _fileIcon(entry.name),
-                  size: 48,
-                  color: entry.isDir ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                ),
+                child: _buildThumbnailOrIcon(context, theme),
               ),
             ),
             const SizedBox(height: 8),
@@ -66,6 +75,37 @@ class FsGridCell extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Chooses between a real thumbnail and a type icon based on the
+  /// entry's MIME type and whether we have a [device] to talk to.
+  Widget _buildThumbnailOrIcon(BuildContext context, ThemeData theme) {
+    final bool isImage = !entry.isDir && entry.mime != null && entry.mime!.startsWith('image/');
+
+    if (isImage && device != null) {
+      final fullPath = currentPath.isEmpty
+          ? entry.name
+          : '$currentPath/${entry.name}';
+      return Center(
+        child: RemoteThumbnail(
+          device: device!,
+          fullPath: fullPath,
+          width: 96,
+          height: 96,
+          placeholder: Icon(
+            _fileIcon(entry.name),
+            size: 48,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return Icon(
+      entry.isDir ? Icons.folder : _fileIcon(entry.name),
+      size: 48,
+      color: entry.isDir ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
     );
   }
 
@@ -138,10 +178,19 @@ class FsGridBody extends StatelessWidget {
   final void Function(rust.FsEntry entry) onTapEntry;
   final void Function(rust.FsEntry entry)? onLongPressEntry;
 
+  /// When set, image entries render real thumbnails via [RemoteThumbnail].
+  final Device? device;
+
+  /// Current directory path (relative to mount root) used to build full
+  /// remote paths for thumbnail requests.
+  final String currentPath;
+
   const FsGridBody({
     required this.entries,
     required this.onTapEntry,
     this.onLongPressEntry,
+    this.device,
+    this.currentPath = '',
     super.key,
   });
 
@@ -155,12 +204,15 @@ class FsGridBody extends StatelessWidget {
       ),
       itemCount: entries.length,
       itemBuilder: (context, index) {
+        final entry = entries[index];
         return FsGridCell(
-          entry: entries[index],
-          onTap: () => onTapEntry(entries[index]),
+          entry: entry,
+          onTap: () => onTapEntry(entry),
           onLongPress: onLongPressEntry != null
-              ? () => onLongPressEntry!(entries[index])
+              ? () => onLongPressEntry!(entry)
               : null,
+          device: device,
+          currentPath: currentPath,
         );
       },
     );

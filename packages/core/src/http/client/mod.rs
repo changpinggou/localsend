@@ -390,6 +390,26 @@ impl LsHttpClient {
             ))),
         }
     }
+
+    /// `GET /api/localsend/v2/fs/thumbnail` — fetch a PNG thumbnail for an
+    /// image file on a whitelisted mount point. T-021.
+    #[cfg(feature = "fs-thumb")]
+    pub async fn fs_thumbnail(
+        &self,
+        protocol: model::discovery::ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+        width: u16,
+        height: u16,
+    ) -> Result<Bytes, ClientError> {
+        match self {
+            LsHttpClient::V2(client) => client.fs_thumbnail(protocol, ip, port, path, width, height).await,
+            LsHttpClient::V3(_) => Err(ClientError::Other(anyhow::anyhow!(
+                "fs namespace is v2-only; use LsHttpClientVersion::V2"
+            ))),
+        }
+    }
 }
 
 /// Builds a streaming request body from the file content, invoking `progress`

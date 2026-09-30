@@ -318,6 +318,8 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
           debugPrint('[T-016 DEBUG] FsGridBody onLongPressEntry triggered for: ${entry.name}');
           _onLongPressEntry(device, state, entry);
         },
+        device: device,
+        currentPath: state.currentPath,
       );
     }
 
@@ -332,6 +334,8 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
         _onLongPressEntry(device, state, entry);
       },
       onLoadMore: () => ref.notifier(fsListProvider).loadMore(device),
+      device: device,
+      currentPath: state.currentPath,
     );
   }
   // ignore: discarded_futures

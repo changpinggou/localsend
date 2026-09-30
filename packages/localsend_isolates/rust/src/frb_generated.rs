@@ -43,7 +43,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2055363441;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1500818718;
 
 // Section: executor
 
@@ -1357,6 +1357,76 @@ fn wire__crate__api__http__RsHttpClient_fs_stat_impl(
                             &api_ip,
                             api_port,
                             api_path,
+                        )
+                        .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__http__RsHttpClient_fs_thumbnail_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "RsHttpClient_fs_thumbnail",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<RsHttpClient>,
+            >>::sse_decode(&mut deserializer);
+            let api_protocol = <crate::api::model::ProtocolType>::sse_decode(&mut deserializer);
+            let api_ip = <String>::sse_decode(&mut deserializer);
+            let api_port = <u16>::sse_decode(&mut deserializer);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            let api_width = <u16>::sse_decode(&mut deserializer);
+            let api_height = <u16>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::api::http::RsHttpClientError>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::api::http::RsHttpClient::fs_thumbnail(
+                            &*api_that_guard,
+                            api_protocol,
+                            &api_ip,
+                            api_port,
+                            api_path,
+                            api_width,
+                            api_height,
                         )
                         .await?;
                         Ok(output_ok)
@@ -6224,175 +6294,181 @@ fn pde_ffi_dispatcher_primary_impl(
         19 => wire__crate__api__http__RsHttpClient_fs_mkdir_impl(port, ptr, rust_vec_len, data_len),
         20 => wire__crate__api__http__RsHttpClient_fs_move_impl(port, ptr, rust_vec_len, data_len),
         21 => wire__crate__api__http__RsHttpClient_fs_stat_impl(port, ptr, rust_vec_len, data_len),
-        22 => {
+        22 => wire__crate__api__http__RsHttpClient_fs_thumbnail_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        23 => {
             wire__crate__api__http__RsHttpClient_fs_upload_impl(port, ptr, rust_vec_len, data_len)
         }
-        23 => wire__crate__api__http__RsHttpClient_list_dir_impl(port, ptr, rust_vec_len, data_len),
-        24 => {
+        24 => wire__crate__api__http__RsHttpClient_list_dir_impl(port, ptr, rust_vec_len, data_len),
+        25 => {
             wire__crate__api__http__RsHttpClient_list_roots_impl(port, ptr, rust_vec_len, data_len)
         }
-        25 => wire__crate__api__http__RsHttpClient_prepare_upload_impl(
+        26 => wire__crate__api__http__RsHttpClient_prepare_upload_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        26 => wire__crate__api__http__RsHttpClient_register_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__http__RsHttpClient_upload_impl(port, ptr, rust_vec_len, data_len),
-        28 => wire__crate__api__server__RsHttpServer_cancel_session_impl(
+        27 => wire__crate__api__http__RsHttpClient_register_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__http__RsHttpClient_upload_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__server__RsHttpServer_cancel_session_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        29 => wire__crate__api__server__RsHttpServer_fail_file_download_impl(
+        30 => wire__crate__api__server__RsHttpServer_fail_file_download_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        30 => wire__crate__api__server__RsHttpServer_fail_file_upload_impl(
+        31 => wire__crate__api__server__RsHttpServer_fail_file_upload_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__api__server__RsHttpServer_listen_impl(port, ptr, rust_vec_len, data_len),
-        32 => wire__crate__api__server__RsHttpServer_respond_file_download_impl(
+        32 => wire__crate__api__server__RsHttpServer_listen_impl(port, ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__server__RsHttpServer_respond_file_download_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        33 => wire__crate__api__server__RsHttpServer_respond_file_upload_impl(
+        34 => wire__crate__api__server__RsHttpServer_respond_file_upload_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => wire__crate__api__server__RsHttpServer_respond_prepare_download_impl(
+        35 => wire__crate__api__server__RsHttpServer_respond_prepare_download_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        35 => wire__crate__api__server__RsHttpServer_respond_prepare_upload_impl(
+        36 => wire__crate__api__server__RsHttpServer_respond_prepare_upload_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        36 => wire__crate__api__server__RsHttpServer_stop_impl(port, ptr, rust_vec_len, data_len),
-        37 => wire__crate__api__webrtc__RtcFileReceiver_get_file_id_impl(
+        37 => wire__crate__api__server__RsHttpServer_stop_impl(port, ptr, rust_vec_len, data_len),
+        38 => wire__crate__api__webrtc__RtcFileReceiver_get_file_id_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        38 => wire__crate__api__webrtc__RtcFileReceiver_receive_impl(
+        39 => wire__crate__api__webrtc__RtcFileReceiver_receive_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        39 => wire__crate__api__webrtc__RtcFileSender_send_impl(port, ptr, rust_vec_len, data_len),
-        40 => wire__crate__api__webrtc__RtcReceiveController_decline_impl(
+        40 => wire__crate__api__webrtc__RtcFileSender_send_impl(port, ptr, rust_vec_len, data_len),
+        41 => wire__crate__api__webrtc__RtcReceiveController_decline_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        41 => wire__crate__api__webrtc__RtcReceiveController_listen_error_impl(
+        42 => wire__crate__api__webrtc__RtcReceiveController_listen_error_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        42 => wire__crate__api__webrtc__RtcReceiveController_listen_files_impl(
+        43 => wire__crate__api__webrtc__RtcReceiveController_listen_files_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        43 => wire__crate__api__webrtc__RtcReceiveController_listen_receiving_impl(
+        44 => wire__crate__api__webrtc__RtcReceiveController_listen_receiving_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        44 => wire__crate__api__webrtc__RtcReceiveController_listen_status_impl(
+        45 => wire__crate__api__webrtc__RtcReceiveController_listen_status_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        45 => wire__crate__api__webrtc__RtcReceiveController_send_file_status_impl(
+        46 => wire__crate__api__webrtc__RtcReceiveController_send_file_status_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        46 => wire__crate__api__webrtc__RtcReceiveController_send_pin_impl(
+        47 => wire__crate__api__webrtc__RtcReceiveController_send_pin_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        47 => wire__crate__api__webrtc__RtcReceiveController_send_selection_impl(
+        48 => wire__crate__api__webrtc__RtcReceiveController_send_selection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        48 => wire__crate__api__webrtc__RtcSendController_listen_error_impl(
+        49 => wire__crate__api__webrtc__RtcSendController_listen_error_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        49 => wire__crate__api__webrtc__RtcSendController_listen_selected_files_impl(
+        50 => wire__crate__api__webrtc__RtcSendController_listen_selected_files_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        50 => wire__crate__api__webrtc__RtcSendController_listen_status_impl(
+        51 => wire__crate__api__webrtc__RtcSendController_listen_status_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        51 => wire__crate__api__webrtc__RtcSendController_send_file_impl(
+        52 => wire__crate__api__webrtc__RtcSendController_send_file_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        52 => wire__crate__api__webrtc__RtcSendController_send_pin_impl(
+        53 => wire__crate__api__webrtc__RtcSendController_send_pin_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        53 => wire__crate__api__webrtc__connect_impl(port, ptr, rust_vec_len, data_len),
-        57 => wire__crate__api__stream__create_stream_impl(port, ptr, rust_vec_len, data_len),
-        58 => {
+        54 => wire__crate__api__webrtc__connect_impl(port, ptr, rust_vec_len, data_len),
+        58 => wire__crate__api__stream__create_stream_impl(port, ptr, rust_vec_len, data_len),
+        59 => {
             wire__crate__api__logging__enable_debug_logging_impl(port, ptr, rust_vec_len, data_len)
         }
-        59 => wire__crate__api__crypto__generate_key_pair_impl(port, ptr, rust_vec_len, data_len),
-        60 => wire__crate__api__crypto__generate_security_context_impl(
+        60 => wire__crate__api__crypto__generate_key_pair_impl(port, ptr, rust_vec_len, data_len),
+        61 => wire__crate__api__crypto__generate_security_context_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        61 => wire__crate__api__crypto__hash_file_impl(port, ptr, rust_vec_len, data_len),
-        63 => {
+        62 => wire__crate__api__crypto__hash_file_impl(port, ptr, rust_vec_len, data_len),
+        64 => {
             wire__crate__api__metadata__read_file_metadata_impl(port, ptr, rust_vec_len, data_len)
         }
-        65 => wire__crate__api__discovery__start_discovery_impl(port, ptr, rust_vec_len, data_len),
-        66 => wire__crate__api__server__start_server_impl(port, ptr, rust_vec_len, data_len),
-        67 => wire__crate__api__crypto__verify_cert_impl(port, ptr, rust_vec_len, data_len),
+        66 => wire__crate__api__discovery__start_discovery_impl(port, ptr, rust_vec_len, data_len),
+        67 => wire__crate__api__server__start_server_impl(port, ptr, rust_vec_len, data_len),
+        68 => wire__crate__api__crypto__verify_cert_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -6407,11 +6483,11 @@ fn pde_ffi_dispatcher_sync_impl(
     match func_id {
         2 => wire__crate__api__stream__Dart2RustStreamSink_close_impl(ptr, rust_vec_len, data_len),
         6 => wire__crate__api__cancel__RsCancellationToken_cancel_impl(ptr, rust_vec_len, data_len),
-        54 => wire__crate__api__cancel__create_cancellation_token_impl(ptr, rust_vec_len, data_len),
-        55 => wire__crate__api__http__create_client_impl(ptr, rust_vec_len, data_len),
-        56 => wire__crate__api__http__create_http_only_client_impl(ptr, rust_vec_len, data_len),
-        62 => wire__crate__api__filename__is_valid_file_name_impl(ptr, rust_vec_len, data_len),
-        64 => wire__crate__api__filename__sanitize_file_name_impl(ptr, rust_vec_len, data_len),
+        55 => wire__crate__api__cancel__create_cancellation_token_impl(ptr, rust_vec_len, data_len),
+        56 => wire__crate__api__http__create_client_impl(ptr, rust_vec_len, data_len),
+        57 => wire__crate__api__http__create_http_only_client_impl(ptr, rust_vec_len, data_len),
+        63 => wire__crate__api__filename__is_valid_file_name_impl(ptr, rust_vec_len, data_len),
+        65 => wire__crate__api__filename__sanitize_file_name_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

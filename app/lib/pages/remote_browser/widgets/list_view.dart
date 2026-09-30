@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:localsend_app/widget/remote_thumbnail.dart';
+import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
 
 /// T-008: list-mode entry row used by [RemoteBrowserPage].
 ///
-/// `name / size / mtime` three columns. `onTap` distinguishes folder vs file
-/// entries so the parent can either navigate into the directory (folder)
-/// or fire the file action sheet (file). Long-press is left to the parent
-/// because it owns the selection / context-menu state.
+/// `name / size / mtime` three columns. Image entries render a small
+/// [RemoteThumbnail] in the leading icon slot when a [device] is provided.
+/// `onTap` distinguishes folder vs file entries so the parent can either
+/// navigate into the directory (folder) or fire the file action sheet
+/// (file). Long-press is left to the parent because it owns the selection
+/// / context-menu state.
 class FsListRow extends StatelessWidget {
   final rust.FsEntry entry;
   final bool isLast;
   final VoidCallback onTap;
 
+  /// Present when the row should render a real thumbnail for image
+  /// entries. When null, the row falls back to type icons.
+  final Device? device;
+
+  /// Current directory path (relative to mount root) used to build full
+  /// remote paths for thumbnail requests.
+  final String currentPath;
+
   const FsListRow({
     required this.entry,
     required this.isLast,
     required this.onTap,
+    this.device,
+    this.currentPath = '',
     super.key,
   });
 
@@ -49,10 +63,7 @@ class FsListRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(
-              entry.isDir ? Icons.folder : _fileIcon(entry.name),
-              color: entry.isDir ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-            ),
+            _buildLeadingIcon(theme),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -87,6 +98,33 @@ class FsListRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Chooses between a real thumbnail and a type icon based on the
+  /// entry's MIME type and whether we have a [device] to talk to.
+  Widget _buildLeadingIcon(ThemeData theme) {
+    final bool isImage = !entry.isDir && entry.mime != null && entry.mime!.startsWith('image/');
+
+    if (isImage && device != null) {
+      final fullPath = currentPath.isEmpty
+          ? entry.name
+          : '$currentPath/${entry.name}';
+      return RemoteThumbnail(
+        device: device!,
+        fullPath: fullPath,
+        width: 40,
+        height: 40,
+        placeholder: Icon(
+          _fileIcon(entry.name),
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Icon(
+      entry.isDir ? Icons.folder : _fileIcon(entry.name),
+      color: entry.isDir ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
     );
   }
 
@@ -213,6 +251,13 @@ class FsListBody extends StatefulWidget {
   final void Function(rust.FsEntry entry)? onLongPressEntry;
   final VoidCallback onLoadMore;
 
+  /// When set, image entries render real thumbnails via [RemoteThumbnail].
+  final Device? device;
+
+  /// Current directory path (relative to mount root) used to build full
+  /// remote paths for thumbnail requests.
+  final String currentPath;
+
   const FsListBody({
     required this.entries,
     required this.hasMore,
@@ -220,6 +265,8 @@ class FsListBody extends StatefulWidget {
     required this.onTapEntry,
     this.onLongPressEntry,
     required this.onLoadMore,
+    this.device,
+    this.currentPath = '',
     super.key,
   });
 
@@ -285,6 +332,8 @@ class _FsListBodyState extends State<FsListBody> {
             entry: entry,
             isLast: index == count - 1,
             onTap: () => widget.onTapEntry(entry),
+            device: widget.device,
+            currentPath: widget.currentPath,
           ),
         );
       },

@@ -92,6 +92,25 @@ abstract class RsHttpClient implements RustOpaqueInterface {
   /// `GET /api/localsend/v2/fs/stat` — get file/directory metadata.
   Future<StatResponse> fsStat({required ProtocolType protocol, required String ip, required int port, required String path});
 
+  /// T-021: `GET /api/localsend/v2/fs/thumbnail` — fetch a
+  /// PNG thumbnail for an image file. Returns raw PNG bytes
+  /// (no JSON envelope). `width` / `height` are the bounding
+  /// box; the server preserves aspect ratio and scales to fit.
+  ///
+  /// The HTTP request itself is plain reqwest GET — no
+  /// `image` crate dependency on the client. We still gate
+  /// behind `fs-thumb` to match the server side (the
+  /// underlying `LsHttpClientV2::fs_thumbnail` is feature-
+  /// gated there); the client wrapper follows.
+  Future<Uint8List> fsThumbnail({
+    required ProtocolType protocol,
+    required String ip,
+    required int port,
+    required String path,
+    required int width,
+    required int height,
+  });
+
   /// `POST /api/localsend/v2/fs/upload` — upload a file to a remote directory.
   /// Implements the session-based upload protocol (init → chunk → finish).
   /// Emits [RsFsUploadEvent]s on [sink].
