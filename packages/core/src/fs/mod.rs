@@ -42,6 +42,8 @@ mod path;
 mod recycle;
 mod rest;
 mod stat;
+#[cfg(feature = "fs-thumb")]
+mod thumbnail;
 pub(crate) mod upload;
 
 pub use audit::{AuditEntry, AuditLog};

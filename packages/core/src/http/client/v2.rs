@@ -882,6 +882,69 @@ impl LsHttpClientV2 {
         Ok(res.json().await?)
     }
 
+    /// GET /api/localsend/v2/fs/thumbnail — fetch a PNG thumbnail
+    /// for an image file. T-021: returns the raw image bytes
+    /// (PNG, ≤ 256×256). The server's LRU cache makes repeat
+    /// requests O(1).
+    ///
+    /// `width` and `height` are the requested bounding box; the
+    /// server preserves the source's aspect ratio and scales to
+    /// fit within the box.
+    ///
+    /// `#[cfg(feature = "fs-thumb")]` so a build that doesn't
+    /// link the `image` crate (just `fs`) still compiles. The
+    /// HTTP request itself is plain reqwest GET — the `image`
+    /// dependency is only used by the *server* handler.
+    #[cfg(feature = "fs-thumb")]
+    pub async fn fs_thumbnail(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: &str,
+        width: u16,
+        height: u16,
+    ) -> Result<bytes::Bytes, ClientError> {
+        let url = TargetUrl {
+            version: ApiVersion::V2,
+            protocol: protocol.as_str(),
+            host: ip.to_string(),
+            port,
+            path: "/fs/thumbnail",
+            params: &[
+                ("path", path),
+                ("w", &width.to_string()),
+                ("h", &height.to_string()),
+            ],
+        }
+        .to_string();
+
+        tracing::debug!(
+            event = "fs.thumbnail.request",
+            url = %url,
+            "fs thumbnail request"
+        );
+
+        let res = self.client.get(&url).send().await?;
+        let status = res.status();
+
+        tracing::debug!(
+            event = "fs.thumbnail.response",
+            status = %status,
+            url = %url,
+            "fs thumbnail response"
+        );
+
+        if !status.is_success() {
+            return res.into_error().await;
+        }
+
+        // Stream into bytes — thumbnails are small but we don't
+        // know the exact Content-Length up front, so use
+        // reqwest's `bytes()` to materialise the response.
+        Ok(res.bytes().await?)
+    }
+
     /// POST /api/localsend/v2/fs/move — move/rename file or directory.
     /// T-014: requires confirm=true to prevent accidental moves.
     #[cfg(feature = "fs")]

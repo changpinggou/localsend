@@ -458,6 +458,34 @@ impl RsHttpClient {
         Ok(StatResponse::from_json(response))
     }
 
+    /// T-021: `GET /api/localsend/v2/fs/thumbnail` — fetch a
+    /// PNG thumbnail for an image file. Returns raw PNG bytes
+    /// (no JSON envelope). `width` / `height` are the bounding
+    /// box; the server preserves aspect ratio and scales to fit.
+    ///
+    /// The HTTP request itself is plain reqwest GET — no
+    /// `image` crate dependency on the client. We still gate
+    /// behind `fs-thumb` to match the server side (the
+    /// underlying `LsHttpClientV2::fs_thumbnail` is feature-
+    /// gated there); the client wrapper follows.
+    #[cfg(feature = "fs-thumb")]
+    pub async fn fs_thumbnail(
+        &self,
+        protocol: ProtocolType,
+        ip: &str,
+        port: u16,
+        path: String,
+        width: u16,
+        height: u16,
+    ) -> Result<Vec<u8>, RsHttpClientError> {
+        let response = self
+            .inner
+            .fs_thumbnail(protocol, ip, port, &path, width, height)
+            .await
+            .map_err(RsHttpClientError::from)?;
+        Ok(response.to_vec())
+    }
+
     /// `POST /api/localsend/v2/fs/move` — move/rename file or directory.
     pub async fn fs_move(
         &self,

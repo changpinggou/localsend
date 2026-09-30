@@ -127,6 +127,18 @@ pub struct FsState {
     /// publishes `RootsChanged` events here; T-019 subscribes and
     /// fans them out to every connected peer.
     pub fs_event_tx: tokio::sync::broadcast::Sender<super::events::FsEvent>,
+    /// T-021: in-memory LRU cache for generated thumbnails. Keyed
+    /// by `(canonical path, width, height)` so a 64×64 and a
+    /// 128×128 request for the same image live side-by-side.
+    /// Wrapped in a `Mutex` so handlers can insert concurrently;
+    /// LRU eviction runs in O(1).
+    ///
+    /// `Option` because the cache only exists when the
+    /// `fs-thumb` feature is enabled (it pulls in the `image`
+    /// crate). Hosts that only need `fs` without thumbnails can
+    /// compile without the heavier dependency.
+    #[cfg(feature = "fs-thumb")]
+    pub thumbnail_cache: Arc<tokio::sync::Mutex<lru::LruCache<(std::path::PathBuf, u16, u16), bytes::Bytes>>>,
 }
 
 impl FsState {
@@ -143,6 +155,13 @@ impl FsState {
             sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             audit: None,
             fs_event_tx,
+            #[cfg(feature = "fs-thumb")]
+            thumbnail_cache: Arc::new(tokio::sync::Mutex::new(
+                lru::LruCache::new(
+                    std::num::NonZeroUsize::new(super::thumbnail::THUMBNAIL_CACHE_CAPACITY)
+                        .expect("capacity > 0"),
+                ),
+            )),
         }
     }
 
@@ -161,6 +180,13 @@ impl FsState {
             sessions: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             audit,
             fs_event_tx,
+            #[cfg(feature = "fs-thumb")]
+            thumbnail_cache: Arc::new(tokio::sync::Mutex::new(
+                lru::LruCache::new(
+                    std::num::NonZeroUsize::new(super::thumbnail::THUMBNAIL_CACHE_CAPACITY)
+                        .expect("capacity > 0"),
+                ),
+            )),
         }
     }
 }
@@ -200,6 +226,12 @@ pub async fn handle_request(
         (&hyper::Method::GET, "/download") => handle_download(&state, &req).await,
         // T-014: stat endpoint
         (&hyper::Method::GET, "/stat") => super::stat::handle_stat(&state, &req).await,
+        // T-021: generate (or return cached) a WebP thumbnail
+        // for an image file. Gated behind `fs-thumb` so a build
+        // that doesn't link the `image` crate stays usable for
+        // other endpoints.
+        #[cfg(feature = "fs-thumb")]
+        (&hyper::Method::GET, "/thumbnail") => super::thumbnail::handle_thumbnail(&state, &req).await,
         // T-010 + T-011 write endpoints.
         (&hyper::Method::POST, "/mkdir") => super::upload::handle_mkdir(&state, req).await,
         (&hyper::Method::POST, "/upload/init") => super::upload::handle_upload_init(&state, req).await,

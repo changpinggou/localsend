@@ -100,7 +100,8 @@
       "Bash(python3 *)",
       "Bash(cargo test *)",
       "Bash(fvm dart *)",
-      "Bash(cargo clippy *)"
+      "Bash(cargo clippy *)",
+      "Bash(cargo build *)"
     ]
   }
 }

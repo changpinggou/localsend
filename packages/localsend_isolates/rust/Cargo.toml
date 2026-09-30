@@ -21,6 +21,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
 # wiring) are erased and every fs endpoint silently 404s.
 default = ["fs"]
 fs = ["localsend/fs"]
+fs-thumb = ["localsend/fs-thumb", "fs"]
 
 [dependencies]
 anyhow = "1.0"
