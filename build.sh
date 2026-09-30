@@ -4,6 +4,10 @@
 
 set -e
 
+# Ensure Dart/Flutter and global pub binaries are on PATH
+# (needed when running non-interactively, e.g. from an IDE)
+export PATH="$HOME/Documents/flutter/bin:$HOME/.pub-cache/bin:$PATH"
+
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 IOS_DEVICE="070CB1E9-E96A-4269-8EB8-A18B4CD27A74"  # iPhone 17 Pro Simulator
 
