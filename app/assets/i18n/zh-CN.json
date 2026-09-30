@@ -102,7 +102,25 @@
     "sortMtimeDesc": "最近修改",
     "viewList": "列表视图",
     "viewGrid": "网格视图",
-    "loadMore": "加载更多"
+    "loadMore": "加载更多",
+    "syncPhotos": "同步相册"
+  },
+  "sync": {
+    "title": "同步相册",
+    "scanningLocal": "正在扫描本地相册…",
+    "scanningRemote": "正在扫描远端目录…",
+    "comparing": "正在对比文件…",
+    "uploading": "正在上传…",
+    "scanned": "已扫描",
+    "uploaded": "已上传",
+    "skipped": "已跳过",
+    "failed": "失败",
+    "confirmTitle": "同步相册",
+    "confirmMessage": "将 %d 张本地照片同步到当前目录？\n其中 %d 张已存在于远端。",
+    "startSync": "开始同步",
+    "noPhotos": "相册中没有照片",
+    "upToDate": "所有照片已同步",
+    "syncComplete": "同步完成"
   },
   "fsBrowser": {
     "fsDisabledByPeerTitle": "该设备未开启驱动器浏览",

@@ -50,6 +50,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   @override
   late final Translations$remoteBrowser$zh_CN remoteBrowser = Translations$remoteBrowser$zh_CN.internal(_root);
   @override
+  late final Translations$sync$zh_CN sync = Translations$sync$zh_CN.internal(_root);
+  @override
   late final Translations$fsBrowser$zh_CN fsBrowser = Translations$fsBrowser$zh_CN.internal(_root);
   @override
   late final Translations$fsDownload$zh_CN fsDownload = Translations$fsDownload$zh_CN.internal(_root);
@@ -285,6 +287,47 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   String get viewGrid => '网格视图';
   @override
   String get loadMore => '加载更多';
+  @override
+  String get syncPhotos => '同步相册';
+}
+
+// Path: sync
+class Translations$sync$zh_CN extends Translations$sync$en {
+  Translations$sync$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => '同步相册';
+  @override
+  String get scanningLocal => '正在扫描本地相册…';
+  @override
+  String get scanningRemote => '正在扫描远端目录…';
+  @override
+  String get comparing => '正在对比文件…';
+  @override
+  String get uploading => '正在上传…';
+  @override
+  String get scanned => '已扫描';
+  @override
+  String get uploaded => '已上传';
+  @override
+  String get skipped => '已跳过';
+  @override
+  String get failed => '失败';
+  @override
+  String get confirmTitle => '同步相册';
+  @override
+  String get confirmMessage => '将 %d 张本地照片同步到当前目录？\n其中 %d 张已存在于远端。';
+  @override
+  String get startSync => '开始同步';
+  @override
+  String get noPhotos => '相册中没有照片';
+  @override
+  String get upToDate => '所有照片已同步';
+  @override
+  String get syncComplete => '同步完成';
 }
 
 // Path: fsBrowser

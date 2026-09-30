@@ -14,6 +14,7 @@ import 'package:localsend_app/pages/remote_browser/widgets/multi_select_bar.dart
 import 'package:localsend_app/pages/remote_browser/widgets/rename_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/selection_list_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/sync_progress_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/upload_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/upload_queue_bar.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart';
@@ -21,6 +22,7 @@ import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_mutation_provider.dart';
+import 'package:localsend_app/provider/network/fs/photo_sync_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_roots_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
@@ -185,6 +187,11 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
                 ),
               ]
             : [
+                IconButton(
+                  icon: const Icon(Icons.sync),
+                  tooltip: t.remoteBrowser.syncPhotos,
+                  onPressed: () => _onSyncPhotos(device, fsState),
+                ),
                 FsSortMenu(
                   current: fsState.sort,
                   onChanged: (s) => ref.notifier(fsListProvider).changeSort(device: device, sort: s),
@@ -236,6 +243,66 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       final fullPath = fsState.currentPath.isEmpty ? entry.name : '${fsState.currentPath}/${entry.name}';
       ref.notifier(fsMutationProvider).toggleSelection(fullPath);
     }
+  }
+
+  /// T-027: 同步相册到当前远端目录
+  Future<void> _onSyncPhotos(Device device, FsListState state) async {
+    // 必须在非根目录
+    if (state.currentPath.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('请先选择一个目录')),
+      );
+      return;
+    }
+
+    // 显示确认对话框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.sync.confirmTitle),
+        content: Text('将同步本地所有照片到当前目录\n${state.currentPath}\n\n已存在的文件会被跳过（同名同大小），不同的文件会覆盖。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.general.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.sync.startSync),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 显示进度对话框
+    if (!mounted) return;
+    SyncProgressDialog.show(
+      context: context,
+      localCount: 0,
+      remoteCount: 0,
+      toUploadCount: 0,
+    );
+
+    try {
+      await ref.notifier(photoSyncProvider).startSync(
+        device: device,
+        remoteDir: state.currentPath,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('同步失败：$e')),
+      );
+    }
+
+    // 关闭进度对话框
+    if (mounted) Navigator.of(context).pop();
+
+    // 刷新当前目录
+    ref.notifier(fsListProvider).refresh(device);
   }
 
   Widget _buildBody(Device device, FsListState state, FsMutationData mutationState) {

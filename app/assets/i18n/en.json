@@ -102,7 +102,25 @@
     "sortMtimeDesc": "Recently modified",
     "viewList": "List view",
     "viewGrid": "Grid view",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "syncPhotos": "Sync photos"
+  },
+  "sync": {
+    "title": "Sync Photos",
+    "scanningLocal": "Scanning local library…",
+    "scanningRemote": "Scanning remote directory…",
+    "comparing": "Comparing files…",
+    "uploading": "Uploading…",
+    "scanned": "Scanned",
+    "uploaded": "Uploaded",
+    "skipped": "Skipped",
+    "failed": "Failed",
+    "confirmTitle": "Sync Photos",
+    "confirmMessage": "Sync %d local photos to current directory?\n%d already exist on remote.",
+    "startSync": "Start Sync",
+    "noPhotos": "No photos found in library",
+    "upToDate": "All photos are already synced",
+    "syncComplete": "Sync complete"
   },
   "fsBrowser": {
     "fsDisabledByPeerTitle": "Drive browsing is off",

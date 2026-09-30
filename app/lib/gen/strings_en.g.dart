@@ -50,6 +50,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$receiveTab$en receiveTab = Translations$receiveTab$en.internal(_root);
   late final Translations$sendTab$en sendTab = Translations$sendTab$en.internal(_root);
   late final Translations$remoteBrowser$en remoteBrowser = Translations$remoteBrowser$en.internal(_root);
+  late final Translations$sync$en sync = Translations$sync$en.internal(_root);
   late final Translations$fsBrowser$en fsBrowser = Translations$fsBrowser$en.internal(_root);
   late final Translations$fsDownload$en fsDownload = Translations$fsDownload$en.internal(_root);
   late final Translations$fsUpload$en fsUpload = Translations$fsUpload$en.internal(_root);
@@ -325,6 +326,63 @@ class Translations$remoteBrowser$en {
 
   /// en: 'Load more'
   String get loadMore => 'Load more';
+
+  /// en: 'Sync photos'
+  String get syncPhotos => 'Sync photos';
+}
+
+// Path: sync
+class Translations$sync$en {
+  Translations$sync$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Sync Photos'
+  String get title => 'Sync Photos';
+
+  /// en: 'Scanning local library…'
+  String get scanningLocal => 'Scanning local library…';
+
+  /// en: 'Scanning remote directory…'
+  String get scanningRemote => 'Scanning remote directory…';
+
+  /// en: 'Comparing files…'
+  String get comparing => 'Comparing files…';
+
+  /// en: 'Uploading…'
+  String get uploading => 'Uploading…';
+
+  /// en: 'Scanned'
+  String get scanned => 'Scanned';
+
+  /// en: 'Uploaded'
+  String get uploaded => 'Uploaded';
+
+  /// en: 'Skipped'
+  String get skipped => 'Skipped';
+
+  /// en: 'Failed'
+  String get failed => 'Failed';
+
+  /// en: 'Sync Photos'
+  String get confirmTitle => 'Sync Photos';
+
+  /// en: 'Sync %d local photos to current directory? %d already exist on remote.'
+  String get confirmMessage => 'Sync %d local photos to current directory?\n%d already exist on remote.';
+
+  /// en: 'Start Sync'
+  String get startSync => 'Start Sync';
+
+  /// en: 'No photos found in library'
+  String get noPhotos => 'No photos found in library';
+
+  /// en: 'All photos are already synced'
+  String get upToDate => 'All photos are already synced';
+
+  /// en: 'Sync complete'
+  String get syncComplete => 'Sync complete';
 }
 
 // Path: fsBrowser
