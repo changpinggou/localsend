@@ -972,6 +972,65 @@ mod tests {
     }
 
     // -----------------------------------------------------------------
+    // PathGuard::check — root-id prefix edge cases
+    //
+    // Regression for the Windows rename bug: when a root's `id` is
+    // a single-char drive letter ("D:") and the client passes
+    // `"D:/"` as a path, `starts_with("D:/")` matches and the
+    // remaining `relative` slice is the empty string. The pre-fix
+    // `PathGuard::check_inner` then called `FsPath::new("")` and
+    // surfaced a `"empty path"` BadRequest, even though the input
+    // is a perfectly legal way to refer to the root itself.
+    //
+    // We don't depend on real Windows drive letters — any
+    // non-empty `id` + a real tempdir as `path` exercises the same
+    // code path.
+    // -----------------------------------------------------------------
+
+    fn table_with_root_id(id: &str, path: &Path) -> MountTable {
+        let path_str = path.to_string_lossy().into_owned();
+        let root = FsRoot::new(id.to_string(), format!("Drive {label}", label = id), path_str);
+        MountTable::from_config(vec![root])
+    }
+
+    #[test]
+    fn check_accepts_root_id_with_trailing_slash() {
+        // `"D:/"` should resolve to the root itself, not the
+        // misleading `"empty path"` BadRequest from before the fix.
+        let dir = tempfile_subdir("root_id_slash");
+        let t = table_with_root_id("D:", &dir);
+        let guard = PathGuard::new(&t);
+
+        let abs = guard.check("D:/").unwrap();
+        assert_eq!(abs, dir.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn check_accepts_root_id_without_trailing_slash() {
+        // Step 0 of `check_inner` already handles this; pin it down
+        // so the prefix branch's new behaviour doesn't regress it.
+        let dir = tempfile_subdir("root_id_no_slash");
+        let t = table_with_root_id("D:", &dir);
+        let guard = PathGuard::new(&t);
+
+        let abs = guard.check("D:").unwrap();
+        assert_eq!(abs, dir.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn check_accepts_path_under_root_id() {
+        // The "happy path" through step 0.5: `"D:/file.txt"` →
+        // `relative = "file.txt"` → resolves to `<root>/file.txt`.
+        let dir = tempfile_subdir("root_id_file");
+        std::fs::write(dir.join("file.txt"), b"hi").unwrap();
+        let t = table_with_root_id("D:", &dir);
+        let guard = PathGuard::new(&t);
+
+        let abs = guard.check("D:/file.txt").unwrap();
+        assert_eq!(abs, dir.join("file.txt").canonicalize().unwrap());
+    }
+
+    // -----------------------------------------------------------------
     // PathGuard::check — symlink escape (Unix only)
     // -----------------------------------------------------------------
 

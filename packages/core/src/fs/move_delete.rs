@@ -86,21 +86,53 @@ pub async fn handle_move(
 
     // Check confirm flag
     if !move_body.confirm {
+        tracing::warn!(
+            from = %move_body.from,
+            to = %move_body.to,
+            "fs move rejected: confirm flag missing"
+        );
         return Err(FsError::BadRequest("confirm required".into()));
     }
 
-    // Validate source path (must exist)
-    let from_abs = state.guard.check(&move_body.from)?;
+    // Validate source path (must exist). We log the raw
+    // `from`/`to` alongside any guard error here (and below) so
+    // that "empty path" or "path denied" never blinds us to the
+    // actual values the client sent.
+    let from_abs = match state.guard.check(&move_body.from) {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::warn!(
+                from = %move_body.from,
+                to = %move_body.to,
+                error = %e,
+                "fs move rejected: source path failed sandbox check"
+            );
+            return Err(e);
+        }
+    };
     if !from_abs.exists() {
+        tracing::warn!(
+            from = %move_body.from,
+            to = %move_body.to,
+            "fs move rejected: source not found"
+        );
         return Err(FsError::NotFound(format!("source not found: {}", move_body.from)));
     }
 
     // Validate destination path
     // The destination file may not exist yet, so we validate the parent directory
     let to_path = std::path::Path::new(&move_body.to);
-    let to_parent = to_path
-        .parent()
-        .ok_or_else(|| FsError::BadRequest("invalid destination path".into()))?;
+    let to_parent = match to_path.parent() {
+        Some(p) => p,
+        None => {
+            tracing::warn!(
+                from = %move_body.from,
+                to = %move_body.to,
+                "fs move rejected: destination has no parent"
+            );
+            return Err(FsError::BadRequest("invalid destination path".into()));
+        }
+    };
     let to_parent_str = to_parent.to_string_lossy().to_string();
 
     // If parent is empty, use "." to refer to root
@@ -110,7 +142,30 @@ pub async fn handle_move(
         to_parent_str
     };
 
-    let to_parent_abs = state.guard.check(&to_parent_check)?;
+    let to_parent_abs = match state.guard.check(&to_parent_check) {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::warn!(
+                from = %move_body.from,
+                to = %move_body.to,
+                to_parent_check = %to_parent_check,
+                error = %e,
+                "fs move rejected: destination parent failed sandbox check"
+            );
+            return Err(e);
+        }
+    };
+    let to_abs = match to_path.file_name() {
+        Some(n) => to_parent_abs.join(n),
+        None => {
+            tracing::warn!(
+                from = %move_body.from,
+                to = %move_body.to,
+                "fs move rejected: destination has no filename"
+            );
+            return Err(FsError::BadRequest("invalid destination filename".into()));
+        }
+    };
     let to_abs = to_parent_abs.join(to_path.file_name().ok_or_else(|| {
         FsError::BadRequest("invalid destination filename".into())
     })?);

@@ -99,7 +99,8 @@
       "Bash(flutter_rust_bridge_codegen generate *)",
       "Bash(python3 *)",
       "Bash(cargo test *)",
-      "Bash(fvm dart *)"
+      "Bash(fvm dart *)",
+      "Bash(cargo clippy *)"
     ]
   }
 }
