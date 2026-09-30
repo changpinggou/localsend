@@ -50,11 +50,17 @@ class RemoteThumbnail extends StatefulWidget {
 class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
   Uint8List? _bytes;
   bool _loading = false;
+  bool _fetchStarted = false;
 
+  /// `ref` (from the Refena mixin) depends on an InheritedWidget, which is
+  /// not available during [initState]. We kick the first fetch here instead.
   @override
-  void initState() {
-    super.initState();
-    _fetch();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_fetchStarted) {
+      _fetchStarted = true;
+      _fetch();
+    }
   }
 
   @override
@@ -64,6 +70,7 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
         oldWidget.device.fingerprint != widget.device.fingerprint) {
       _bytes = null;
       _loading = false;
+      _fetchStarted = true;
       _fetch();
     }
   }
