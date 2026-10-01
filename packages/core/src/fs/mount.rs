@@ -410,6 +410,25 @@ fn list_macos_volumes_via_getmntinfo() -> Vec<FsRoot> {
         "getmntinfo found {} volume(s) under /Volumes",
         roots.len()
     );
+
+    // T-002 follow-up: also include the user's home directory so that
+    // even without external drives there's at least one browsable root.
+    // This matches the common expectation "browse my Mac's files".
+    if let Some(home) = std::env::var_os("HOME") {
+        let home_str = home.to_string_lossy().to_string();
+        if !home_str.is_empty() && Path::new(&home_str).is_dir() {
+            let label = home_str
+                .rsplit('/')
+                .next()
+                .unwrap_or("Home")
+                .to_string();
+            let mut root = FsRoot::new(&home_str, &label, &home_str);
+            fill_unix_disk_info(&mut root, Path::new(&home_str));
+            roots.push(root);
+            tracing::info!("added home directory as mount root: {}", home_str);
+        }
+    }
+
     roots
 }
 
