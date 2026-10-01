@@ -335,7 +335,19 @@ impl PathGuard {
         let canonical_roots = table
             .roots()
             .iter()
-            .filter_map(|r| std::fs::canonicalize(&r.path).ok().map(|c| (r.id.clone(), c)))
+            .filter_map(|r| {
+                // T-002: On macOS, `std::fs::canonicalize` resolves the
+                // user's home directory to the app container path due to
+                // sandbox redirection. Use the original path instead.
+                #[cfg(target_os = "macos")]
+                {
+                    Some((r.id.clone(), PathBuf::from(&r.path)))
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    std::fs::canonicalize(&r.path).ok().map(|c| (r.id.clone(), c))
+                }
+            })
             .collect();
         Self { table: table.clone(), canonical_roots }
     }
