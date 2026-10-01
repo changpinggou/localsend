@@ -256,7 +256,12 @@
       "enableFs": "Allow other devices to browse my drives",
       "enableFsSubtitle": "Mobile devices on the same network can browse folders and download files from selected drives.",
       "enableFsNoticeTitle": "Browsing drives is enabled",
-      "enableFsNoticeBody": "Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates."
+      "enableFsNoticeBody": "Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.",
+      "fsBookmarksTitle": "Shared Folders",
+      "fsBookmarksEmpty": "No shared folders",
+      "fsBookmarksHint": "Add folders you want to share with other devices.\nThese folders will be visible to devices on your network.",
+      "fsBookmarkDelete": "Remove Shared Folder",
+      "fsBookmarkDeleteConfirm": "Are you sure you want to remove this shared folder? Other devices will no longer be able to access it."
     },
     "other": {
       "title": "Other",

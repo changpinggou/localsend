@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
@@ -29,7 +30,7 @@ class _FsMoveTargetPickerState extends State<FsMoveTargetPicker> with Refena {
   @override
   void initState() {
     super.initState();
-    _loadEntries('');
+    unawaited(_loadEntries(''));
   }
 
   Future<void> _loadEntries(String path) async {
@@ -45,13 +46,15 @@ class _FsMoveTargetPickerState extends State<FsMoveTargetPicker> with Refena {
         final roots = state.roots;
         setState(() {
           _entries = roots
-              .map((r) => rust.FsEntry(
-                    name: r.label,
-                    isDir: true,
-                    size: BigInt.zero,
-                    mtime: 0,
-                    mime: null,
-                  ))
+              .map(
+                (r) => rust.FsEntry(
+                  name: r.label,
+                  isDir: true,
+                  size: BigInt.zero,
+                  mtime: 0,
+                  mime: null,
+                ),
+              )
               .toList();
         });
       } else {
@@ -84,16 +87,16 @@ class _FsMoveTargetPickerState extends State<FsMoveTargetPicker> with Refena {
   void _navigateInto(rust.FsEntry entry) {
     if (!entry.isDir) return;
     final newPath = _currentPath.isEmpty ? entry.name : '$_currentPath/${entry.name}';
-    _loadEntries(newPath);
+    unawaited(_loadEntries(newPath));
   }
 
   void _navigateUp() {
     if (_currentPath.isEmpty) return;
     final lastSlash = _currentPath.lastIndexOf('/');
     if (lastSlash == -1) {
-      _loadEntries('');
+      unawaited(_loadEntries(''));
     } else {
-      _loadEntries(_currentPath.substring(0, lastSlash));
+      unawaited(_loadEntries(_currentPath.substring(0, lastSlash)));
     }
   }
 
@@ -152,30 +155,30 @@ class _FsMoveTargetPickerState extends State<FsMoveTargetPicker> with Refena {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _entries.isEmpty
-                    ? Center(
-                        child: Text(
-                          '此目录为空',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _entries.length,
-                        itemBuilder: (context, index) {
-                          final entry = _entries[index];
-                          if (!entry.isDir) return const SizedBox.shrink();
-                          return ListTile(
-                            leading: Icon(
-                              Icons.folder,
-                              color: theme.colorScheme.primary,
-                            ),
-                            title: Text(entry.name),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => _navigateInto(entry),
-                          );
-                        },
+                ? Center(
+                    child: Text(
+                      '此目录为空',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _entries.length,
+                    itemBuilder: (context, index) {
+                      final entry = _entries[index];
+                      if (!entry.isDir) return const SizedBox.shrink();
+                      return ListTile(
+                        leading: Icon(
+                          Icons.folder,
+                          color: theme.colorScheme.primary,
+                        ),
+                        title: Text(entry.name),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _navigateInto(entry),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

@@ -1,125 +1,122 @@
-import 'dart:typed_data';
+import 'dart:async';
+
+import 'package:dart_mappable/dart_mappable.dart';
+import 'package:localsend_app/util/native/fs_bookmark_channel.dart';
+import 'package:localsend_isolates/rust/api/server.dart' as rust_server;
+import 'package:logging/logging.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../util/native/fs_bookmark_channel.dart';
 
-/// Represents a saved bookmark with its bookmark data and optional alias.
-class FsBookmark {
-  final String id;
+part 'fs_bookmark_provider.mapper.dart';
+
+final _logger = Logger('FsBookmark');
+
+/// Represents a saved filesystem bookmark.
+@MappableClass()
+class FsBookmark with FsBookmarkMappable {
+  final String path;
   final String? alias;
-  final Uint8List bookmarkData;
   final DateTime createdAt;
 
-  FsBookmark({
-    required this.id,
+  const FsBookmark({
+    required this.path,
     this.alias,
-    required this.bookmarkData,
     required this.createdAt,
   });
 }
 
-/// State for the bookmark provider.
-class FsBookmarkState {
+@MappableClass()
+class FsBookmarkState with FsBookmarkStateMappable {
   final List<FsBookmark> bookmarks;
   final bool loading;
   final String? error;
 
   const FsBookmarkState({
     required this.bookmarks,
-    this.loading = false,
+    required this.loading,
     this.error,
   });
 
   factory FsBookmarkState.initial() => FsBookmarkState(
-        bookmarks: [],
-        loading: false,
-      );
-
-  FsBookmarkState copyWith({
-    List<FsBookmark>? bookmarks,
-    bool? loading,
-    String? error,
-  }) {
-    return FsBookmarkState(
-      bookmarks: bookmarks ?? this.bookmarks,
-      loading: loading ?? this.loading,
-      error: error,
-    );
-  }
+    bookmarks: [],
+    loading: false,
+  );
 }
 
-/// Provider for managing security-scoped bookmarks.
 final fsBookmarkProvider = NotifierProvider<FsBookmarkService, FsBookmarkState>((ref) {
   return FsBookmarkService();
 });
 
 class FsBookmarkService extends Notifier<FsBookmarkState> {
-  static const String _prefKey = 'fs_bookmarks';
+  static const String _prefKey = 'fs_bookmark_paths';
 
   @override
   FsBookmarkState init() {
-    // Load saved bookmarks on init
-    _loadBookmarks();
+    unawaited(_loadBookmarks());
     return FsBookmarkState.initial();
   }
 
-  /// Loads bookmarks from shared preferences.
+  /// Loads bookmarks from SharedPreferences and syncs to Rust.
   Future<void> _loadBookmarks() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bookmarkJson = prefs.getStringList(_prefKey) ?? [];
+      final paths = prefs.getStringList(_prefKey) ?? [];
 
       final bookmarks = <FsBookmark>[];
-      for (final json in bookmarkJson) {
-        // Simple JSON parsing (in production, use proper serialization)
-        final parts = json.split('|');
-        if (parts.length >= 3) {
-          bookmarks.add(FsBookmark(
-            id: parts[0],
-            alias: parts[1].isEmpty ? null : parts[1],
-            bookmarkData: Uint8List.fromList(parts[2].codeUnits),
-            createdAt: DateTime.fromMillisecondsSinceEpoch(
-              int.tryParse(parts[3]) ?? 0,
-            ),
-          ));
-        }
+      for (final path in paths) {
+        // Sync to Rust additional roots
+        rust_server.addFsRoot(path: path);
+
+        bookmarks.add(
+          FsBookmark(
+            path: path,
+            createdAt: DateTime.now(),
+          ),
+        );
       }
 
       state = state.copyWith(bookmarks: bookmarks);
-    } catch (e) {
+      _logger.info('Loaded ${bookmarks.length} bookmarks');
+    } catch (e, st) {
+      _logger.warning('Failed to load bookmarks', e, st);
       state = state.copyWith(error: 'Failed to load bookmarks: $e');
     }
   }
 
-  /// Saves bookmarks to shared preferences.
+  /// Saves bookmark paths to SharedPreferences.
   Future<void> _saveBookmarks() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bookmarkJson = state.bookmarks.map((b) {
-        return '${b.id}|${b.alias ?? ''}|${String.fromCharCodes(b.bookmarkData)}|${b.createdAt.millisecondsSinceEpoch}';
-      }).toList();
-      await prefs.setStringList(_prefKey, bookmarkJson);
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to save bookmarks: $e');
+      final paths = state.bookmarks.map((b) => b.path).toList();
+      await prefs.setStringList(_prefKey, paths);
+      _logger.info('Saved ${paths.length} bookmark paths');
+    } catch (e, st) {
+      _logger.warning('Failed to save bookmarks', e, st);
     }
   }
 
-  /// Adds a new bookmark by picking a folder.
+  /// Adds a bookmark by picking a folder (macOS only).
+  ///
+  /// This opens NSOpenPanel on macOS to let the user select a folder.
+  /// The selected path is added to Rust's additional roots and saved
+  /// to SharedPreferences.
   Future<void> addBookmark() async {
     state = state.copyWith(loading: true);
 
     try {
-      final bookmarkData = await FsBookmarkChannel.pickFolder();
-      if (bookmarkData == null) {
+      final path = await _pickFolder();
+      if (path == null) {
         // User cancelled
         state = state.copyWith(loading: false);
         return;
       }
 
-      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      // Add to Rust
+      rust_server.addFsRoot(path: path);
+
+      // Add to state
       final bookmark = FsBookmark(
-        id: id,
-        bookmarkData: bookmarkData,
+        path: path,
         createdAt: DateTime.now(),
       );
 
@@ -129,7 +126,9 @@ class FsBookmarkService extends Notifier<FsBookmarkState> {
       );
 
       await _saveBookmarks();
-    } catch (e) {
+      _logger.info('Added bookmark: $path');
+    } catch (e, st) {
+      _logger.warning('Failed to add bookmark', e, st);
       state = state.copyWith(
         loading: false,
         error: 'Failed to add bookmark: $e',
@@ -138,32 +137,31 @@ class FsBookmarkService extends Notifier<FsBookmarkState> {
   }
 
   /// Removes a bookmark.
-  Future<void> removeBookmark(String id) async {
-    state = state.copyWith(
-      bookmarks: state.bookmarks.where((b) => b.id != id).toList(),
-    );
-    await _saveBookmarks();
-  }
+  Future<void> removeBookmark(String path) async {
+    try {
+      // Remove from Rust
+      rust_server.removeFsRoot(path: path);
 
-  /// Resolves a bookmark to a path.
-  Future<String?> resolveBookmark(FsBookmark bookmark) async {
-    // Validate bookmark first
-    final isValid = await FsBookmarkChannel.isBookmarkValid(bookmark.bookmarkData);
-    if (!isValid) {
-      return null;
+      // Remove from state
+      state = state.copyWith(
+        bookmarks: state.bookmarks.where((b) => b.path != path).toList(),
+      );
+
+      await _saveBookmarks();
+      _logger.info('Removed bookmark: $path');
+    } catch (e, st) {
+      _logger.warning('Failed to remove bookmark', e, st);
+      state = state.copyWith(error: 'Failed to remove bookmark: $e');
     }
-
-    return await FsBookmarkChannel.resolveBookmark(bookmark.bookmarkData);
   }
 
   /// Updates the alias of a bookmark.
-  Future<void> updateAlias(String id, String? alias) async {
+  Future<void> updateAlias(String path, String? alias) async {
     final bookmarks = state.bookmarks.map((b) {
-      if (b.id == id) {
+      if (b.path == path) {
         return FsBookmark(
-          id: b.id,
+          path: b.path,
           alias: alias,
-          bookmarkData: b.bookmarkData,
           createdAt: b.createdAt,
         );
       }
@@ -172,5 +170,13 @@ class FsBookmarkService extends Notifier<FsBookmarkState> {
 
     state = state.copyWith(bookmarks: bookmarks);
     await _saveBookmarks();
+  }
+
+  /// Platform-specific folder picker.
+  ///
+  /// On macOS, this opens NSOpenPanel via FsBookmarkChannel.
+  /// On other platforms, returns null (not implemented).
+  Future<String?> _pickFolder() async {
+    return await FsBookmarkChannel.pickFolder();
   }
 }

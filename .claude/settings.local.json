@@ -121,7 +121,8 @@
       "Bash(rustup --version)",
       "Bash(rustup self *)",
       "Bash(rustup toolchain *)",
-      "Bash(rustup default *)"
+      "Bash(rustup default *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

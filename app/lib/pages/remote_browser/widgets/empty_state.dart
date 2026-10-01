@@ -6,6 +6,7 @@ import 'package:localsend_app/gen/strings.g.dart';
 class FsEmptyState extends StatelessWidget {
   final bool isRoots;
   final VoidCallback? onRetry;
+
   /// Optional device alias to show in the hint message.
   final String? deviceAlias;
 
@@ -39,9 +40,7 @@ class FsEmptyState extends StatelessWidget {
             if (isRoots) ...[
               const SizedBox(height: 8),
               Text(
-                deviceAlias != null
-                    ? t.remoteBrowser.emptyRootsHintWithDevice(device: deviceAlias!)
-                    : t.remoteBrowser.emptyRootsHint,
+                deviceAlias != null ? t.remoteBrowser.emptyRootsHintWithDevice(device: deviceAlias!) : t.remoteBrowser.emptyRootsHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
@@ -61,14 +63,14 @@ class PhotoSyncState with PhotoSyncStateMappable {
   });
 
   factory PhotoSyncState.initial() => const PhotoSyncState(
-        phase: PhotoSyncPhase.idle,
-        localScannedCount: 0,
-        remoteScannedCount: 0,
-        uploadedCount: 0,
-        skippedCount: 0,
-        failedCount: 0,
-        totalToUpload: 0,
-      );
+    phase: PhotoSyncPhase.idle,
+    localScannedCount: 0,
+    remoteScannedCount: 0,
+    uploadedCount: 0,
+    skippedCount: 0,
+    failedCount: 0,
+    totalToUpload: 0,
+  );
 }
 
 final photoSyncProvider = NotifierProvider<PhotoSyncService, PhotoSyncState>((ref) {
@@ -190,11 +192,13 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
             final file = await asset.originFile;
             if (file == null) continue;
 
-            photos.add(LocalPhoto(
-              filename: await asset.titleAsync,
-              size: await file.length(),
-              localPath: file.path,
-            ));
+            photos.add(
+              LocalPhoto(
+                filename: await asset.titleAsync,
+                size: await file.length(),
+                localPath: file.path,
+              ),
+            );
           } catch (e) {
             _logger.warning('PhotoSync: failed to read asset ${asset.id}: $e');
           }
@@ -222,8 +226,7 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
       timeoutMs: 30000,
     );
 
-    final protocol =
-        device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
+    final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
     final ip = device.ip;
     if (ip == null) {
       throw StateError('Device has no IP address');
@@ -288,10 +291,14 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
     // Collect paths and enqueue them all at once.
     final paths = toUpload.map((p) => p.localPath).toList();
 
-    ref.notifier(fsUploadProvider).enqueueFiles(
-      device: device,
-      localPaths: paths,
-      remotePath: remoteDir,
+    unawaited(
+      ref
+          .notifier(fsUploadProvider)
+          .enqueueFiles(
+            device: device,
+            localPaths: paths,
+            remotePath: remoteDir,
+          ),
     );
 
     // Monitor the upload queue until all our tasks finish.

@@ -1559,6 +1559,21 @@ class Translations$settingsTab$network$en {
   /// en: 'Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.'
   String get enableFsNoticeBody =>
       'Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.';
+
+  /// en: 'Shared Folders'
+  String get fsBookmarksTitle => 'Shared Folders';
+
+  /// en: 'No shared folders'
+  String get fsBookmarksEmpty => 'No shared folders';
+
+  /// en: 'Add folders you want to share with other devices. These folders will be visible to devices on your network.'
+  String get fsBookmarksHint => 'Add folders you want to share with other devices.\nThese folders will be visible to devices on your network.';
+
+  /// en: 'Remove Shared Folder'
+  String get fsBookmarkDelete => 'Remove Shared Folder';
+
+  /// en: 'Are you sure you want to remove this shared folder? Other devices will no longer be able to access it.'
+  String get fsBookmarkDeleteConfirm => 'Are you sure you want to remove this shared folder? Other devices will no longer be able to access it.';
 }
 
 // Path: settingsTab.other

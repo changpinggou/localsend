@@ -107,9 +107,7 @@ class FsListRow extends StatelessWidget {
     final bool isImage = !entry.isDir && entry.mime != null && entry.mime!.startsWith('image/');
 
     if (isImage && device != null) {
-      final fullPath = currentPath.isEmpty
-          ? entry.name
-          : '$currentPath/${entry.name}';
+      final fullPath = currentPath.isEmpty ? entry.name : '$currentPath/${entry.name}';
       return RemoteThumbnail(
         device: device!,
         fullPath: fullPath,

@@ -1297,6 +1297,16 @@ class Translations$settingsTab$network$zh_CN extends Translations$settingsTab$ne
   String get enableFsNoticeTitle => '已开启驱动器浏览';
   @override
   String get enableFsNoticeBody => '同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。';
+  @override
+  String get fsBookmarksTitle => '共享文件夹';
+  @override
+  String get fsBookmarksEmpty => '没有共享文件夹';
+  @override
+  String get fsBookmarksHint => '添加你想要与其他设备共享的文件夹。\n这些文件夹将对网络中的设备可见。';
+  @override
+  String get fsBookmarkDelete => '移除共享文件夹';
+  @override
+  String get fsBookmarkDeleteConfirm => '你确定要移除这个共享文件夹吗？其他设备将无法再访问它。';
 }
 
 // Path: settingsTab.other

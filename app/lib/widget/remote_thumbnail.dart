@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -60,7 +62,7 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
     super.didChangeDependencies();
     if (!_fetchStarted && _isVisible) {
       _fetchStarted = true;
-      _fetch();
+      unawaited(_fetch());
     }
   }
 
@@ -69,14 +71,13 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
   @override
   void didUpdateWidget(covariant RemoteThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.fullPath != widget.fullPath ||
-        oldWidget.device.fingerprint != widget.device.fingerprint) {
+    if (oldWidget.fullPath != widget.fullPath || oldWidget.device.fingerprint != widget.device.fingerprint) {
       _bytes = null;
       _loading = false;
       _fetchStarted = false;
       if (_isVisible) {
         _fetchStarted = true;
-        _fetch();
+        unawaited(_fetch());
       }
     }
   }
@@ -85,12 +86,14 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
     if (_loading) return;
     setState(() => _loading = true);
 
-    final bytes = await ref.notifier(fsThumbnailProvider).fetchThumbnail(
-      device: widget.device,
-      fullPath: widget.fullPath,
-      width: widget.width.round(),
-      height: widget.height.round(),
-    );
+    final bytes = await ref
+        .notifier(fsThumbnailProvider)
+        .fetchThumbnail(
+          device: widget.device,
+          fullPath: widget.fullPath,
+          width: widget.width.round(),
+          height: widget.height.round(),
+        );
 
     if (mounted && bytes != null) {
       setState(() {
@@ -108,7 +111,7 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
         if (info.visibleFraction > 0.1 && !_fetchStarted) {
           _isVisible = true;
           _fetchStarted = true;
-          _fetch();
+          unawaited(_fetch());
         }
       },
       child: _buildContent(context),
@@ -124,7 +127,7 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
           width: widget.width,
           height: widget.height,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => widget.placeholder,
+          errorBuilder: (_, _, _) => widget.placeholder,
         ),
       );
     }

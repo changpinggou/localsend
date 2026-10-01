@@ -1,65 +1,50 @@
+import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 
-/// Platform channel for managing macOS security-scoped bookmarks.
-///
-/// Security-scoped bookmarks allow sandboxed apps to access files/directories
-/// outside the sandbox with user permission. This is the official Apple
-/// recommended approach for sandboxed apps that need persistent access to
-/// user-selected resources.
+final _logger = Logger('FsBookmarkChannel');
+
+/// Platform channel for macOS-specific filesystem operations.
 class FsBookmarkChannel {
   static const MethodChannel _channel = MethodChannel('localsend/fs_bookmark');
 
-  /// Opens a folder picker dialog and returns the bookmark data for the
-  /// selected folder. Returns null if the user cancelled.
+  /// Opens a folder picker dialog on macOS.
   ///
-  /// The bookmark data can be persisted and used to regain access to the
-  /// folder across app launches.
-  static Future<Uint8List?> pickFolder() async {
+  /// Returns the selected folder path, or null if the user cancelled.
+  /// On non-macOS platforms, returns null immediately.
+  static Future<String?> pickFolder() async {
+    if (!Platform.isMacOS) {
+      _logger.warning('Folder picker is only supported on macOS');
+      return null;
+    }
+
     try {
-      final result = await _channel.invokeMethod<Uint8List>('pickFolder');
+      final result = await _channel.invokeMethod<String>('pickFolder');
+      _logger.info('Folder picker result: $result');
       return result;
-    } on PlatformException catch (e) {
+    } on PlatformException catch (e, st) {
+      _logger.warning('Failed to pick folder', e, st);
       return null;
     }
   }
 
-  /// Resolves a bookmark data to a path. Returns null if the bookmark is
-  /// invalid or access is denied.
+  /// Resolves a security-scoped bookmark to a path.
   ///
-  /// This will automatically start and stop security-scoped access.
-  static Future<String?> resolveBookmark(Uint8List bookmarkData) async {
+  /// Returns the resolved path, or null if the bookmark is invalid or
+  /// access is denied.
+  static Future<String?> resolveBookmark(List<int> bookmarkData) async {
+    if (!Platform.isMacOS) {
+      return null;
+    }
+
     try {
       final result = await _channel.invokeMethod<String>('resolveBookmark', {
         'bookmark': bookmarkData,
       });
       return result;
-    } on PlatformException catch (e) {
+    } on PlatformException catch (e, st) {
+      _logger.warning('Failed to resolve bookmark', e, st);
       return null;
-    }
-  }
-
-  /// Checks if bookmark data is still valid (the resource still exists and
-  /// we still have access).
-  static Future<bool> isBookmarkValid(Uint8List bookmarkData) async {
-    try {
-      final result = await _channel.invokeMethod<bool>('isBookmarkValid', {
-        'bookmark': bookmarkData,
-      });
-      return result ?? false;
-    } on PlatformException catch (e) {
-      return false;
-    }
-  }
-
-  /// Stops security-scoped access for a bookmark. Should be called when
-  /// done using the resolved path.
-  static Future<void> stopAccessing(Uint8List bookmarkData) async {
-    try {
-      await _channel.invokeMethod('stopAccessing', {
-        'bookmark': bookmarkData,
-      });
-    } on PlatformException catch (e) {
-      // Ignore
     }
   }
 }

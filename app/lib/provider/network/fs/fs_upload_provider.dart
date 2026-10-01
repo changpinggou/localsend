@@ -139,17 +139,19 @@ class FsUploadService extends Notifier<FsUploadState> {
       final stat = await file.stat();
       final sessionId = _generateSessionId();
 
-      newTasks.add(FsUploadTask(
-        sessionId: sessionId,
-        localPath: localPath,
-        filename: p.basename(localPath),
-        remotePath: remotePath,
-        total: stat.size,
-        transferred: 0,
-        status: FsUploadStatus.queued,
-        error: null,
-        device: device,
-      ));
+      newTasks.add(
+        FsUploadTask(
+          sessionId: sessionId,
+          localPath: localPath,
+          filename: p.basename(localPath),
+          remotePath: remotePath,
+          total: stat.size,
+          transferred: 0,
+          status: FsUploadStatus.queued,
+          error: null,
+          device: device,
+        ),
+      );
     }
 
     if (newTasks.isEmpty) {
@@ -232,9 +234,7 @@ class FsUploadService extends Notifier<FsUploadState> {
   /// T-012: remove finished/failed/cancelled tasks from the queue.
   void clearCompleted() {
     final remaining = state.tasks.where((t) {
-      return t.status != FsUploadStatus.finished &&
-          t.status != FsUploadStatus.failed &&
-          t.status != FsUploadStatus.cancelled;
+      return t.status != FsUploadStatus.finished && t.status != FsUploadStatus.failed && t.status != FsUploadStatus.cancelled;
     }).toList();
 
     state = state.copyWith(tasks: remaining);
@@ -286,7 +286,9 @@ class FsUploadService extends Notifier<FsUploadState> {
         localPath: task.localPath,
         remotePath: task.remotePath,
       );
-      final result = ref.redux(parentIsolateProvider).dispatchTakeResult(
+      final result = ref
+          .redux(parentIsolateProvider)
+          .dispatchTakeResult(
             IsolateFsUploadAction(
               sessionId: task.sessionId,
               request: request,
@@ -332,7 +334,9 @@ class FsUploadService extends Notifier<FsUploadState> {
   /// Cancel the isolate task for a session.
   void _cancelIsolateTask(String sessionId) {
     try {
-      ref.redux(parentIsolateProvider).dispatch(
+      ref
+          .redux(parentIsolateProvider)
+          .dispatch(
             IsolateFsUploadCancelAction(sessionId: sessionId),
           );
     } catch (e, st) {
