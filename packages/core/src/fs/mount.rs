@@ -414,8 +414,24 @@ fn list_macos_volumes_via_getmntinfo() -> Vec<FsRoot> {
     // T-002 follow-up: also include the user's home directory so that
     // even without external drives there's at least one browsable root.
     // This matches the common expectation "browse my Mac's files".
-    if let Some(home) = std::env::var_os("HOME") {
-        let home_str = home.to_string_lossy().to_string();
+    //
+    // NOTE: We use `getpwuid` instead of `std::env::var_os("HOME")`
+    // because the sandbox overrides `HOME` to point at the container
+    // directory. `getpwuid` reads from `/etc/passwd` directly and
+    // returns the real user home (e.g. `/Users/changping`).
+    let real_home = unsafe {
+        let pw = libc::getpwuid(libc::geteuid());
+        if pw.is_null() {
+            None
+        } else {
+            std::ffi::CStr::from_ptr((*pw).pw_dir)
+                .to_str()
+                .ok()
+                .map(|s| s.to_string())
+        }
+    };
+
+    if let Some(home_str) = real_home {
         if !home_str.is_empty() && Path::new(&home_str).is_dir() {
             let label = home_str
                 .rsplit('/')
