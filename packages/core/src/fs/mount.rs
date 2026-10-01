@@ -340,11 +340,12 @@ impl FsMount {
             let path_obj = Path::new(&path);
             if path_obj.is_dir() {
                 let label = path
-                    .rsplit('/')
+                    .rsplit(['/', '\\'])
                     .next()
                     .unwrap_or(&path)
                     .to_string();
                 let mut root = FsRoot::new(&path, &label, &path);
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
                 fill_unix_disk_info(&mut root, path_obj);
                 roots.push(root);
                 tracing::debug!(event = "fs.mount.additional_root_listed", path = %path, "additional root included in list");
