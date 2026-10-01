@@ -416,7 +416,8 @@ where
         Ok(entries)
     })
     .await
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("spawn_blocking panicked: {e}")))??;
+    .map_err(|e| io_to_fs(std::io::Error::new(std::io::ErrorKind::Other, format!("spawn_blocking panicked: {e}"))))?
+    .map_err(io_to_fs)?;
 
     let mut entries = list_result;
 
