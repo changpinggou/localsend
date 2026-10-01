@@ -264,6 +264,10 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   @override
   String get emptyFolder => '此文件夹为空';
   @override
+  String get emptyRootsHint => '远端设备未配置可浏览的驱动器。\n请在远端设备上打开 设置 → 网络 → "允许驱动器浏览" 并添加目录。';
+  @override
+  String emptyRootsHintWithDevice({required Object device}) => '设备 "${device}" 未配置可浏览的驱动器。\n请在该设备上打开 设置 → 网络 → "允许驱动器浏览" 并添加目录。';
+  @override
   String get errorTitle => '无法加载文件';
   @override
   String get errorGeneric => '发生错误，请重试。';

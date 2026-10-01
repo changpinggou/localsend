@@ -328,6 +328,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       if (state.roots.isEmpty) {
         return FsEmptyState(
           isRoots: true,
+          deviceAlias: device.alias,
           onRetry: () => ref.notifier(fsListProvider).enterRoots(device),
         );
       }

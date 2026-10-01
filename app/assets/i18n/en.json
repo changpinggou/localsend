@@ -91,6 +91,8 @@
     "roots": "Drives",
     "breadcrumbRoot": "Drives",
     "emptyFolder": "This folder is empty",
+    "emptyRootsHint": "The remote device has no drives configured for browsing.\nPlease open Settings → Network → \"Allow drive browsing\" on the remote device and add directories.",
+    "emptyRootsHintWithDevice": "The device \"{device}\" has no drives configured for browsing.\nPlease open Settings → Network → \"Allow drive browsing\" on that device and add directories.",
     "errorTitle": "Could not load files",
     "errorGeneric": "An error occurred. Please try again.",
     "retry": "Retry",

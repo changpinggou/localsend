@@ -291,6 +291,14 @@ class Translations$remoteBrowser$en {
   /// en: 'This folder is empty'
   String get emptyFolder => 'This folder is empty';
 
+  /// en: 'The remote device has no drives configured for browsing. Please open Settings → Network → "Allow drive browsing" on the remote device and add directories.'
+  String get emptyRootsHint =>
+      'The remote device has no drives configured for browsing.\nPlease open Settings → Network → "Allow drive browsing" on the remote device and add directories.';
+
+  /// en: 'The device "{device}" has no drives configured for browsing. Please open Settings → Network → "Allow drive browsing" on that device and add directories.'
+  String emptyRootsHintWithDevice({required Object device}) =>
+      'The device "${device}" has no drives configured for browsing.\nPlease open Settings → Network → "Allow drive browsing" on that device and add directories.';
+
   /// en: 'Could not load files'
   String get errorTitle => 'Could not load files';
 

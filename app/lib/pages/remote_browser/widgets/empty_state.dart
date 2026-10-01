@@ -6,8 +6,15 @@ import 'package:localsend_app/gen/strings.g.dart';
 class FsEmptyState extends StatelessWidget {
   final bool isRoots;
   final VoidCallback? onRetry;
+  /// Optional device alias to show in the hint message.
+  final String? deviceAlias;
 
-  const FsEmptyState({required this.isRoots, this.onRetry, super.key});
+  const FsEmptyState({
+    required this.isRoots,
+    this.onRetry,
+    this.deviceAlias,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +36,18 @@ class FsEmptyState extends StatelessWidget {
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
+            if (isRoots) ...[
+              const SizedBox(height: 8),
+              Text(
+                deviceAlias != null
+                    ? t.remoteBrowser.emptyRootsHintWithDevice(device: deviceAlias!)
+                    : t.remoteBrowser.emptyRootsHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               ElevatedButton.icon(
