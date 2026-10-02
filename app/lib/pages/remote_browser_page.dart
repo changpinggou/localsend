@@ -190,9 +190,17 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
               ]
             : [
                 IconButton(
-                  icon: const Icon(Icons.sync),
+                  // Folder + up-arrow: "push the album into this folder".
+                  // Icons.sync reads as bidirectional (and looks like the
+                  // refresh icon); the album sync is one-way backup.
+                  icon: const Icon(Icons.drive_folder_upload),
                   tooltip: t.remoteBrowser.syncPhotos,
                   onPressed: () => _onSyncPhotos(device, fsState),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: t.remoteBrowser.refresh,
+                  onPressed: () => ref.notifier(fsListProvider).refresh(device),
                 ),
                 FsSortMenu(
                   current: fsState.sort,

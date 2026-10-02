@@ -292,6 +292,8 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   @override
   String get loadMore => '加载更多';
   @override
+  String get refresh => '刷新当前目录';
+  @override
   String get syncPhotos => '同步相册';
 }
 

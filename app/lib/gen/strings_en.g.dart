@@ -335,6 +335,9 @@ class Translations$remoteBrowser$en {
   /// en: 'Load more'
   String get loadMore => 'Load more';
 
+  /// en: 'Refresh directory'
+  String get refresh => 'Refresh directory';
+
   /// en: 'Sync photos'
   String get syncPhotos => 'Sync photos';
 }

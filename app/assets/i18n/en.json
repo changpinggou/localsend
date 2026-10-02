@@ -105,6 +105,7 @@
     "viewList": "List view",
     "viewGrid": "Grid view",
     "loadMore": "Load more",
+    "refresh": "Refresh directory",
     "syncPhotos": "Sync photos"
   },
   "sync": {
