@@ -126,7 +126,7 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
       final skippedCount = localPhotos.length - toUpload.length;
 
       _logger.info(
-        'PhotoSync: local=${localPhotos.length}, remote=${remoteFiles.length}, toUpload=$toUpload.length, skip=$skippedCount',
+        'PhotoSync: local=${localPhotos.length}, remote=${remoteFiles.length}, toUpload=${toUpload.length}, skip=$skippedCount',
       );
 
       state = state.copyWith(
@@ -172,6 +172,11 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
     }
 
     final photos = <LocalPhoto>[];
+    // Albums overlap on iOS ("Recents" contains everything in the
+    // library), so the same asset appears in several albums. Dedupe by
+    // the asset's stable id, or every photo in a custom album gets
+    // scanned — and uploaded — twice.
+    final seenAssetIds = <String>{};
     const pageSize = 300;
 
     final paths = await PhotoManager.getAssetPathList(
@@ -179,6 +184,7 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
     );
 
     for (final path in paths) {
+      final albumStart = photos.length;
       int page = 0;
       while (true) {
         final assets = await path.getAssetListPaged(
@@ -188,6 +194,7 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
         if (assets.isEmpty) break;
 
         for (final asset in assets) {
+          if (!seenAssetIds.add(asset.id)) continue;
           try {
             final file = await asset.originFile;
             if (file == null) continue;
@@ -207,8 +214,15 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
         onLocalProgress?.call(photos.length);
         page++;
       }
+
+      // Per-album contribution after the asset-id dedupe — raw page
+      // counts are higher because albums overlap on iOS.
+      _logger.info(
+        'PhotoSync: album "${path.name}" (isAll=${path.isAll}) contributed ${photos.length - albumStart} photos, running total ${photos.length}',
+      );
     }
 
+    _logger.info('PhotoSync: local scan finished, ${photos.length} photos from ${paths.length} albums');
     return photos;
   }
 
@@ -274,10 +288,20 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
       }
     }
 
-    return local.where((photo) {
+    final result = <LocalPhoto>[];
+    for (final photo in local) {
       final remoteSize = remoteMap[photo.filename];
-      return remoteSize == null || remoteSize != photo.size;
-    }).toList();
+      if (remoteSize == null) {
+        _logger.info('PhotoSync: diff → upload "${photo.filename}" (${photo.size} B): not on remote');
+        result.add(photo);
+      } else if (remoteSize != photo.size) {
+        _logger.info('PhotoSync: diff → upload "${photo.filename}": size mismatch remote=$remoteSize local=${photo.size}');
+        result.add(photo);
+      } else {
+        _logger.info('PhotoSync: diff → skip "${photo.filename}": same name and size (${photo.size} B)');
+      }
+    }
+    return result;
   }
 
   /// Uploads the diff set using the existing upload queue.
@@ -288,56 +312,66 @@ class PhotoSyncService extends Notifier<PhotoSyncState> {
     String remoteDir,
     List<LocalPhoto> toUpload,
   ) async {
-    // Collect paths and enqueue them all at once.
-    final paths = toUpload.map((p) => p.localPath).toList();
+    // Enqueue and await, so we get the created tasks back and can track
+    // progress per session ID. Matching by filename does not work here:
+    // the queue used to store `basename(originFile.path)` while [toUpload]
+    // holds the photo-library title, and the two regularly differ on iOS —
+    // which left the progress dialog frozen at 0 / N while the uploads
+    // themselves completed fine.
+    //
+    // [filenames] also fixes the diff loop: files used to land on the
+    // peer under the mangled tmp basename, so no later sync ever found
+    // a same-name match and every sync re-uploaded the whole library.
+    final enqueued = await ref
+        .notifier(fsUploadProvider)
+        .enqueueFiles(
+          device: device,
+          localPaths: toUpload.map((p) => p.localPath).toList(),
+          remotePath: remoteDir,
+          filenames: toUpload.map((p) => p.filename).toList(),
+        );
 
-    unawaited(
-      ref
-          .notifier(fsUploadProvider)
-          .enqueueFiles(
-            device: device,
-            localPaths: paths,
-            remotePath: remoteDir,
-          ),
-    );
+    // sessionId → filename, in upload order. Files skipped by the queue
+    // (missing locally) are simply not tracked.
+    final tracked = {for (final task in enqueued) task.sessionId: task.filename};
+    if (tracked.isEmpty) return 0;
 
-    // Monitor the upload queue until all our tasks finish.
-    var completed = 0;
-    final total = toUpload.length;
+    _logger.info('PhotoSync: tracking ${tracked.length} upload task(s) → $remoteDir: ${tracked.values.toList().join(', ')}');
 
-    // Poll the upload state until all tasks are terminal.
-    while (completed < total) {
-      await Future.delayed(const Duration(milliseconds: 500));
+    // Terminal status per tracked session. A session that vanishes from
+    // the queue (e.g. the user cleared completed uploads) counts as
+    // failed so the loop below cannot hang.
+    final statuses = <String, FsUploadStatus>{};
+
+    while (statuses.length < tracked.length) {
+      await Future.delayed(const Duration(milliseconds: 200));
 
       final uploadState = ref.read(fsUploadProvider);
+      final bySessionId = {for (final task in uploadState.tasks) task.sessionId: task};
+
       var done = 0;
-      var failed = 0;
-
-      // We track by filename since we don't have session IDs here.
-      // Match tasks whose filename is in our upload set.
-      final uploadFilenames = toUpload.map((p) => p.filename).toSet();
-
-      for (final task in uploadState.tasks) {
-        if (!uploadFilenames.contains(task.filename)) continue;
-        switch (task.status) {
-          case FsUploadStatus.finished:
-            done++;
-          case FsUploadStatus.failed:
-          case FsUploadStatus.cancelled:
-            failed++;
-          default:
-            break;
+      String? activeFilename;
+      for (final entry in tracked.entries) {
+        final task = bySessionId[entry.key];
+        if (task == null) {
+          statuses[entry.key] ??= FsUploadStatus.failed;
+        } else if (task.status == FsUploadStatus.finished || task.status == FsUploadStatus.failed || task.status == FsUploadStatus.cancelled) {
+          statuses[entry.key] = task.status;
+        } else {
+          // queued / uploading / paused — the first one is what the
+          // dialog shows as the file currently in flight.
+          activeFilename ??= task.filename;
         }
+        if (statuses[entry.key] == FsUploadStatus.finished) done++;
       }
 
-      completed = done + failed;
       state = state.copyWith(
         uploadedCount: done,
-        failedCount: failed,
-        currentFilename: done < total ? toUpload[done].filename : null,
+        failedCount: statuses.length - done,
+        currentFilename: activeFilename,
       );
     }
 
-    return total - state.failedCount;
+    return statuses.values.where((s) => s == FsUploadStatus.finished).length;
   }
 }

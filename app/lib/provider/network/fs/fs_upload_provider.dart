@@ -43,7 +43,10 @@ class FsUploadTask with FsUploadTaskMappable {
   /// Local file path on the mobile device.
   final String localPath;
 
-  /// Filename only (`p.basename(localPath)`).
+  /// Filename the file gets on the peer, and the name shown in the UI.
+  /// Defaults to `p.basename(localPath)`; callers can override it when
+  /// the local path is not the intended name (iOS photo-library tmp
+  /// paths are mangled, e.g. `UUID_L0_001_..._o_IMG_0111.HEIC`).
   final String filename;
 
   /// Remote directory path on the peer (e.g., "Photos/2024").
@@ -122,14 +125,24 @@ class FsUploadService extends Notifier<FsUploadState> {
   ///
   /// Each file gets a unique session ID. The isolate will process them
   /// up to [maxConcurrent] at a time.
-  Future<void> enqueueFiles({
+  ///
+  /// Returns the tasks actually created — files that don't exist locally
+  /// are skipped, so the list can be shorter than [localPaths]. Callers
+  /// that show progress should track the returned [FsUploadTask.sessionId]s
+  /// rather than matching by filename.
+  ///
+  /// [filenames] optionally overrides the peer-side name per file
+  /// (parallel to [localPaths]; missing entries fall back to
+  /// `basename(localPath)`). It also becomes the task's display name.
+  Future<List<FsUploadTask>> enqueueFiles({
     required Device device,
     required List<String> localPaths,
     required String remotePath,
+    List<String>? filenames,
   }) async {
     final newTasks = <FsUploadTask>[];
 
-    for (final localPath in localPaths) {
+    for (final (index, localPath) in localPaths.indexed) {
       final file = File(localPath);
       if (!await file.exists()) {
         _logger.warning('File does not exist: $localPath');
@@ -143,7 +156,7 @@ class FsUploadService extends Notifier<FsUploadState> {
         FsUploadTask(
           sessionId: sessionId,
           localPath: localPath,
-          filename: p.basename(localPath),
+          filename: filenames != null && index < filenames.length ? filenames[index] : p.basename(localPath),
           remotePath: remotePath,
           total: stat.size,
           transferred: 0,
@@ -155,7 +168,7 @@ class FsUploadService extends Notifier<FsUploadState> {
     }
 
     if (newTasks.isEmpty) {
-      return;
+      return const [];
     }
 
     state = state.copyWith(tasks: [...state.tasks, ...newTasks]);
@@ -163,6 +176,7 @@ class FsUploadService extends Notifier<FsUploadState> {
 
     // Kick off the worker loop.
     _processQueue();
+    return newTasks;
   }
 
   /// T-012: pause a specific upload task.
@@ -285,6 +299,7 @@ class FsUploadService extends Notifier<FsUploadState> {
         device: task.device,
         localPath: task.localPath,
         remotePath: task.remotePath,
+        filename: task.filename,
       );
       final result = ref
           .redux(parentIsolateProvider)
