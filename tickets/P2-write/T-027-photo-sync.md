@@ -83,6 +83,11 @@ Future<int> startSync({
 ### 5.3 本地扫描
 
 ```dart
+final photos = <LocalPhoto>[];
+// iOS 相册互相重叠（"最近项目" isAll=true 包含全部），同一 asset 会
+// 出现在多个相册里——必须按 asset.id 去重，否则每个任务重复扫描/上传。
+final seenAssetIds = <String>{};
+
 final paths = await PhotoManager.getAssetPathList(type: RequestType.common);
 for (final path in paths) {
   int page = 0;
@@ -90,6 +95,7 @@ for (final path in paths) {
     final assets = await path.getAssetListPaged(page: page, size: 300);
     if (assets.isEmpty) break;
     for (final asset in assets) {
+      if (!seenAssetIds.add(asset.id)) continue;
       final file = await asset.originFile;
       photos.add(LocalPhoto(
         filename: await asset.titleAsync,
@@ -134,15 +140,20 @@ List<LocalPhoto> _computeDiff(
 
 ### 5.6 上传
 
-复用 `fs_upload_provider.enqueueFiles()`：
+复用 `fs_upload_provider.enqueueFiles()`。**必须显式传 `filenames`**（见 §10 不变量）：
 
 ```dart
 final paths = toUpload.map((p) => p.localPath).toList();
-ref.notifier(fsUploadProvider).enqueueFiles(
+final names = toUpload.map((p) => p.filename).toList();   // titleAsync
+final enqueued = await ref.notifier(fsUploadProvider).enqueueFiles(
   device: device,
   localPaths: paths,
   remotePath: remoteDir,
+  filenames: names,
 );
+// 按 enqueued 的 sessionId（不是文件名）跟踪进度：iOS 上任务的
+// localPath 是乱码 tmp 路径，文件名匹配永远失败；队列里消失的
+// session 记为 failed，防止轮询死循环。
 ```
 
 ## 6. UI / Interaction
@@ -244,3 +255,36 @@ ref.notifier(fsUploadProvider).enqueueFiles(
 - **后台执行**：Android 需要前台服务保活，iOS 后台可能受限
 - **文件冲突**：同名文件按大小判断，不考虑 mtime（相册导出时 mtime 可能丢失）
 - **子目录**：只同步到目标目录根级别，扁平存放
+
+## 10. 定型语义与实现记录（2026-10-02）
+
+首次联调（iOS 模拟器 → macOS 对端）暴露三个 bug 并修复后，语义定型如下。
+
+### 10.1 语义（当前实现）
+
+- **方向**：单向备份，**只增不删**——从不清理对端已有文件（与 §3 out-of-scope 的"双向同步"一致）。
+- **扫描范围**：全图库（含"最近项目" isAll=true），按 `asset.id` 去重。
+- **远端文件名** = `asset.titleAsync`（相册库里的原始文件名，如 `IMG_0001.JPG`），经 `FsUploadRequest.filename` 显式传到 Rust 上传层。
+- **diff 规则**：远端存在同名且同 size → 跳过；否则上传覆盖。
+- **进度追踪**：按 `sessionId` 跟踪上传队列（并发 2）。
+
+### 10.2 不变量（改代码前必读）
+
+> diff/跳过完全依赖"**同一张照片每次得到同一个远端文件名**"。这条链路是
+> `titleAsync → LocalPhoto.filename → enqueueFiles(filenames:) → FsUploadRequest.filename → Rust fsUpload`。
+> **新增上传路径禁止回退到 `basename(localPath)`**——iOS 的 `originFile.path` 是
+> `/tmp/.image/UUID_L0_001_..._o_IMG_0111.HEIC` 乱码临时副本（模拟器必现），曾导致
+> 远端文件名与 diff 名字永不匹配 → 每次同步全量重传、对端乱码文件堆积。
+
+### 10.3 已修复的三个 bug（日志特征：local=14 / remote=10 / toUpload=14 / skip=0）
+
+1. 上传文件名用了 tmp 乱码 basename → diff 永不匹配 → 全量重传（10.2 所述）。
+2. 扫描未按 `asset.id` 去重 → 9 张照片扫出 14 个任务。
+3. 进度按文件名匹配上传任务 → iOS 上两套名字对不上 → 进度对话框冻结在 0/N。
+
+### 10.4 已知边界（未做产品决策）
+
+- **删除语义**：iOS 从自建相册删除 ≠ 从图库删除（照片仍在"最近项目"），全库扫描仍会扫到——"相册里删了又同步过去"是当前语义的预期行为。镜像语义（删除传播）或相册范围选择需另行立项。
+- **同名异内容**：从"文件"App 导入的同名照片会上传互相覆盖；size 恰好也相同时会被误跳过。相机照片（IMG_XXXX）不重名，日常不受影响。
+- **编辑照片**：上传的是 `originFile` = 未编辑原图，不含 iOS 相册内的裁剪/滤镜。
+- **一次性清理**：2026-10-02 修复前遗留的对端乱码文件（UUID 前缀、`fs-*` 前缀）需手动删除；修复后不会再产生。

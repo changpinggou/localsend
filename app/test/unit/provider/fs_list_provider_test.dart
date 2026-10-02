@@ -86,6 +86,17 @@ void main() {
       );
     });
 
+    test('500 with EPERM payload maps to permissionDenied (macOS TCC)', () {
+      // The exact payload reported when listing a macOS home directory
+      // the peer OS refuses to read.
+      expect(
+        classifyFsError(
+          'RsHttpClientError.statusCode(status: 500, message: {"error":{"code":"internal","message":"io error: Operation not permitted (os error 1)"}})',
+        ),
+        FsErrorReason.permissionDenied,
+      );
+    });
+
     test('"Connection refused" / DNS failure map to network', () {
       expect(classifyFsError('Connection refused'), FsErrorReason.network);
       expect(classifyFsError('Failed host lookup: foo'), FsErrorReason.network);

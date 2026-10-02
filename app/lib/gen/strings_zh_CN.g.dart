@@ -358,6 +358,10 @@ class Translations$fsBrowser$zh_CN extends Translations$fsBrowser$en {
   @override
   String get pathDeniedBody => '该路径不在对端的共享驱动器内。请让对方将其加入白名单。';
   @override
+  String get permissionDeniedTitle => '你没有权限访问当前系统卷';
+  @override
+  String get permissionDeniedBody => '对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalSend 的 设置 → 共享文件夹 中添加要访问的文件夹。';
+  @override
   String get networkTitle => '无法连接设备';
   @override
   String get networkBody => '对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。';
@@ -1297,6 +1301,16 @@ class Translations$settingsTab$network$zh_CN extends Translations$settingsTab$ne
   String get enableFsNoticeTitle => '已开启驱动器浏览';
   @override
   String get enableFsNoticeBody => '同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。';
+  @override
+  String get fsBookmarksTitle => '共享文件夹';
+  @override
+  String get fsBookmarksEmpty => '没有共享文件夹';
+  @override
+  String get fsBookmarksHint => '添加你想要与其他设备共享的文件夹。\n这些文件夹将对网络中的设备可见。';
+  @override
+  String get fsBookmarkDelete => '移除共享文件夹';
+  @override
+  String get fsBookmarkDeleteConfirm => '你确定要移除这个共享文件夹吗？其他设备将无法再访问它。';
 }
 
 // Path: settingsTab.other

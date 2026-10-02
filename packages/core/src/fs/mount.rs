@@ -35,8 +35,41 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use std::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
+
+// =====================================================================
+// Additional roots (user-selected via bookmarks)
+// =====================================================================
+
+/// Additional root paths added by the user via security-scoped bookmarks.
+/// These are merged with the auto-detected mount points in [`FsMount::list`].
+static ADDITIONAL_ROOTS: RwLock<Vec<String>> = RwLock::new(Vec::new());
+
+/// Add a path to the additional roots list. Called from FRB when the user
+/// picks a folder via NSOpenPanel.
+pub fn add_additional_root(path: String) {
+    if let Ok(mut roots) = ADDITIONAL_ROOTS.write() {
+        if !roots.contains(&path) {
+            roots.push(path.clone());
+            tracing::info!(event = "fs.mount.additional_root_added", path = %path, "additional root added");
+        }
+    }
+}
+
+/// Remove a path from the additional roots list.
+pub fn remove_additional_root(path: &str) {
+    if let Ok(mut roots) = ADDITIONAL_ROOTS.write() {
+        roots.retain(|p| p != path);
+        tracing::info!(event = "fs.mount.additional_root_removed", path = %path, "additional root removed");
+    }
+}
+
+/// Get all additional root paths.
+pub fn get_additional_roots() -> Vec<String> {
+    ADDITIONAL_ROOTS.read().map(|r| r.clone()).unwrap_or_default()
+}
 
 // =====================================================================
 // FsRoot
@@ -300,6 +333,27 @@ impl FsMount {
         // Other targets (freebsd, netbsd, android, ios) are out of
         // scope for T-002. Add a `#[cfg]` arm when a contributor
         // wants to support them.
+
+        // Add user-selected roots (from security-scoped bookmarks).
+        // These are paths the user explicitly chose to share.
+        for path in get_additional_roots() {
+            let path_obj = Path::new(&path);
+            if path_obj.is_dir() {
+                let label = path
+                    .rsplit(['/', '\\'])
+                    .next()
+                    .unwrap_or(&path)
+                    .to_string();
+                let mut root = FsRoot::new(&path, &label, &path);
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
+                fill_unix_disk_info(&mut root, path_obj);
+                roots.push(root);
+                tracing::debug!(event = "fs.mount.additional_root_listed", path = %path, "additional root included in list");
+            } else {
+                tracing::warn!(event = "fs.mount.additional_root_missing", path = %path, "additional root path does not exist");
+            }
+        }
+
         roots
     }
 

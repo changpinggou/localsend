@@ -133,6 +133,8 @@
     "timeoutBody": "对端响应过慢。请确认双方在同一 Wi-Fi 下后重试。",
     "pathDeniedTitle": "路径未被共享",
     "pathDeniedBody": "该路径不在对端的共享驱动器内。请让对方将其加入白名单。",
+    "permissionDeniedTitle": "你没有权限访问当前系统卷",
+    "permissionDeniedBody": "对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalSend 的 设置 → 共享文件夹 中添加要访问的文件夹。",
     "networkTitle": "无法连接设备",
     "networkBody": "对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。",
     "rootsChangedAdded": "新增了一个驱动器",
@@ -256,7 +258,12 @@
       "enableFs": "允许其他设备浏览我的驱动器",
       "enableFsSubtitle": "同一网络下的移动设备可以浏览文件夹并下载你所选驱动器中的文件。",
       "enableFsNoticeTitle": "已开启驱动器浏览",
-      "enableFsNoticeBody": "同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。"
+      "enableFsNoticeBody": "同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。",
+      "fsBookmarksTitle": "共享文件夹",
+      "fsBookmarksEmpty": "没有共享文件夹",
+      "fsBookmarksHint": "添加你想要与其他设备共享的文件夹。\n这些文件夹将对网络中的设备可见。",
+      "fsBookmarkDelete": "移除共享文件夹",
+      "fsBookmarkDeleteConfirm": "你确定要移除这个共享文件夹吗？其他设备将无法再访问它。"
     },
     "other": {
       "title": "其他",

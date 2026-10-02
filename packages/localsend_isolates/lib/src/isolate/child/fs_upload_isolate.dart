@@ -18,10 +18,17 @@ class FsUploadRequest {
   final String localPath;
   final String remotePath;
 
+  /// Filename the file gets on the peer. Callers pass this explicitly
+  /// because `basename(localPath)` is not always the intended name —
+  /// on iOS, `asset.originFile.path` is a mangled tmp path that has
+  /// nothing to do with the photo-library title.
+  final String filename;
+
   const FsUploadRequest({
     required this.device,
     required this.localPath,
     required this.remotePath,
+    required this.filename,
   });
 }
 
@@ -115,7 +122,6 @@ Future<void> setupFsUploadIsolate(
           }
 
           final fileSize = await file.length();
-          final fileName = request.localPath.split(Platform.pathSeparator).last;
 
           try {
             // Create FRB stream pair for sending bytes to Rust
@@ -127,7 +133,7 @@ Future<void> setupFsUploadIsolate(
               ip: ip,
               port: device.port,
               remoteDir: request.remotePath,
-              filename: fileName,
+              filename: request.filename,
               fileSize: BigInt.from(fileSize),
               binary: streamReceiver,
               resumeSessionId: null, // TODO: implement resume

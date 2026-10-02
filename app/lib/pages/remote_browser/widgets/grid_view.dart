@@ -84,9 +84,7 @@ class FsGridCell extends StatelessWidget {
     final bool isImage = !entry.isDir && entry.mime != null && entry.mime!.startsWith('image/');
 
     if (isImage && device != null) {
-      final fullPath = currentPath.isEmpty
-          ? entry.name
-          : '$currentPath/${entry.name}';
+      final fullPath = currentPath.isEmpty ? entry.name : '$currentPath/${entry.name}';
       return Center(
         child: RemoteThumbnail(
           device: device!,
@@ -208,9 +206,7 @@ class FsGridBody extends StatelessWidget {
         return FsGridCell(
           entry: entry,
           onTap: () => onTapEntry(entry),
-          onLongPress: onLongPressEntry != null
-              ? () => onLongPressEntry!(entry)
-              : null,
+          onLongPress: onLongPressEntry != null ? () => onLongPressEntry!(entry) : null,
           device: device,
           currentPath: currentPath,
         );

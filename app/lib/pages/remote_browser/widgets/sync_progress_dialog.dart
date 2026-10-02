@@ -65,8 +65,7 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> with Refena {
         ),
       ),
       actions: [
-        if (syncState.phase == PhotoSyncPhase.done ||
-            syncState.phase == PhotoSyncPhase.failed)
+        if (syncState.phase == PhotoSyncPhase.done || syncState.phase == PhotoSyncPhase.failed)
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(t.general.close),

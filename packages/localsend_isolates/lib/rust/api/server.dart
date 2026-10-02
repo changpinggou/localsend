@@ -54,6 +54,18 @@ Future<RsHttpServer> startServer({
   showToken: showToken,
 );
 
+/// Add a path to the additional roots list. These paths are merged with
+/// the auto-detected mount points in [`FsMount::list`].
+///
+/// Called when the user picks a folder via NSOpenPanel on macOS.
+void addFsRoot({required String path}) => RustLib.instance.api.crateApiServerAddFsRoot(path: path);
+
+/// Remove a path from the additional roots list.
+void removeFsRoot({required String path}) => RustLib.instance.api.crateApiServerRemoveFsRoot(path: path);
+
+/// Get all additional root paths.
+List<String> getFsRoots() => RustLib.instance.api.crateApiServerGetFsRoots();
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<RsHttpServer>>
 abstract class RsHttpServer implements RustOpaqueInterface {
   /// Cancels the active upload session, e.g. because the user aborted the

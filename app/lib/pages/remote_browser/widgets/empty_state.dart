@@ -6,6 +6,7 @@ import 'package:localsend_app/gen/strings.g.dart';
 class FsEmptyState extends StatelessWidget {
   final bool isRoots;
   final VoidCallback? onRetry;
+
   /// Optional device alias to show in the hint message.
   final String? deviceAlias;
 
@@ -39,9 +40,7 @@ class FsEmptyState extends StatelessWidget {
             if (isRoots) ...[
               const SizedBox(height: 8),
               Text(
-                deviceAlias != null
-                    ? t.remoteBrowser.emptyRootsHintWithDevice(device: deviceAlias!)
-                    : t.remoteBrowser.emptyRootsHint,
+                deviceAlias != null ? t.remoteBrowser.emptyRootsHintWithDevice(device: deviceAlias!) : t.remoteBrowser.emptyRootsHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -107,6 +106,11 @@ class FsErrorState extends StatelessWidget {
         t.fsBrowser.pathDeniedTitle,
         t.fsBrowser.pathDeniedBody,
       ),
+      FsErrorReason.permissionDenied => (
+        Icons.folder_off_outlined,
+        t.fsBrowser.permissionDeniedTitle,
+        t.fsBrowser.permissionDeniedBody,
+      ),
       FsErrorReason.network => (
         Icons.cloud_off,
         t.fsBrowser.networkTitle,
@@ -169,6 +173,15 @@ enum FsErrorReason {
 
   /// HTTP 403 — the path was outside the peer's whitelist (T-004).
   pathDenied,
+
+  /// HTTP 500 whose payload is an EPERM from the peer's `readdir` —
+  /// macOS TCC / privacy protection blocks reading system volumes
+  /// (e.g. a home directory) unless the folder was explicitly shared
+  /// via a security-scoped bookmark. Distinct from [pathDenied] (403,
+  /// the path simply isn't whitelisted) so the UI can tell the user
+  /// to configure shared folders on the peer instead of just
+  /// whitelisting.
+  permissionDenied,
 
   /// Network-level failure (DNS, refused connection, etc.).
   network,

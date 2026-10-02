@@ -25,13 +25,13 @@ final settingsProvider = NotifierProvider<SettingsService, SettingsState>(
   },
   onChanged: (prev, next, ref) {
     final syncState = ref.read(parentIsolateProvider).syncState;
-    final enableFsChanged = prev != null && prev.enableFs != next.enableFs;
+    final enableFsChanged = prev.enableFs != next.enableFs;
 
     // When enableFs flips, restart the server so the new fs_config
     // (which is built once at server start) takes effect. The
     // capability set is also re-published below.
     if (enableFsChanged) {
-      _logger.info('enableFs changed: ${prev?.enableFs} -> ${next.enableFs}, restarting server');
+      _logger.info('enableFs changed: ${prev.enableFs} -> ${next.enableFs}, restarting server');
       unawaited(ref.notifier(serverProvider).restartServerFromSettings());
     }
 

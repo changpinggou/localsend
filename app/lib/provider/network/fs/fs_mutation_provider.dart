@@ -1,4 +1,3 @@
-import 'package:localsend_app/provider/http_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
@@ -42,10 +41,10 @@ class FsMutationData {
   });
 
   factory FsMutationData.initial() => const FsMutationData(
-        state: FsMutationState.idle,
-        selectedPaths: {},
-        isMultiSelectMode: false,
-      );
+    state: FsMutationState.idle,
+    selectedPaths: {},
+    isMultiSelectMode: false,
+  );
 
   FsMutationData copyWith({
     FsMutationState? state,
@@ -63,9 +62,7 @@ class FsMutationData {
       selectedPaths: selectedPaths ?? this.selectedPaths,
       isMultiSelectMode: isMultiSelectMode ?? this.isMultiSelectMode,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      snapshotBeforeMutation: clearSnapshot
-          ? null
-          : (snapshotBeforeMutation ?? this.snapshotBeforeMutation),
+      snapshotBeforeMutation: clearSnapshot ? null : (snapshotBeforeMutation ?? this.snapshotBeforeMutation),
     );
   }
 }
@@ -134,9 +131,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
 
     try {
       // 构建新路径
-      final parentPath = oldPath.contains('/')
-          ? oldPath.substring(0, oldPath.lastIndexOf('/'))
-          : '';
+      final parentPath = oldPath.contains('/') ? oldPath.substring(0, oldPath.lastIndexOf('/')) : '';
       final newPath = parentPath.isEmpty ? newName : '$parentPath/$newName';
 
       _logger.info('Constructed newPath="$newPath" (parentPath="$parentPath")');
@@ -150,9 +145,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
         expectedFingerprint: device.fingerprint,
         timeoutMs: 30000,
       );
-      final protocol = device.https
-          ? rust_model.ProtocolType.https
-          : rust_model.ProtocolType.http;
+      final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
       final ip = device.ip;
       if (ip == null) {
         throw Exception('Device has no IP address');
@@ -218,8 +211,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
         expectedFingerprint: device.fingerprint,
         timeoutMs: 30000,
       );
-      final protocol =
-          device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
+      final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
       final ip = device.ip;
       if (ip == null) {
         throw Exception('Device has no IP address');
@@ -229,9 +221,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
 
       // 逐个移动
       for (final path in paths) {
-        final filename = path.contains('/')
-            ? path.substring(path.lastIndexOf('/') + 1)
-            : path;
+        final filename = path.contains('/') ? path.substring(path.lastIndexOf('/') + 1) : path;
         final newPath = '$targetDir/$filename';
 
         await client.fsMove(
@@ -282,8 +272,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
         expectedFingerprint: device.fingerprint,
         timeoutMs: 30000,
       );
-      final protocol =
-          device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
+      final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
       final ip = device.ip;
       if (ip == null) {
         throw Exception('Device has no IP address');
@@ -297,8 +286,7 @@ class FsMutationNotifier extends Notifier<FsMutationData> {
         recycle: useRecycleBin,
       );
 
-      _logger.info(
-          'Deleted ${response.deleted.length} items, ${response.failed.length} failed');
+      _logger.info('Deleted ${response.deleted.length} items, ${response.failed.length} failed');
 
       if (response.failed.isNotEmpty) {
         final failedPaths = response.failed.map((f) => f.path).join(', ');

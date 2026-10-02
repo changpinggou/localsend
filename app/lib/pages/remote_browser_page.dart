@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/pages/media_preview/image_preview_page.dart';
@@ -22,9 +24,9 @@ import 'package:localsend_app/provider/device_info_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_download_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_mutation_provider.dart';
-import 'package:localsend_app/provider/network/fs/photo_sync_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_roots_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
+import 'package:localsend_app/provider/network/fs/photo_sync_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/util/native/pick_for_upload.dart';
@@ -279,18 +281,22 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
     // 显示进度对话框
     if (!mounted) return;
-    SyncProgressDialog.show(
-      context: context,
-      localCount: 0,
-      remoteCount: 0,
-      toUploadCount: 0,
+    unawaited(
+      SyncProgressDialog.show(
+        context: context,
+        localCount: 0,
+        remoteCount: 0,
+        toUploadCount: 0,
+      ),
     );
 
     try {
-      await ref.notifier(photoSyncProvider).startSync(
-        device: device,
-        remoteDir: state.currentPath,
-      );
+      await ref
+          .notifier(photoSyncProvider)
+          .startSync(
+            device: device,
+            remoteDir: state.currentPath,
+          );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -306,7 +312,11 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
   }
 
   Widget _buildBody(Device device, FsListState state, FsMutationData mutationState) {
-    if (state.error != null && state.entries.isEmpty && state.roots.isEmpty) {
+    // The roots list is preserved when browsing a directory, so
+    // requiring `roots.isEmpty` here would skip the error card for
+    // every failed directory listing (e.g. a peer volume the OS
+    // refuses to read) and fall through to the empty-folder view.
+    if (state.error != null && state.entries.isEmpty && !state.loading) {
       return FsErrorState(
         message: state.error,
         reason: state.errorReason,
@@ -421,7 +431,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     } else {
       // Async file action sheet + download + save flow. Outcome is
       // surfaced via a snackbar from inside `_handleFileTap`.
-      _handleFileTap(device, entry);
+      unawaited(_handleFileTap(device, entry));
     }
   }
 

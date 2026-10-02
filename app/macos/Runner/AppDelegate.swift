@@ -31,14 +31,17 @@ class AppDelegate: FlutterAppDelegate {
         let controller = mainFlutterWindow?.contentViewController as! FlutterViewController
         channel = FlutterMethodChannel(name: "main-delegate-channel", binaryMessenger: controller.engine.binaryMessenger)
         channel?.setMethodCallHandler(handleFlutterCall)
-        
+
+        // Register filesystem bookmark plugin
+        FsBookmarkPlugin.register(with: controller.engine.registrar(forPlugin: "FsBookmarkPlugin"))
+
         NSApplication.shared.servicesProvider = self
-        
+
         let localsendBrandColor = NSColor(red: 0, green: 0.392, blue: 0.353, alpha: 0.8) // #00645a
         DockProgress.style = .squircle(color: localsendBrandColor)
-        
+
         isLaunchedAsLoginItem = LaunchAtLogin.wasLaunchedAtLogin
-        
+
         restoreDestinationFolderAccess()
     }
     
