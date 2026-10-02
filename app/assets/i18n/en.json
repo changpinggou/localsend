@@ -151,6 +151,7 @@
     "cancelled": "Cancelled",
     "failedTitle": "Download failed",
     "galleryDenied": "Gallery permission denied",
+    "alreadyInGallery": "Already in Photos, skipped download",
     "complete": "Download complete",
     "savedToGallery": "Saved to Photos",
     "savedToFiles": "Saved to {path}",

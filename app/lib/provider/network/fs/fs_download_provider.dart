@@ -198,7 +198,9 @@ class FsDownloadService extends Notifier<FsDownloadState> {
   Future<bool> saveCachedToGallery({required bool isImage}) async {
     final cached = state.cachedPath;
     if (cached == null) return false;
-    return saveFileToGallery(cached, isImage: isImage);
+    // Pass the download's filename so the gallery asset does not inherit
+    // the `fs-<session>-…` cache basename as its title.
+    return saveFileToGallery(cached, isImage: isImage, filename: state.filename);
   }
 
   /// Asks the user where to put the cached file (mobile) or copies it

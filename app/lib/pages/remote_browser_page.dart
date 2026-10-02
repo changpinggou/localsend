@@ -476,7 +476,12 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     if (!mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
     final msg = switch (result.action) {
-      FsFileAction.saveToGallery => result.failed ? t.fsDownload.galleryDenied : t.fsDownload.savedToGallery,
+      FsFileAction.saveToGallery =>
+        result.skipped
+            ? t.fsDownload.alreadyInGallery
+            : result.failed
+            ? t.fsDownload.galleryDenied
+            : t.fsDownload.savedToGallery,
       FsFileAction.saveToFiles => result.failed ? t.fsDownload.failedTitle : t.fsDownload.savedToFiles(path: result.savedPath ?? ''),
       FsFileAction.preview => t.fsDownload.complete,
     };

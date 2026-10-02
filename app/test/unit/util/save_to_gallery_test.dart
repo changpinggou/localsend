@@ -22,4 +22,12 @@ void main() {
     final ok = await saveFileToGallery('/nonexistent/path.jpg', isImage: true);
     expect(ok, isFalse);
   });
+
+  // `isFileInGallery` is best-effort: on platforms without a gallery
+  // (or without photo permission, untestable here) it must report "no
+  // duplicate" so callers fall back to the plain save flow.
+  test('isFileInGallery returns false on platforms without gallery', () async {
+    final ok = await isFileInGallery(filename: 'IMG_0001.JPG', sizeBytes: 1234);
+    expect(ok, isFalse);
+  });
 }

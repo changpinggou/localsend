@@ -288,3 +288,11 @@ final enqueued = await ref.notifier(fsUploadProvider).enqueueFiles(
 - **同名异内容**：从"文件"App 导入的同名照片会上传互相覆盖；size 恰好也相同时会被误跳过。相机照片（IMG_XXXX）不重名，日常不受影响。
 - **编辑照片**：上传的是 `originFile` = 未编辑原图，不含 iOS 相册内的裁剪/滤镜。
 - **一次性清理**：2026-10-02 修复前遗留的对端乱码文件（UUID 前缀、`fs-*` 前缀）需手动删除；修复后不会再产生。
+
+### 10.5 保存到相册的去重（2026-10-02）
+
+远端浏览器「保存到相册」（`FsFileAction.saveToGallery`）复用 §10.1 的 diff 规则防止相册重复：
+
+- **保存前检查**：`isFileInGallery(filename, sizeBytes)`（`lib/util/save_to_gallery.dart`）扫描本地图库，`titleAsync == entry.name` 且文件字节数 == `entry.size` → 命中即跳过**下载和保存**，提示「相册中已存在，已跳过下载」。检查是 best-effort：无相册平台 / 无权限 / 插件异常一律返回 false，回退到普通保存流程。
+- **保存时写干净标题**：`gal` 的 `putImage(path)` 会把文件 basename 当作资源的 `originalFilename`（`PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL:)`），而下载缓存名是 `fs-<session>-IMG_0001.JPG` —— 与 §10.2 同类 bug（下载方向）。现改用 `Gal.putImageBytes(bytes, name: entry.name)` 显式设标题，之后去重才能按名字命中。旧存量 `fs-*` 标题资源无法命中，需手动清理一次。
+- **已知边界**：`gal` 的视频接口无 name 参数，视频保存仍是 basename 标题（fs 浏览器该入口仅对图片开放，暂不受影响）；同名不同内容的照片会被误跳过（与 §10.4 同名异内容一致）。

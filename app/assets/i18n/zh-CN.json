@@ -151,6 +151,7 @@
     "cancelled": "已取消",
     "failedTitle": "下载失败",
     "galleryDenied": "未授权访问相册",
+    "alreadyInGallery": "相册中已存在，已跳过下载",
     "complete": "下载完成",
     "savedToGallery": "已保存到相册",
     "savedToFiles": "已保存到 {path}",

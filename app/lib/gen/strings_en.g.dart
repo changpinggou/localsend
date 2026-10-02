@@ -484,6 +484,9 @@ class Translations$fsDownload$en {
   /// en: 'Gallery permission denied'
   String get galleryDenied => 'Gallery permission denied';
 
+  /// en: 'Already in Photos, skipped download'
+  String get alreadyInGallery => 'Already in Photos, skipped download';
+
   /// en: 'Download complete'
   String get complete => 'Download complete';
 

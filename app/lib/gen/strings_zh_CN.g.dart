@@ -399,6 +399,8 @@ class Translations$fsDownload$zh_CN extends Translations$fsDownload$en {
   @override
   String get galleryDenied => '未授权访问相册';
   @override
+  String get alreadyInGallery => '相册中已存在，已跳过下载';
+  @override
   String get complete => '下载完成';
   @override
   String get savedToGallery => '已保存到相册';
