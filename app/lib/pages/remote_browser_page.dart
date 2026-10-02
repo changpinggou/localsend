@@ -312,7 +312,11 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
   }
 
   Widget _buildBody(Device device, FsListState state, FsMutationData mutationState) {
-    if (state.error != null && state.entries.isEmpty && state.roots.isEmpty) {
+    // The roots list is preserved when browsing a directory, so
+    // requiring `roots.isEmpty` here would skip the error card for
+    // every failed directory listing (e.g. a peer volume the OS
+    // refuses to read) and fall through to the empty-folder view.
+    if (state.error != null && state.entries.isEmpty && !state.loading) {
       return FsErrorState(
         message: state.error,
         reason: state.errorReason,

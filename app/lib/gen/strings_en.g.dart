@@ -426,6 +426,13 @@ class Translations$fsBrowser$en {
   /// en: 'This path is outside the peer's shared drives. Ask the owner to whitelist it.'
   String get pathDeniedBody => 'This path is outside the peer\'s shared drives. Ask the owner to whitelist it.';
 
+  /// en: 'No permission to access this volume'
+  String get permissionDeniedTitle => 'No permission to access this volume';
+
+  /// en: 'The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalSend → Settings → Shared Folders on the peer device.'
+  String get permissionDeniedBody =>
+      'The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalSend → Settings → Shared Folders on the peer device.';
+
   /// en: 'Can't reach the device'
   String get networkTitle => 'Can\'t reach the device';
 

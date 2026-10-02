@@ -106,6 +106,11 @@ class FsErrorState extends StatelessWidget {
         t.fsBrowser.pathDeniedTitle,
         t.fsBrowser.pathDeniedBody,
       ),
+      FsErrorReason.permissionDenied => (
+        Icons.folder_off_outlined,
+        t.fsBrowser.permissionDeniedTitle,
+        t.fsBrowser.permissionDeniedBody,
+      ),
       FsErrorReason.network => (
         Icons.cloud_off,
         t.fsBrowser.networkTitle,
@@ -168,6 +173,15 @@ enum FsErrorReason {
 
   /// HTTP 403 — the path was outside the peer's whitelist (T-004).
   pathDenied,
+
+  /// HTTP 500 whose payload is an EPERM from the peer's `readdir` —
+  /// macOS TCC / privacy protection blocks reading system volumes
+  /// (e.g. a home directory) unless the folder was explicitly shared
+  /// via a security-scoped bookmark. Distinct from [pathDenied] (403,
+  /// the path simply isn't whitelisted) so the UI can tell the user
+  /// to configure shared folders on the peer instead of just
+  /// whitelisting.
+  permissionDenied,
 
   /// Network-level failure (DNS, refused connection, etc.).
   network,

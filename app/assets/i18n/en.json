@@ -133,6 +133,8 @@
     "timeoutBody": "The peer took too long to respond. Check that you're on the same Wi-Fi network and try again.",
     "pathDeniedTitle": "Path not shared",
     "pathDeniedBody": "This path is outside the peer's shared drives. Ask the owner to whitelist it.",
+    "permissionDeniedTitle": "No permission to access this volume",
+    "permissionDeniedBody": "The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalSend → Settings → Shared Folders on the peer device.",
     "networkTitle": "Can't reach the device",
     "networkBody": "The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down.",
     "rootsChangedAdded": "New drive available",

@@ -358,6 +358,10 @@ class Translations$fsBrowser$zh_CN extends Translations$fsBrowser$en {
   @override
   String get pathDeniedBody => '该路径不在对端的共享驱动器内。请让对方将其加入白名单。';
   @override
+  String get permissionDeniedTitle => '你没有权限访问当前系统卷';
+  @override
+  String get permissionDeniedBody => '对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalSend 的 设置 → 共享文件夹 中添加要访问的文件夹。';
+  @override
   String get networkTitle => '无法连接设备';
   @override
   String get networkBody => '对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。';
