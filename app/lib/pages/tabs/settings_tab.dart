@@ -517,31 +517,35 @@ class SettingsTab extends StatelessWidget {
                     ),
                   ),
                 ),
-                _BooleanEntry(
-                  label: t.settingsTab.network.enableFs,
-                  description: t.settingsTab.network.enableFsSubtitle,
-                  value: vm.settings.enableFs,
-                  onChanged: (b) async {
-                    final wasEnabled = vm.settings.enableFs;
-                    await ref.notifier(settingsProvider).setEnableFs(b);
-                    if (!wasEnabled && b && context.mounted) {
-                      await EnableFsNotice.open(context);
-                    }
-                    // The capability is announced by the discovery multicast
-                    // thread; restart the server so the next announcement
-                    // carries the updated set.
-                    if (ref.read(serverProvider) != null) {
-                      await ref.notifier(serverProvider).restartServerFromSettings();
-                    }
-                  },
-                ),
-                _ButtonEntry(
-                  label: t.settingsTab.network.fsBookmarksTitle,
-                  buttonLabel: t.general.open,
-                  onTap: () async {
-                    await context.push(() => const FsBookmarksPage());
-                  },
-                ),
+                // Drive sharing is a desktop-only feature: mobile devices
+                // are the browsing clients, not shared sources.
+                if (checkPlatformIsDesktop())
+                  _BooleanEntry(
+                    label: t.settingsTab.network.enableFs,
+                    description: t.settingsTab.network.enableFsSubtitle,
+                    value: vm.settings.enableFs,
+                    onChanged: (b) async {
+                      final wasEnabled = vm.settings.enableFs;
+                      await ref.notifier(settingsProvider).setEnableFs(b);
+                      if (!wasEnabled && b && context.mounted) {
+                        await EnableFsNotice.open(context);
+                      }
+                      // The capability is announced by the discovery multicast
+                      // thread; restart the server so the next announcement
+                      // carries the updated set.
+                      if (ref.read(serverProvider) != null) {
+                        await ref.notifier(serverProvider).restartServerFromSettings();
+                      }
+                    },
+                  ),
+                if (checkPlatformIsDesktop())
+                  _ButtonEntry(
+                    label: t.settingsTab.network.fsBookmarksTitle,
+                    buttonLabel: t.general.open,
+                    onTap: () async {
+                      await context.push(() => const FsBookmarksPage());
+                    },
+                  ),
               ],
             ),
             _SettingsSection(
