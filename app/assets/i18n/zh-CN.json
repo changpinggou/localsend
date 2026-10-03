@@ -1,5 +1,5 @@
 {
-  "appName": "LocalSend",
+  "appName": "LocalU",
   "general": {
     "accept": "接受",
     "accepted": "已接受",
@@ -129,13 +129,13 @@
     "fsDisabledByPeerTitle": "该设备未开启驱动器浏览",
     "fsDisabledByPeerBody": "对端还没有开启驱动器共享。请让对方在 设置 → 网络 → 打开「允许其他设备浏览我的驱动器」。同时需要启用加密（HTTPS）。",
     "notFoundTitle": "找不到对应接口",
-    "notFoundBody": "对端没有响应文件浏览请求，可能是旧版本 LocalSend。",
+    "notFoundBody": "对端没有响应文件浏览请求，可能是旧版本 LocalU。",
     "timeoutTitle": "连接超时",
     "timeoutBody": "对端响应过慢。请确认双方在同一 Wi-Fi 下后重试。",
     "pathDeniedTitle": "路径未被共享",
     "pathDeniedBody": "该路径不在对端的共享驱动器内。请让对方将其加入白名单。",
     "permissionDeniedTitle": "你没有权限访问当前系统卷",
-    "permissionDeniedBody": "对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalSend 的 设置 → 共享文件夹 中添加要访问的文件夹。",
+    "permissionDeniedBody": "对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalU 的 设置 → 共享文件夹 中添加要访问的文件夹。",
     "networkTitle": "无法连接设备",
     "networkBody": "对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。",
     "rootsChangedAdded": "新增了一个驱动器",
@@ -217,7 +217,7 @@
       "minimizeToTray": "关闭时最小化到系统托盘",
       "launchAtStartup": "登录系统后自动启动程序",
       "launchMinimized": "启动时最小化到任务栏",
-      "showInContextMenu": "在“发送到...”文件菜单中显示 LocalSend",
+      "showInContextMenu": "在“发送到...”文件菜单中显示 LocalU",
       "animations": "动画效果"
     },
     "receive": {
@@ -269,7 +269,7 @@
     },
     "other": {
       "title": "其他",
-      "support": "支持 LocalSend",
+      "support": "支持 LocalU",
       "donate": "捐赠",
       "privacyPolicy": "隐私政策",
       "termsOfUse": "使用条款"
@@ -297,7 +297,7 @@
   },
   "networkInterfacesPage": {
     "title": "网络接口",
-    "info": "默认情况下，LocalSend 使用所有可用的网络接口。您可以在此处排除不需要的网络接口。您需要重新启动服务器以应用更改。",
+    "info": "默认情况下，LocalU 使用所有可用的网络接口。您可以在此处排除不需要的网络接口。您需要重新启动服务器以应用更改。",
     "preview": "预览",
     "whitelist": "白名单",
     "blacklist": "黑名单"
@@ -358,7 +358,7 @@
   "receiveOptionsPage": {
     "title": "设置",
     "destination": "@:settingsTab.receive.destination",
-    "appDirectory": "(LocalSend 文件夹)",
+    "appDirectory": "(LocalU 文件夹)",
     "saveToGallery": "@:settingsTab.receive.saveToGallery",
     "saveToGalleryOff": "由于分享内容中存在文件夹，已自动关闭。"
   },
@@ -410,16 +410,16 @@
     "autoAccept": "自动接受请求",
     "requirePin": "启用 PIN 密码",
     "pinHint": "PIN 为 “{pin}”",
-    "encryptionHint": "LocalSend 使用自签名证书。您需要在浏览器中允许它。",
+    "encryptionHint": "LocalU 使用自签名证书。您需要在浏览器中允许它。",
     "pendingRequests": "待处理请求：{n}"
   },
   "webReceivePage": {
     "title": "通过链接接收"
   },
   "aboutPage": {
-    "title": "关于 LocalSend",
+    "title": "关于 LocalU",
     "description": [
-      "LocalSend 是一款免费的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
+      "LocalU 是一款免费的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
       "本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。您可以在官方主页找到所有下载选项。"
     ],
     "author": "作者",
@@ -429,7 +429,7 @@
   },
   "donationPage": {
     "title": "捐赠",
-    "info": "LocalSend 免费、开源、无广告。如果您喜欢这款应用程序，可以捐款支持开发。",
+    "info": "LocalU 免费、开源、无广告。如果您喜欢这款应用程序，可以捐款支持开发。",
     "donate": "捐款 {amount}",
     "thanks": "非常感谢您的支持！",
     "restore": "恢复购买"
@@ -584,7 +584,7 @@
     },
     "localNetworkUnauthorized": {
       "title": "@:dialogs.noPermission.title",
-      "description": "LocalSend 在没有扫描本地网络的权限的情况下无法找到其他设备。请在设置中授予此权限。",
+      "description": "LocalU 在没有扫描本地网络的权限的情况下无法找到其他设备。请在设置中授予此权限。",
       "gotoSettings": "设置"
     },
     "messageInput": {
@@ -631,7 +631,7 @@
       "title": "发送模式",
       "single": "发送文件给一个接收者。已选择的文件在发送后会取消选择。",
       "multiple": "发送文件给多个接收者。已选择的文件在发送后不会取消选择。",
-      "link": "未安装 LocalSend 的接收者可以在浏览器中打开链接以下载选中的文件。"
+      "link": "未安装 LocalU 的接收者可以在浏览器中打开链接以下载选中的文件。"
     },
     "zoom": {
       "title": "URL"
@@ -644,7 +644,7 @@
   "tray": {
     "@info": "Apple Guidelines are very strict about the \"close\" wording.",
     "open": "@:general.open",
-    "close": "退出 LocalSend",
+    "close": "退出 LocalU",
     "closeWindows": "退出"
   },
   "web": {

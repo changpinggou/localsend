@@ -1,5 +1,5 @@
 {
-  "appName": "LocalSend",
+  "appName": "LocalU",
   "general": {
     "accept": "Accept",
     "accepted": "Accepted",
@@ -129,13 +129,13 @@
     "fsDisabledByPeerTitle": "Drive browsing is off",
     "fsDisabledByPeerBody": "This device hasn't enabled drive browsing yet. Ask the owner to open Settings → Network → \"Allow other devices to browse my drives\". The connection also needs to be encrypted (HTTPS).",
     "notFoundTitle": "Endpoint not found",
-    "notFoundBody": "The peer did not respond to the file-browsing request. It may be running an older LocalSend version.",
+    "notFoundBody": "The peer did not respond to the file-browsing request. It may be running an older LocalU version.",
     "timeoutTitle": "Connection timed out",
     "timeoutBody": "The peer took too long to respond. Check that you're on the same Wi-Fi network and try again.",
     "pathDeniedTitle": "Path not shared",
     "pathDeniedBody": "This path is outside the peer's shared drives. Ask the owner to whitelist it.",
     "permissionDeniedTitle": "No permission to access this volume",
-    "permissionDeniedBody": "The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalSend → Settings → Shared Folders on the peer device.",
+    "permissionDeniedBody": "The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalU → Settings → Shared Folders on the peer device.",
     "networkTitle": "Can't reach the device",
     "networkBody": "The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down.",
     "rootsChangedAdded": "New drive available",
@@ -217,7 +217,7 @@
       "minimizeToTray": "Minimize to the System Tray/Menu Bar when closing",
       "launchAtStartup": "Autostart after login",
       "launchMinimized": "Autostart: Start hidden",
-      "showInContextMenu": "Show LocalSend in context menu",
+      "showInContextMenu": "Show LocalU in context menu",
       "animations": "Animations"
     },
     "receive": {
@@ -269,7 +269,7 @@
     },
     "other": {
       "title": "Other",
-      "support": "Support LocalSend",
+      "support": "Support LocalU",
       "donate": "Donate",
       "privacyPolicy": "Privacy Policy",
       "termsOfUse": "Terms of Use"
@@ -297,7 +297,7 @@
   },
   "networkInterfacesPage": {
     "title": "Network Interfaces",
-    "info": "By default, LocalSend uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.",
+    "info": "By default, LocalU uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.",
     "preview": "Preview",
     "whitelist": "Whitelist",
     "blacklist": "Blacklist"
@@ -358,7 +358,7 @@
   "receiveOptionsPage": {
     "title": "Options",
     "destination": "@:settingsTab.receive.destination",
-    "appDirectory": "(LocalSend folder)",
+    "appDirectory": "(LocalU folder)",
     "saveToGallery": "@:settingsTab.receive.saveToGallery",
     "saveToGalleryOff": "Turned off automatically because there are folders."
   },
@@ -410,16 +410,16 @@
     "autoAccept": "Automatically accept requests",
     "requirePin": "Require PIN",
     "pinHint": "The PIN is \"{pin}\"",
-    "encryptionHint": "LocalSend uses a self-signed certificate. You need to accept it in your browser.",
+    "encryptionHint": "LocalU uses a self-signed certificate. You need to accept it in your browser.",
     "pendingRequests": "Pending requests: {n}"
   },
   "webReceivePage": {
     "title": "Receive via link"
   },
   "aboutPage": {
-    "title": "About LocalSend",
+    "title": "About LocalU",
     "description": [
-      "LocalSend is a free, open-source app that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
+      "LocalU is a free, open-source app that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
       "This app is available on Android, iOS, macOS, Windows and Linux. You can find all download options on the official homepage."
     ],
     "author": "Author",
@@ -429,7 +429,7 @@
   },
   "donationPage": {
     "title": "Donate",
-    "info": "LocalSend is free, open-source and without any ads. If you like the app, you can support the development with a donation.",
+    "info": "LocalU is free, open-source and without any ads. If you like the app, you can support the development with a donation.",
     "donate": "Donate {amount}",
     "thanks": "Thank you very much!",
     "restore": "Restore purchase"
@@ -585,7 +585,7 @@
     },
     "localNetworkUnauthorized": {
       "title": "@:dialogs.noPermission.title",
-      "description": "LocalSend can't find other devices without having the permission to scan the local network. Please grant this permission in the settings.",
+      "description": "LocalU can't find other devices without having the permission to scan the local network. Please grant this permission in the settings.",
       "gotoSettings": "Settings"
     },
     "messageInput": {
@@ -632,7 +632,7 @@
       "title": "Send modes",
       "single": "Sends files to one recipient. Selection will be cleared after finished files transfer.",
       "multiple": "Sends files to multiple recipients. Selection will not be cleared after finished files transfer.",
-      "link": "Recipients who do not have LocalSend installed can download the selected files by opening the link in their browser."
+      "link": "Recipients who do not have LocalU installed can download the selected files by opening the link in their browser."
     },
     "zoom": {
       "title": "URL"
@@ -645,7 +645,7 @@
   "tray": {
     "@info": "Apple Guidelines are very strict about the \"close\" wording.",
     "open": "@:general.open",
-    "close": "Quit LocalSend",
+    "close": "Quit LocalU",
     "closeWindows": "Exit"
   },
   "web": {
