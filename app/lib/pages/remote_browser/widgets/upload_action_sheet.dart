@@ -5,6 +5,7 @@ import 'package:localsend_app/gen/strings.g.dart';
 /// - From Photos (gallery picker)
 /// - From Files (file picker)
 /// - New Folder (mkdir dialog)
+/// - Sync Photos (T-027: one-way album backup into the current directory)
 ///
 /// Returns the selected action or null if cancelled.
 Future<FsUploadAction?> showUploadActionSheet(BuildContext context) {
@@ -31,6 +32,13 @@ Future<FsUploadAction?> showUploadActionSheet(BuildContext context) {
               title: Text(t.fsUpload.newFolder),
               onTap: () => Navigator.pop(context, FsUploadAction.newFolder),
             ),
+            ListTile(
+              // Same icon as the toolbar's sync button so the entry
+              // reads as the same feature.
+              leading: const Icon(Icons.drive_folder_upload),
+              title: Text(t.remoteBrowser.syncPhotos),
+              onTap: () => Navigator.pop(context, FsUploadAction.syncPhotos),
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -44,4 +52,5 @@ enum FsUploadAction {
   fromPhotos,
   fromFiles,
   newFolder,
+  syncPhotos,
 }

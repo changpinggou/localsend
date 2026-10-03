@@ -11,6 +11,7 @@ import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/breadcrumb.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/empty_state.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/upload_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart';
 import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 
@@ -135,6 +136,38 @@ void main() {
       await tester.tap(find.byIcon(Icons.view_list));
       await tester.pump();
       expect(picked, FsViewMode.list);
+    });
+  });
+
+  group('showUploadActionSheet', () {
+    testWidgets('lists all four entries and returns the popped action', (tester) async {
+      FsUploadAction? picked;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: FilledButton(
+                  onPressed: () async {
+                    picked = await showUploadActionSheet(context);
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // All four entries are present.
+      expect(find.byType(ListTile), findsNWidgets(4));
+      expect(find.text(t.remoteBrowser.syncPhotos), findsOneWidget);
+
+      await tester.tap(find.text(t.remoteBrowser.syncPhotos));
+      await tester.pumpAndSettle();
+      expect(picked, FsUploadAction.syncPhotos);
     });
   });
 }

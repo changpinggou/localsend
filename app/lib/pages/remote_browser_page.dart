@@ -525,6 +525,13 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       case FsUploadAction.newFolder:
         await _handleMkdir(device, currentPath);
         break;
+      case FsUploadAction.syncPhotos:
+        // T-027: sync the local album into the current directory.
+        // The sheet can only be opened when a directory is open (the
+        // FAB is hidden at the roots view), but `_onSyncPhotos` still
+        // guards the empty path itself.
+        await _onSyncPhotos(device, ref.read(fsListProvider));
+        break;
     }
   }
 
