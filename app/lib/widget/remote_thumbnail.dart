@@ -6,13 +6,22 @@ import 'package:flutter/material.dart';
 import 'package:localsend_app/provider/network/fs/fs_thumbnail_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:refena_flutter/refena_flutter.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 /// Renders a thumbnail for a remote file by fetching
 /// `GET /api/localsend/v2/fs/thumbnail` through the FRB client.
 ///
+/// The fetch starts as soon as the widget mounts. Laziness comes from the
+/// list / grid bodies, which use `ListView.builder` / `GridView.builder`
+/// and therefore only build entries near the viewport. (An earlier
+/// revision triggered the fetch from a `VisibilityDetector` callback
+/// instead — that detector keeps its last visibility per key in static
+/// state which survives unmounts, so after an in-place refresh, e.g.
+/// deleting an entry, the remounted rows with identical geometry
+/// suppressed the initial "visible" callback and no thumbnail ever
+/// loaded until the page was left and re-entered.)
+///
 /// Lifecycle:
-///   1. `initState` → triggers fetch via [FsThumbnailService.fetchThumbnail]
+///   1. `didChangeDependencies` → triggers fetch via [FsThumbnailService.fetchThumbnail]
 ///   2. Loading    → shows [placeholder] (the fallback icon)
 ///   3. Success    → `Image.memory(pngBytes, fit: BoxFit.cover)`
 ///   4. Error      → keeps [placeholder] (no error UI; thumbnails are
@@ -60,13 +69,8 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_fetchStarted && _isVisible) {
-      _fetchStarted = true;
-      unawaited(_fetch());
-    }
+    _maybeFetch();
   }
-
-  bool _isVisible = false;
 
   @override
   void didUpdateWidget(covariant RemoteThumbnail oldWidget) {
@@ -75,47 +79,47 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
       _bytes = null;
       _loading = false;
       _fetchStarted = false;
-      if (_isVisible) {
-        _fetchStarted = true;
-        unawaited(_fetch());
-      }
+      _maybeFetch();
     }
+  }
+
+  void _maybeFetch() {
+    if (_fetchStarted) return;
+    _fetchStarted = true;
+    unawaited(_fetch());
   }
 
   Future<void> _fetch() async {
     if (_loading) return;
-    setState(() => _loading = true);
+    // Not part of the rendered output, so no setState needed to flip it.
+    _loading = true;
+    final fullPath = widget.fullPath;
 
     final bytes = await ref
         .notifier(fsThumbnailProvider)
         .fetchThumbnail(
           device: widget.device,
-          fullPath: widget.fullPath,
+          fullPath: fullPath,
           width: widget.width.round(),
           height: widget.height.round(),
         );
 
-    if (mounted && bytes != null) {
-      setState(() {
+    // Never apply the bytes of a path the widget has moved away from
+    // while the request was in flight. Also reset [_loading] on failure
+    // so a later trigger (e.g. the row being rebuilt for another entry)
+    // can retry.
+    if (!mounted || widget.fullPath != fullPath) return;
+    setState(() {
+      if (bytes != null) {
         _bytes = bytes;
-        _loading = false;
-      });
-    }
+      }
+      _loading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return VisibilityDetector(
-      key: ValueKey(widget.fullPath),
-      onVisibilityChanged: (info) {
-        if (info.visibleFraction > 0.1 && !_fetchStarted) {
-          _isVisible = true;
-          _fetchStarted = true;
-          unawaited(_fetch());
-        }
-      },
-      child: _buildContent(context),
-    );
+    return _buildContent(context);
   }
 
   Widget _buildContent(BuildContext context) {
