@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/pages/media_preview/image_preview_page.dart';
+import 'package:localsend_app/pages/pro/pro_page.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/breadcrumb.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/context_menu.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/delete_confirm_dialog.dart';
@@ -28,6 +29,7 @@ import 'package:localsend_app/provider/network/fs/fs_roots_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
 import 'package:localsend_app/provider/network/fs/photo_sync_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
+import 'package:localsend_app/provider/pro_gate_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/util/native/pick_for_upload.dart';
 import 'package:localsend_app/util/ui/snackbar.dart';
@@ -35,6 +37,7 @@ import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
 import 'package:refena_flutter/refena_flutter.dart';
+import 'package:routerino/routerino.dart';
 
 /// T-008: remote filesystem browser page.
 ///
@@ -170,6 +173,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
     // T-016: 多选模式时显示不同的 AppBar
     final isMultiSelect = mutationState.isMultiSelectMode;
+    // T-028: 相册同步是 LocalU Pro 功能 — gate at tap time, keep the
+    // button visible for discoverability (badge marks the locked state).
+    final isPro = ref.watch(isProProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -193,8 +199,14 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
                   // Folder + up-arrow: "push the album into this folder".
                   // Icons.sync reads as bidirectional (and looks like the
                   // refresh icon); the album sync is one-way backup.
-                  icon: const Icon(Icons.drive_folder_upload),
-                  tooltip: t.remoteBrowser.syncPhotos,
+                  icon: Badge(
+                    isLabelVisible: !isPro,
+                    alignment: AlignmentDirectional.bottomStart,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    label: const Icon(Icons.lock, size: 8, color: Colors.white),
+                    child: const Icon(Icons.drive_folder_upload),
+                  ),
+                  tooltip: isPro ? t.remoteBrowser.syncPhotos : t.remoteBrowser.proLocked,
                   onPressed: () => _onSyncPhotos(device, fsState),
                 ),
                 IconButton(
@@ -257,6 +269,14 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
   /// T-027: 同步相册到当前远端目录
   Future<void> _onSyncPhotos(Device device, FsListState state) async {
+    // T-028: 未购时先进入 Pro 解锁页，不执行同步。
+    // 点击时 gate（按钮不隐藏），已购则直接走原流程。
+    if (!ref.read(isProProvider)) {
+      if (!mounted) return;
+      await context.push(() => const ProPage());
+      return;
+    }
+
     // 必须在非根目录
     if (state.currentPath.isEmpty) {
       if (!mounted) return;

@@ -70,6 +70,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$webReceivePage$en webReceivePage = Translations$webReceivePage$en.internal(_root);
   late final Translations$aboutPage$en aboutPage = Translations$aboutPage$en.internal(_root);
   late final Translations$donationPage$en donationPage = Translations$donationPage$en.internal(_root);
+  late final Translations$proPage$en proPage = Translations$proPage$en.internal(_root);
   late final Translations$changelogPage$en changelogPage = Translations$changelogPage$en.internal(_root);
   late final Translations$whatsNewPage$en whatsNewPage = Translations$whatsNewPage$en.internal(_root);
   late final Translations$aliasGenerator$en aliasGenerator = Translations$aliasGenerator$en.internal(_root);
@@ -340,6 +341,9 @@ class Translations$remoteBrowser$en {
 
   /// en: 'Sync photos'
   String get syncPhotos => 'Sync photos';
+
+  /// en: 'Photo sync is a LocalU Pro feature'
+  String get proLocked => 'Photo sync is a LocalU Pro feature';
 }
 
 // Path: sync
@@ -986,6 +990,45 @@ class Translations$donationPage$en {
 
   /// en: 'Restore purchase'
   String get restore => 'Restore purchase';
+}
+
+// Path: proPage
+class Translations$proPage$en {
+  Translations$proPage$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'LocalU Pro'
+  String get title => 'LocalU Pro';
+
+  /// en: 'Photo sync and future Pro features. One-time purchase, yours forever.'
+  String get subtitle => 'Photo sync and future Pro features. One-time purchase, yours forever.';
+
+  /// en: 'Unlock for {price}'
+  String buy({required Object price}) => 'Unlock for ${price}';
+
+  /// en: 'Purchased'
+  String get purchased => 'Purchased';
+
+  /// en: 'Unlock'
+  String get unlock => 'Unlock';
+
+  /// en: 'Unlocked'
+  String get unlocked => 'Unlocked';
+
+  /// en: 'Restore purchase'
+  String get restore => 'Restore purchase';
+
+  /// en: 'Price unavailable'
+  String get priceUnavailable => 'Price unavailable';
+
+  /// en: 'Thank you for supporting LocalU!'
+  String get thanks => 'Thank you for supporting LocalU!';
+
+  /// en: 'In-app purchases are not available in this build.'
+  String get unavailable => 'In-app purchases are not available in this build.';
 }
 
 // Path: changelogPage

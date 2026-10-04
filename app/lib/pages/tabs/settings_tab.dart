@@ -8,10 +8,12 @@ import 'package:localsend_app/model/persistence/color_mode.dart';
 import 'package:localsend_app/pages/about/about_page.dart';
 import 'package:localsend_app/pages/changelog_page.dart';
 import 'package:localsend_app/pages/donation/donation_page.dart';
+import 'package:localsend_app/pages/pro/pro_page.dart';
 import 'package:localsend_app/pages/settings/fs_bookmarks_page.dart';
 import 'package:localsend_app/pages/settings/network_interfaces_page.dart';
 import 'package:localsend_app/pages/tabs/settings_tab_controller.dart';
 import 'package:localsend_app/provider/network/server/server_provider.dart';
+import 'package:localsend_app/provider/pro_gate_provider.dart';
 import 'package:localsend_app/provider/settings_provider.dart';
 import 'package:localsend_app/provider/version_provider.dart';
 import 'package:localsend_app/util/alias_generator.dart';
@@ -566,6 +568,17 @@ class SettingsTab extends StatelessWidget {
                     await context.push(() => const DonationPage());
                   },
                 ),
+                // T-028: LocalU Pro entry next to the donation entry.
+                // Desktop is free (no gate), so the entry only shows on
+                // Android + iOS.
+                if (checkProGatePlatform())
+                  _ButtonEntry(
+                    label: t.proPage.title,
+                    buttonLabel: ref.watch(isProProvider) ? t.proPage.unlocked : t.proPage.unlock,
+                    onTap: () async {
+                      await context.push(() => const ProPage());
+                    },
+                  ),
                 _ButtonEntry(
                   label: t.settingsTab.other.privacyPolicy,
                   buttonLabel: t.general.open,

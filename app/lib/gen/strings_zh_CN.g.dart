@@ -90,6 +90,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   @override
   late final Translations$donationPage$zh_CN donationPage = Translations$donationPage$zh_CN.internal(_root);
   @override
+  late final Translations$proPage$zh_CN proPage = Translations$proPage$zh_CN.internal(_root);
+  @override
   late final Translations$changelogPage$zh_CN changelogPage = Translations$changelogPage$zh_CN.internal(_root);
   @override
   late final Translations$whatsNewPage$zh_CN whatsNewPage = Translations$whatsNewPage$zh_CN.internal(_root);
@@ -295,6 +297,8 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   String get refresh => '刷新当前目录';
   @override
   String get syncPhotos => '同步相册';
+  @override
+  String get proLocked => '同步相册是 LocalU Pro 功能';
 }
 
 // Path: sync
@@ -802,6 +806,35 @@ class Translations$donationPage$zh_CN extends Translations$donationPage$en {
   String get thanks => '非常感谢您的支持！';
   @override
   String get restore => '恢复购买';
+}
+
+// Path: proPage
+class Translations$proPage$zh_CN extends Translations$proPage$en {
+  Translations$proPage$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => 'LocalU Pro';
+  @override
+  String get subtitle => '相册同步及后续 Pro 功能，一次购买，永久解锁。';
+  @override
+  String buy({required Object price}) => '解锁（${price}）';
+  @override
+  String get purchased => '已购买';
+  @override
+  String get unlock => '解锁';
+  @override
+  String get unlocked => '已解锁';
+  @override
+  String get restore => '恢复购买';
+  @override
+  String get priceUnavailable => '价格获取失败';
+  @override
+  String get thanks => '感谢支持 LocalU！';
+  @override
+  String get unavailable => '此版本不支持应用内购买。';
 }
 
 // Path: changelogPage

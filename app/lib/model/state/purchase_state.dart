@@ -19,6 +19,11 @@ enum PurchaseItem {
   donate50(
     androidId: 'localsend_android_donate_50',
     iosId: 'localsend_ios_donate_50',
+  ),
+  // T-028: one-time buyout unlocking photo sync (and future Pro features).
+  pro(
+    androidId: 'localu_pro',
+    iosId: 'localu_pro',
   )
   ;
 

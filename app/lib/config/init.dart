@@ -316,6 +316,15 @@ Future<void> postInit(BuildContext context, Ref ref, bool appStart) async {
     // ignore: unawaited_futures
     ref.redux(purchaseProvider).dispatchAsync(InitPurchaseStream());
   }
+  // T-028: silently restore purchases on Android so the Pro buyout is
+  // re-confirmed at startup (Google Play answers without any dialog).
+  // iOS must not do this — restorePurchases() pops the system login
+  // dialog there, so iOS relies on the local cache + the manual restore
+  // button in the Pro page.
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    // ignore: unawaited_futures
+    ref.redux(purchaseProvider).dispatchAsync(PurchaseRestoreAction());
+  }
   // [FOSS_REMOVE_END]
 }
 

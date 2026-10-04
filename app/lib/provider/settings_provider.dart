@@ -123,6 +123,7 @@ class SettingsService extends PureNotifier<SettingsState> {
     discoveryTimeout: _persistence.getDiscoveryTimeout(),
     advancedSettings: _persistence.getAdvancedSettingsEnabled(),
     enableFs: _persistence.getEnableFs(),
+    proCached: _persistence.getProCached(),
   );
 
   Future<void> setAlias(String alias) async {
@@ -325,6 +326,16 @@ class SettingsService extends PureNotifier<SettingsState> {
     } catch (e, st) {
       _logger.warning('Failed to restart server after enableFs toggle', e, st);
     }
+  }
+
+  /// T-028: caches the LocalU Pro buyout so the gate survives restarts
+  /// and offline starts. Only ever set to `true` — the buyout does not
+  /// expire and there is no server to revoke it.
+  Future<void> setProCached(bool proCached) async {
+    await _persistence.setProCached(proCached);
+    state = state.copyWith(
+      proCached: proCached,
+    );
   }
 
   Future<void> setDeviceType(DeviceType deviceType) async {

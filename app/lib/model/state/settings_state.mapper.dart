@@ -176,6 +176,13 @@ class SettingsStateMapper extends ClassMapperBase<SettingsState> {
     opt: true,
     def: false,
   );
+  static bool _$proCached(SettingsState v) => v.proCached;
+  static const Field<SettingsState, bool> _f$proCached = Field(
+    'proCached',
+    _$proCached,
+    opt: true,
+    def: false,
+  );
 
   @override
   final MappableFields<SettingsState> fields = const {
@@ -210,6 +217,7 @@ class SettingsStateMapper extends ClassMapperBase<SettingsState> {
     #discoveryTimeout: _f$discoveryTimeout,
     #advancedSettings: _f$advancedSettings,
     #enableFs: _f$enableFs,
+    #proCached: _f$proCached,
   };
 
   static SettingsState _instantiate(DecodingData data) {
@@ -245,6 +253,7 @@ class SettingsStateMapper extends ClassMapperBase<SettingsState> {
       discoveryTimeout: data.dec(_f$discoveryTimeout),
       advancedSettings: data.dec(_f$advancedSettings),
       enableFs: data.dec(_f$enableFs),
+      proCached: data.dec(_f$proCached),
     );
   }
 
@@ -346,6 +355,7 @@ abstract class SettingsStateCopyWith<$R, $In extends SettingsState, $Out>
     int? discoveryTimeout,
     bool? advancedSettings,
     bool? enableFs,
+    bool? proCached,
   });
   SettingsStateCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -409,6 +419,7 @@ class _SettingsStateCopyWithImpl<$R, $Out>
     int? discoveryTimeout,
     bool? advancedSettings,
     bool? enableFs,
+    bool? proCached,
   }) => $apply(
     FieldCopyWithData({
       if (showToken != null) #showToken: showToken,
@@ -446,6 +457,7 @@ class _SettingsStateCopyWithImpl<$R, $Out>
       if (discoveryTimeout != null) #discoveryTimeout: discoveryTimeout,
       if (advancedSettings != null) #advancedSettings: advancedSettings,
       if (enableFs != null) #enableFs: enableFs,
+      if (proCached != null) #proCached: proCached,
     }),
   );
   @override
@@ -493,6 +505,7 @@ class _SettingsStateCopyWithImpl<$R, $Out>
     discoveryTimeout: data.get(#discoveryTimeout, or: $value.discoveryTimeout),
     advancedSettings: data.get(#advancedSettings, or: $value.advancedSettings),
     enableFs: data.get(#enableFs, or: $value.enableFs),
+    proCached: data.get(#proCached, or: $value.proCached),
   );
 
   @override

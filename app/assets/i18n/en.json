@@ -106,7 +106,8 @@
     "viewGrid": "Grid view",
     "loadMore": "Load more",
     "refresh": "Refresh directory",
-    "syncPhotos": "Sync photos"
+    "syncPhotos": "Sync photos",
+    "proLocked": "Photo sync is a LocalU Pro feature"
   },
   "sync": {
     "title": "Sync Photos",
@@ -433,6 +434,18 @@
     "donate": "Donate {amount}",
     "thanks": "Thank you very much!",
     "restore": "Restore purchase"
+  },
+  "proPage": {
+    "title": "LocalU Pro",
+    "subtitle": "Photo sync and future Pro features. One-time purchase, yours forever.",
+    "buy": "Unlock for {price}",
+    "purchased": "Purchased",
+    "unlock": "Unlock",
+    "unlocked": "Unlocked",
+    "restore": "Restore purchase",
+    "priceUnavailable": "Price unavailable",
+    "thanks": "Thank you for supporting LocalU!",
+    "unavailable": "In-app purchases are not available in this build."
   },
   "changelogPage": {
     "title": "Changelog"

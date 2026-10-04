@@ -34,6 +34,11 @@ enum FsUploadStatus {
   cancelled,
 }
 
+/// T-012 follow-up: a task in one of these states will never change again.
+extension _FsUploadStatusX on FsUploadStatus {
+  bool get isTerminal => this == FsUploadStatus.finished || this == FsUploadStatus.failed || this == FsUploadStatus.cancelled;
+}
+
 /// T-012: a single file in the upload queue.
 @MappableClass()
 class FsUploadTask with FsUploadTaskMappable {
@@ -95,6 +100,10 @@ class FsUploadState with FsUploadStateMappable {
 
   /// Number of tasks waiting in the queue.
   int get queuedCount => tasks.where((t) => t.status == FsUploadStatus.queued).length;
+
+  /// Number of tasks that can still change (queued, uploading, paused).
+  /// The queue bar shows "done" and auto-clears once this reaches 0.
+  int get pendingCount => tasks.where((t) => !t.status.isTerminal).length;
 
   /// Number of tasks that finished successfully.
   int get finishedCount => tasks.where((t) => t.status == FsUploadStatus.finished).length;
@@ -171,11 +180,15 @@ class FsUploadService extends Notifier<FsUploadState> {
       return const [];
     }
 
-    state = state.copyWith(tasks: [...state.tasks, ...newTasks]);
+    // Drop old terminal tasks so the bar reflects only the new batch plus
+    // anything still in flight — otherwise the count grows forever.
+    final kept = state.tasks.where((t) => !t.status.isTerminal).toList();
+    state = state.copyWith(tasks: [...kept, ...newTasks]);
     _logger.info('Enqueued ${newTasks.length} upload tasks');
 
     // Kick off the worker loop.
     _processQueue();
+    _scheduleAutoClear();
     return newTasks;
   }
 
@@ -198,6 +211,7 @@ class FsUploadService extends Notifier<FsUploadState> {
     state = state.copyWith(tasks: newTasks);
 
     _logger.info('Paused upload task $sessionId');
+    _scheduleAutoClear();
   }
 
   /// T-012: resume a paused upload task.
@@ -219,6 +233,7 @@ class FsUploadService extends Notifier<FsUploadState> {
 
     // Kick off the worker loop.
     _processQueue();
+    _scheduleAutoClear();
   }
 
   /// T-012: cancel a specific upload task.
@@ -243,13 +258,12 @@ class FsUploadService extends Notifier<FsUploadState> {
     TransferNotification.stop(sessionId);
 
     _logger.info('Cancelled upload task $sessionId');
+    _scheduleAutoClear();
   }
 
   /// T-012: remove finished/failed/cancelled tasks from the queue.
   void clearCompleted() {
-    final remaining = state.tasks.where((t) {
-      return t.status != FsUploadStatus.finished && t.status != FsUploadStatus.failed && t.status != FsUploadStatus.cancelled;
-    }).toList();
+    final remaining = state.tasks.where((t) => !t.status.isTerminal).toList();
 
     state = state.copyWith(tasks: remaining);
     _logger.info('Cleared completed uploads, ${remaining.length} remaining');
@@ -257,8 +271,36 @@ class FsUploadService extends Notifier<FsUploadState> {
 
   /// T-012: reset the entire queue.
   void reset() {
+    _cancelAutoClear();
     state = FsUploadState.initial();
     _logger.info('Upload queue reset');
+  }
+
+  /// After every task reached a terminal state, keep the summary visible
+  /// for a few seconds, then drop the terminal tasks so the queue bar
+  /// disappears. Any new activity cancels the pending cleanup.
+  ///
+  /// The delay must stay well above the 200 ms poll interval of
+  /// [PhotoSyncService]: a task vanishing from the queue counts as failed
+  /// there, so clearing too early would corrupt a running sync.
+  static const _autoClearDelay = Duration(seconds: 4);
+  Timer? _autoClearTimer;
+
+  void _scheduleAutoClear() {
+    _autoClearTimer?.cancel();
+    _autoClearTimer = null;
+    if (state.tasks.isEmpty || state.tasks.any((t) => !t.status.isTerminal)) {
+      return;
+    }
+    _autoClearTimer = Timer(_autoClearDelay, () {
+      _autoClearTimer = null;
+      clearCompleted();
+    });
+  }
+
+  void _cancelAutoClear() {
+    _autoClearTimer?.cancel();
+    _autoClearTimer = null;
   }
 
   /// Process the queue: start uploads up to [maxConcurrent].
@@ -338,6 +380,17 @@ class FsUploadService extends Notifier<FsUploadState> {
           return;
         }
       }
+
+      // The result stream ended without a terminal event (e.g. the isolate
+      // died). Without this guard the task stays "uploading" forever and
+      // the queue bar never clears.
+      final index = state.tasks.indexWhere((t) => t.sessionId == task.sessionId);
+      if (index != -1 && state.tasks[index].status == FsUploadStatus.uploading) {
+        _logger.warning('Upload stream ended without a terminal event: ${task.filename}');
+        TransferNotification.stop(task.sessionId);
+        _markFailed(task.sessionId, 'Upload stream ended unexpectedly');
+        _processQueue();
+      }
     } catch (e, st) {
       _logger.severe('Upload failed: ${task.filename}', e, st);
       TransferNotification.stop(task.sessionId);
@@ -383,6 +436,7 @@ class FsUploadService extends Notifier<FsUploadState> {
     state = state.copyWith(tasks: newTasks);
 
     _logger.info('Upload finished: ${task.filename}');
+    _scheduleAutoClear();
   }
 
   /// Mark a task as failed.
@@ -397,6 +451,7 @@ class FsUploadService extends Notifier<FsUploadState> {
     state = state.copyWith(tasks: newTasks);
 
     _logger.warning('Upload failed: ${task.filename}: $error');
+    _scheduleAutoClear();
   }
 
   /// Mark a task as cancelled.
@@ -411,6 +466,7 @@ class FsUploadService extends Notifier<FsUploadState> {
     state = state.copyWith(tasks: newTasks);
 
     _logger.info('Upload cancelled: ${task.filename}');
+    _scheduleAutoClear();
   }
 
   /// Generate a unique session ID.
