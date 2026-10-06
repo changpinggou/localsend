@@ -61,8 +61,11 @@ class FsBookmarkPlugin: NSObject, FlutterPlugin {
             // Store for later resolution
             accessedBookmarks[bookmarkData] = url
 
-            // Return the path as a string
-            result(url.path)
+            // Return the path together with the base64-encoded bookmark data.
+            // With the App Sandbox enabled, the NSOpenPanel grant only lasts
+            // for this session; Dart persists the bookmark so it can call
+            // resolveBookmark on startup to restore access after a restart.
+            result(["path": url.path, "bookmark": bookmarkData.base64EncodedString()])
         } catch {
             print("Failed to create bookmark: \(error)")
             result(nil)

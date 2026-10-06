@@ -776,8 +776,8 @@ class Translations$aboutPage$zh_CN extends Translations$aboutPage$en {
   String get title => '关于 LocalU';
   @override
   List<String> get description => [
-    'LocalU 是一款免费的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。',
-    '本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。您可以在官方主页找到所有下载选项。',
+    'LocalU 是一款基于 LocalSend 的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。',
+    '本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。',
   ];
   @override
   String get author => '作者';
@@ -799,7 +799,7 @@ class Translations$donationPage$zh_CN extends Translations$donationPage$en {
   @override
   String get title => '捐赠';
   @override
-  String get info => 'LocalU 免费、开源、无广告。如果您喜欢这款应用程序，可以捐款支持开发。';
+  String get info => 'LocalSend 免费、开源、无广告。如果您喜欢这款应用程序，可以捐款支持开发。';
   @override
   String donate({required Object amount}) => '捐款 ${amount}';
   @override
@@ -835,6 +835,8 @@ class Translations$proPage$zh_CN extends Translations$proPage$en {
   String get thanks => '感谢支持 LocalU！';
   @override
   String get unavailable => '此版本不支持应用内购买。';
+  @override
+  late final Translations$proPage$features$zh_CN features = Translations$proPage$features$zh_CN.internal(_root);
 }
 
 // Path: changelogPage
@@ -1360,7 +1362,7 @@ class Translations$settingsTab$other$zh_CN extends Translations$settingsTab$othe
   @override
   String get title => '其他';
   @override
-  String get support => '支持 LocalU';
+  String get support => '支持 LocalSend';
   @override
   String get donate => '捐赠';
   @override
@@ -1500,6 +1502,27 @@ class Translations$progressPage$remainingTime$zh_CN extends Translations$progres
   @override
   String hours({required num h, required num m}) =>
       '${_root.progressPage.remainingTime.hoursUnit(h: h)} ${_root.progressPage.remainingTime.minutesUnit(m: m)}';
+}
+
+// Path: proPage.features
+class Translations$proPage$features$zh_CN extends Translations$proPage$features$en {
+  Translations$proPage$features$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get oneTapTitle => '一键同步相册';
+  @override
+  String get oneTapDesc => '选好电脑，一键把整个相册同步过去，无需逐张挑选文件。';
+  @override
+  String get incrementalTitle => '增量更新';
+  @override
+  String get incrementalDesc => '首次全量同步后，之后只上传新增的照片，又快又省流量。';
+  @override
+  String get icloudTitle => '类似 iCloud 的便捷体验';
+  @override
+  String get icloudDesc => '手机里的照片，电脑上随时都在，设备之间自动保持一致。';
 }
 
 // Path: whatsNewPage.changes

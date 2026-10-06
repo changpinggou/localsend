@@ -270,7 +270,7 @@
     },
     "other": {
       "title": "其他",
-      "support": "支持 LocalU",
+      "support": "支持 LocalSend",
       "donate": "捐赠",
       "privacyPolicy": "隐私政策",
       "termsOfUse": "使用条款"
@@ -420,8 +420,8 @@
   "aboutPage": {
     "title": "关于 LocalU",
     "description": [
-      "LocalU 是一款免费的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
-      "本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。您可以在官方主页找到所有下载选项。"
+      "LocalU 是一款基于 LocalSend 的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
+      "本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。"
     ],
     "author": "作者",
     "contributors": "贡献者",
@@ -430,7 +430,7 @@
   },
   "donationPage": {
     "title": "捐赠",
-    "info": "LocalU 免费、开源、无广告。如果您喜欢这款应用程序，可以捐款支持开发。",
+    "info": "LocalSend 免费、开源、无广告。如果您喜欢这款应用程序，可以捐款支持开发。",
     "donate": "捐款 {amount}",
     "thanks": "非常感谢您的支持！",
     "restore": "恢复购买"
@@ -445,7 +445,15 @@
     "restore": "恢复购买",
     "priceUnavailable": "价格获取失败",
     "thanks": "感谢支持 LocalU！",
-    "unavailable": "此版本不支持应用内购买。"
+    "unavailable": "此版本不支持应用内购买。",
+    "features": {
+      "oneTapTitle": "一键同步相册",
+      "oneTapDesc": "选好电脑，一键把整个相册同步过去，无需逐张挑选文件。",
+      "incrementalTitle": "增量更新",
+      "incrementalDesc": "首次全量同步后，之后只上传新增的照片，又快又省流量。",
+      "icloudTitle": "类似 iCloud 的便捷体验",
+      "icloudDesc": "手机里的照片，电脑上随时都在，设备之间自动保持一致。"
+    }
   },
   "changelogPage": {
     "title": "更新日志"

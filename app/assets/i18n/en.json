@@ -420,8 +420,8 @@
   "aboutPage": {
     "title": "About LocalU",
     "description": [
-      "LocalU is a free, open-source app that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
-      "This app is available on Android, iOS, macOS, Windows and Linux. You can find all download options on the official homepage."
+      "LocalU is an open-source app based on LocalSend that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
+      "This app is available on Android, iOS, macOS, Windows and Linux."
     ],
     "author": "Author",
     "contributors": "Contributors",
@@ -445,7 +445,15 @@
     "restore": "Restore purchase",
     "priceUnavailable": "Price unavailable",
     "thanks": "Thank you for supporting LocalU!",
-    "unavailable": "In-app purchases are not available in this build."
+    "unavailable": "In-app purchases are not available in this build.",
+    "features": {
+      "oneTapTitle": "One-tap album sync",
+      "oneTapDesc": "Pick your computer, tap once, and your entire photo library syncs over — no manual file picking.",
+      "incrementalTitle": "Incremental updates",
+      "incrementalDesc": "After the first full sync, only new photos are uploaded — fast and data-friendly.",
+      "icloudTitle": "iCloud-like convenience",
+      "icloudDesc": "Photos from your phone are always there on your computer. Devices stay in sync automatically."
+    }
   },
   "changelogPage": {
     "title": "Changelog"

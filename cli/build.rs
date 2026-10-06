@@ -5,10 +5,10 @@ fn main() {
         let mut res = winresource::WindowsResource::new();
         res.set("ProductName", "LocalSend");
         res.set("FileDescription", "LocalSend CLI");
-        res.set("CompanyName", "Tien Do Nam");
+        res.set("CompanyName", "Apple Chang");
         res.set("OriginalFilename", "localsend-cli.exe");
         res.set("InternalName", "localsend-cli");
-        res.set("LegalCopyright", "Copyright (C) 2022-2026 Tien Do Nam");
+        res.set("LegalCopyright", "Copyright (C) 2022-2026 Apple Chang");
         // FileVersion/ProductVersion are derived from CARGO_PKG_VERSION automatically.
         res.compile().expect("failed to compile Windows resources");
     }

@@ -519,8 +519,8 @@ class Translations$aboutPage$zh_HK extends Translations$aboutPage$en {
   String get title => '關於 LocalU';
   @override
   List<String> get description => [
-    'LocalU 係一款免費嘅開源應用程式，佢可以透過區域網絡幫你安全噉將檔案同訊息分享畀附近嘅裝置，全程無需互聯網連線。',
-    '呢個 app 喺 Android、iOS、macOS、Windows 同 Linux 都用得㗎。你可以喺我哋嘅網站揾到呢個 app 所有平台嘅版本同其他下載方式。',
+    'LocalU 係一款基於 LocalSend 嘅開源應用程式，佢可以透過區域網絡幫你安全噉將檔案同訊息分享畀附近嘅裝置，全程無需互聯網連線。',
+    '呢個 app 喺 Android、iOS、macOS、Windows 同 Linux 都用得㗎。',
   ];
   @override
   String get author => '作者';

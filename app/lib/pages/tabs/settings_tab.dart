@@ -630,7 +630,7 @@ class SettingsTab extends StatelessWidget {
                   orElse: () => Container(),
                 ),
             Text(
-              '© ${DateTime.now().year} Tien Do Nam',
+              '© ${DateTime.now().year} Apple Chang',
               textAlign: TextAlign.center,
             ),
             Center(

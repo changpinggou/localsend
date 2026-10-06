@@ -35,12 +35,19 @@ class FsBookmarkMapper extends ClassMapperBase<FsBookmark> {
     'createdAt',
     _$createdAt,
   );
+  static String? _$bookmark(FsBookmark v) => v.bookmark;
+  static const Field<FsBookmark, String> _f$bookmark = Field(
+    'bookmark',
+    _$bookmark,
+    opt: true,
+  );
 
   @override
   final MappableFields<FsBookmark> fields = const {
     #path: _f$path,
     #alias: _f$alias,
     #createdAt: _f$createdAt,
+    #bookmark: _f$bookmark,
   };
 
   static FsBookmark _instantiate(DecodingData data) {
@@ -48,6 +55,7 @@ class FsBookmarkMapper extends ClassMapperBase<FsBookmark> {
       path: data.dec(_f$path),
       alias: data.dec(_f$alias),
       createdAt: data.dec(_f$createdAt),
+      bookmark: data.dec(_f$bookmark),
     );
   }
 
@@ -111,7 +119,7 @@ extension FsBookmarkValueCopy<$R, $Out>
 
 abstract class FsBookmarkCopyWith<$R, $In extends FsBookmark, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
-  $R call({String? path, String? alias, DateTime? createdAt});
+  $R call({String? path, String? alias, DateTime? createdAt, String? bookmark});
   FsBookmarkCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
 
@@ -124,11 +132,17 @@ class _FsBookmarkCopyWithImpl<$R, $Out>
   late final ClassMapperBase<FsBookmark> $mapper =
       FsBookmarkMapper.ensureInitialized();
   @override
-  $R call({String? path, Object? alias = $none, DateTime? createdAt}) => $apply(
+  $R call({
+    String? path,
+    Object? alias = $none,
+    DateTime? createdAt,
+    Object? bookmark = $none,
+  }) => $apply(
     FieldCopyWithData({
       if (path != null) #path: path,
       if (alias != $none) #alias: alias,
       if (createdAt != null) #createdAt: createdAt,
+      if (bookmark != $none) #bookmark: bookmark,
     }),
   );
   @override
@@ -136,6 +150,7 @@ class _FsBookmarkCopyWithImpl<$R, $Out>
     path: data.get(#path, or: $value.path),
     alias: data.get(#alias, or: $value.alias),
     createdAt: data.get(#createdAt, or: $value.createdAt),
+    bookmark: data.get(#bookmark, or: $value.bookmark),
   );
 
   @override

@@ -951,8 +951,8 @@ class Translations$aboutPage$en {
   String get title => 'About LocalU';
 
   List<String> get description => [
-    'LocalU is a free, open-source app that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.',
-    'This app is available on Android, iOS, macOS, Windows and Linux. You can find all download options on the official homepage.',
+    'LocalU is an open-source app based on LocalSend that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.',
+    'This app is available on Android, iOS, macOS, Windows and Linux.',
   ];
 
   /// en: 'Author'
@@ -1029,6 +1029,8 @@ class Translations$proPage$en {
 
   /// en: 'In-app purchases are not available in this build.'
   String get unavailable => 'In-app purchases are not available in this build.';
+
+  late final Translations$proPage$features$en features = Translations$proPage$features$en.internal(_root);
 }
 
 // Path: changelogPage
@@ -1815,6 +1817,33 @@ class Translations$progressPage$remainingTime$en {
   /// en: '(other) {{h}h} (other) {{m}m}'
   String hours({required num h, required num m}) =>
       '${_root.progressPage.remainingTime.hoursUnit(h: h)} ${_root.progressPage.remainingTime.minutesUnit(m: m)}';
+}
+
+// Path: proPage.features
+class Translations$proPage$features$en {
+  Translations$proPage$features$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'One-tap album sync'
+  String get oneTapTitle => 'One-tap album sync';
+
+  /// en: 'Pick your computer, tap once, and your entire photo library syncs over — no manual file picking.'
+  String get oneTapDesc => 'Pick your computer, tap once, and your entire photo library syncs over — no manual file picking.';
+
+  /// en: 'Incremental updates'
+  String get incrementalTitle => 'Incremental updates';
+
+  /// en: 'After the first full sync, only new photos are uploaded — fast and data-friendly.'
+  String get incrementalDesc => 'After the first full sync, only new photos are uploaded — fast and data-friendly.';
+
+  /// en: 'iCloud-like convenience'
+  String get icloudTitle => 'iCloud-like convenience';
+
+  /// en: 'Photos from your phone are always there on your computer. Devices stay in sync automatically.'
+  String get icloudDesc => 'Photos from your phone are always there on your computer. Devices stay in sync automatically.';
 }
 
 // Path: whatsNewPage.changes
