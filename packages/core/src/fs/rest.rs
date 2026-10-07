@@ -641,6 +641,12 @@ pub(crate) fn guess_mime(filename: &str) -> &'static str {
         "gif" => "image/gif",
         "webp" => "image/webp",
         "svg" => "image/svg+xml",
+        // HEIF family: clients gate thumbnail requests on the `image/`
+        // prefix (grid_view checks `mime.startsWith('image/')`), so a
+        // missing entry here silently disables thumbnails for these.
+        "heic" => "image/heic",
+        "heif" => "image/heif",
+        "avif" => "image/avif",
         "pdf" => "application/pdf",
         "zip" => "application/zip",
         "mp4" => "video/mp4",
@@ -1035,6 +1041,9 @@ mod tests {
     fn guess_mime_known_extensions() {
         assert_eq!(guess_mime("a.png"), "image/png");
         assert_eq!(guess_mime("a.JPG"), "image/jpeg");
+        assert_eq!(guess_mime("a.heic"), "image/heic");
+        assert_eq!(guess_mime("a.HEIF"), "image/heif");
+        assert_eq!(guess_mime("a.AvIf"), "image/avif");
         assert_eq!(guess_mime("a.txt"), "text/plain; charset=utf-8");
         assert_eq!(guess_mime("a"), "application/octet-stream");
         assert_eq!(guess_mime("a.unknownext"), "application/octet-stream");

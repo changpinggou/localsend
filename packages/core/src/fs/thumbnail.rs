@@ -14,10 +14,11 @@
 //! whitelist even if the file extension is `.jpg`. Directories,
 //! missing files, and undecodable images return an error.
 //!
-//! HEIC and RAW formats are intentionally NOT decoded in v1
-//! (the `image` crate doesn't support them without `kamadak-exif`
-//! and a heavier dependency tree). Clients should fall back to
-//! the type icon for those.
+//! HEIC/AVIF get a second chance: when the `image` crate decoder
+//! fails and the magic bytes are a HEIF container, the system
+//! ImageIO framework decodes them on macOS (see [`super::heif`]).
+//! Non-macOS targets — and genuinely undecodable formats like RAW —
+//! still return an error; clients fall back to the type icon.
 
 use std::path::PathBuf;
 
@@ -128,9 +129,24 @@ pub async fn handle_thumbnail(
     // runtime free for HTTP I/O on big files.
     let (abs_for_worker, w, h) = (key.0.clone(), w, h);
     let path_dbg = path.clone();
-    let bytes = tokio::task::spawn_blocking(move || generate_thumbnail(&abs_for_worker, w, h))
+    let result = tokio::task::spawn_blocking(move || generate_thumbnail(&abs_for_worker, w, h))
         .await
-        .map_err(|e| FsError::Io(format!("thumbnail worker panicked: {e}")))??;
+        .map_err(|e| FsError::Io(format!("thumbnail worker panicked: {e}")))
+        .and_then(|inner| inner);
+    if let Err(e) = &result {
+        // Failures used to be silent — a client showing a placeholder
+        // icon gives no clue why. This is the one place the reason is
+        // still available.
+        tracing::warn!(
+            event = "fs.thumbnail.failed",
+            path = %path_dbg,
+            w,
+            h,
+            error = %e,
+            "thumbnail generation failed"
+        );
+    }
+    let bytes = result?;
 
     tracing::debug!(
         event = "fs.thumbnail.generated",
@@ -201,9 +217,27 @@ fn generate_thumbnail(abs: &std::path::Path, w: u16, h: u16) -> Result<Bytes, Fs
     let bytes = std::fs::read(abs).map_err(|e| {
         FsError::Io(format!("read {}: {e}", abs.display()))
     })?;
-    let img = image::load_from_memory(&bytes).map_err(|e| {
-        FsError::BadRequest(format!("unsupported image format: {e}"))
-    })?;
+    let img = match image::load_from_memory(&bytes) {
+        Ok(img) => img,
+        Err(e) => {
+            if super::heif::is_heif_container(&bytes) {
+                // HEIC/AVIF: the `image` crate has no HEIF decoder.
+                // Fall back to the system ImageIO framework (macOS
+                // only); the decode is already downscaled to the
+                // longer of (w, h) and orientation-corrected.
+                tracing::debug!(
+                    event = "fs.thumbnail.heif_fallback",
+                    len = bytes.len(),
+                    max_dim = u32::from(w.max(h)),
+                    "image crate failed; decoding via system ImageIO"
+                );
+                let max_dim = u32::from(w.max(h));
+                super::heif::decode_heif(&bytes, max_dim).map_err(FsError::BadRequest)?
+            } else {
+                return Err(FsError::BadRequest(format!("unsupported image format: {e}")));
+            }
+        }
+    };
 
     // Fit within (w, h) preserving aspect ratio. `thumbnail`
     // uses Lanczos3 resampling internally; the result is

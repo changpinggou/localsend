@@ -43,6 +43,8 @@ mod recycle;
 mod rest;
 mod stat;
 #[cfg(feature = "fs-thumb")]
+mod heif;
+#[cfg(feature = "fs-thumb")]
 mod thumbnail;
 pub(crate) mod upload;
 
