@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:localsend_app/widget/remote_thumbnail.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
+import 'package:logging/logging.dart';
+
+final _logger = Logger('FsGridCell');
 
 /// T-008: grid-mode cell. P5: image entries render a [RemoteThumbnail]
 /// fetched from `/api/localsend/v2/fs/thumbnail?path=...&w=128&h=128`;
@@ -82,6 +85,13 @@ class FsGridCell extends StatelessWidget {
   /// entry's MIME type and whether we have a [device] to talk to.
   Widget _buildThumbnailOrIcon(BuildContext context, ThemeData theme) {
     final bool isImage = !entry.isDir && entry.mime != null && entry.mime!.startsWith('image/');
+
+    // Diagnostic: an image-looking extension whose server-provided `mime`
+    // is not `image/*` silently skips the thumbnail request below — this
+    // log makes that skip visible when debugging thumbnail reports.
+    if (!isImage && _fileIcon(entry.name) == Icons.image_outlined) {
+      _logger.warning('thumbnail skipped: "${entry.name}" mime=${entry.mime} (extension looks like an image)');
+    }
 
     if (isImage && device != null) {
       final fullPath = currentPath.isEmpty ? entry.name : '$currentPath/${entry.name}';

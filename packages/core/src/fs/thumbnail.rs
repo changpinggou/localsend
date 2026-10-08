@@ -218,23 +218,75 @@ fn generate_thumbnail(abs: &std::path::Path, w: u16, h: u16) -> Result<Bytes, Fs
     let bytes = std::fs::read(abs).map_err(|e| {
         FsError::Io(format!("read {}: {e}", abs.display()))
     })?;
+    // Diagnostic: the first 16 bytes decide every branch below
+    // (image crate vs HEIF fallback), so a thumbnail bug report
+    // starts here. `ftyp heic` at offset 4 means HEIF container.
+    let magic: String = bytes
+        .iter()
+        .take(16)
+        .map(|b| format!("{b:02X}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    tracing::debug!(
+        event = "fs.thumbnail.decode_entry",
+        path = %abs.display(),
+        len = bytes.len(),
+        magic = %magic,
+        "decoding image for thumbnail"
+    );
     let img = match image::load_from_memory(&bytes) {
         Ok(img) => img,
         Err(e) => {
-            if super::heif::is_heif_container(&bytes) {
+            let heif = super::heif::is_heif_container(&bytes);
+            tracing::info!(
+                event = "fs.thumbnail.image_crate_failed",
+                path = %abs.display(),
+                error = %e,
+                heif_container = heif,
+                "image crate decode failed"
+            );
+            if heif {
                 // HEIC/AVIF: the `image` crate has no HEIF decoder.
-                // Fall back to the system ImageIO framework (macOS
-                // only); the decode is already downscaled to the
-                // longer of (w, h) and orientation-corrected.
-                tracing::debug!(
+                // Fall back to the system ImageIO framework (macOS)
+                // or Windows Imaging Component (Windows); the decode
+                // is already downscaled to the longer of (w, h) and
+                // orientation-corrected.
+                tracing::info!(
                     event = "fs.thumbnail.heif_fallback",
+                    path = %abs.display(),
                     len = bytes.len(),
                     max_dim = u32::from(w.max(h)),
-                    "image crate failed; decoding via system ImageIO"
+                    "image crate failed; decoding via system framework"
                 );
                 let max_dim = u32::from(w.max(h));
-                super::heif::decode_heif(&bytes, max_dim).map_err(FsError::BadRequest)?
+                match super::heif::decode_heif(&bytes, max_dim) {
+                    Ok(img) => {
+                        tracing::info!(
+                            event = "fs.thumbnail.heif_decoded",
+                            path = %abs.display(),
+                            width = img.width(),
+                            height = img.height(),
+                            "HEIF system decode succeeded"
+                        );
+                        img
+                    }
+                    Err(err) => {
+                        tracing::warn!(
+                            event = "fs.thumbnail.heif_decode_failed",
+                            path = %abs.display(),
+                            error = %err,
+                            "HEIF system decode failed"
+                        );
+                        return Err(FsError::BadRequest(err));
+                    }
+                }
             } else {
+                tracing::warn!(
+                    event = "fs.thumbnail.unsupported",
+                    path = %abs.display(),
+                    magic = %magic,
+                    "not a HEIF container and image crate cannot decode; refusing"
+                );
                 return Err(FsError::BadRequest(format!("unsupported image format: {e}")));
             }
         }

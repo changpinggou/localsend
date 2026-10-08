@@ -192,6 +192,12 @@ mod imageio {
         if bytes.len() > i32::MAX as usize {
             return Err("HEIF file too large".into());
         }
+        tracing::debug!(
+            event = "fs.heif.imageio.entry",
+            len = bytes.len(),
+            max_dim,
+            "decoding HEIF via system ImageIO"
+        );
 
         unsafe {
             // `release_data` is NULL: the provider must not outlive `bytes`,
@@ -681,6 +687,12 @@ mod wic {
                 let mut value = PropVariant { vt: 0, _reserved: [0; 3], value: [0; 16] };
                 let hr = (reader_vtbl.get_metadata_by_name)(reader, wide(path).as_ptr(), &mut value);
                 if !failed(hr) {
+                    tracing::debug!(
+                        event = "fs.heif.wic.orientation",
+                        query = %path,
+                        vt = value.vt,
+                        "EXIF orientation metadata found"
+                    );
                     orientation = match value.vt {
                         VT_I2 => i16::from_le_bytes([value.value[0], value.value[1]]).max(0) as u16,
                         VT_I4 => i32::from_le_bytes(value.value[..4].try_into().unwrap()).max(0) as u16,
@@ -712,6 +724,12 @@ mod wic {
         if bytes.len() > i32::MAX as usize {
             return Err("HEIF file too large".into());
         }
+        tracing::debug!(
+            event = "fs.heif.wic.entry",
+            len = bytes.len(),
+            max_dim,
+            "decoding HEIF via Windows Imaging Component"
+        );
 
         let init_hr = unsafe { CoInitializeEx(std::ptr::null_mut(), COINIT_MULTITHREADED) };
         if failed(init_hr) && init_hr != RPC_E_CHANGED_MODE {
@@ -734,6 +752,7 @@ mod wic {
             }
             scope.track(factory);
             let factory_vtbl = &**(factory as *mut *const FactoryVtbl);
+            tracing::debug!(event = "fs.heif.wic.factory", "WIC imaging factory created");
 
             // Copy the bytes into a moveable HGLOBAL; the IStream takes
             // ownership of it (`fDeleteOnRelease = TRUE`), so failure
@@ -777,6 +796,7 @@ mod wic {
             }
             scope.track(decoder);
             let decoder_vtbl = &**(decoder as *mut *const DecoderVtbl);
+            tracing::debug!(event = "fs.heif.wic.decoder", "WIC decoder created for HEIF stream");
 
             let mut frame = std::ptr::null_mut();
             let hr = (decoder_vtbl.get_frame)(decoder, 0, &mut frame);
@@ -794,13 +814,26 @@ mod wic {
             if source_w == 0 || source_h == 0 || source_w > 100_000 || source_h > 100_000 {
                 return Err(format!("implausible HEIF dimensions: {source_w}x{source_h}"));
             }
+            tracing::debug!(
+                event = "fs.heif.wic.frame",
+                width = source_w,
+                height = source_h,
+                max_dim,
+                "frame acquired"
+            );
 
             // Downscale through a scaler when the photo exceeds the cap —
             // the scaler streams rows, so the full-size original is never
             // allocated (mirrors ImageIO's maxPixelSize behaviour).
             let mut source = frame;
             let (target_w, target_h) = fit(source_w, source_h, max_dim);
-            if (target_w, target_h) != (source_w, source_h) {
+            if target_w != source_w || target_h != source_h {
+                tracing::debug!(
+                    event = "fs.heif.wic.scaler",
+                    from = %(format!("{source_w}x{source_h}")),
+                    to = %(format!("{target_w}x{target_h}")),
+                    "scaling down via IWICBitmapScaler"
+                );
                 let mut scaler = std::ptr::null_mut();
                 let hr = (factory_vtbl.create_bitmap_scaler)(factory, &mut scaler);
                 if failed(hr) {
@@ -866,6 +899,13 @@ mod wic {
             }
 
             let orientation = read_orientation(frame);
+            tracing::debug!(
+                event = "fs.heif.wic.decoded",
+                width,
+                height,
+                orientation,
+                "WIC pixel copy finished"
+            );
 
             image::RgbaImage::from_raw(width, height, pixels)
                 .map(|img| image::DynamicImage::ImageRgba8(apply_exif_orientation(img, orientation)))

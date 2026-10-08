@@ -5,7 +5,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:localsend_app/provider/network/fs/fs_thumbnail_provider.dart';
 import 'package:localsend_isolates/model/device.dart';
+import 'package:logging/logging.dart';
 import 'package:refena_flutter/refena_flutter.dart';
+
+final _logger = Logger('RemoteThumbnail');
 
 /// Renders a thumbnail for a remote file by fetching
 /// `GET /api/localsend/v2/fs/thumbnail` through the FRB client.
@@ -131,7 +134,13 @@ class _RemoteThumbnailState extends State<RemoteThumbnail> with Refena {
           width: widget.width,
           height: widget.height,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => widget.placeholder,
+          errorBuilder: (context, error, stackTrace) {
+            // A 200 with undecodable bytes used to degrade to the
+            // placeholder in silence — log it so decode-garbage cases
+            // are distinguishable from a failed request.
+            _logger.warning('Image.memory failed for ${widget.fullPath}', error);
+            return widget.placeholder;
+          },
         ),
       );
     }

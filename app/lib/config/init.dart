@@ -64,12 +64,17 @@ final _logger = Logger('Init');
 Future<RefenaContainer> preInit(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  initLogger(args.contains('-v') || args.contains('--verbose') ? Level.ALL : Level.INFO);
+  final verbose = args.contains('-v') || args.contains('--verbose');
+  initLogger(verbose ? Level.ALL : Level.INFO);
   MapperContainer.globals.use(const FileDtoMapper());
 
   await RustLib.init();
 
-  if (kDebugMode) {
+  // `-v` on a release build (e.g. `localsend.exe -v` launched from a
+  // console) installs the Rust tracing subscriber too — without it the
+  // core crate's tracing logs are silently dropped, which makes
+  // server-side bugs (fs thumbnails, discovery) undebuggable.
+  if (kDebugMode || verbose) {
     try {
       await rust_logging.enableDebugLogging();
     } catch (e) {

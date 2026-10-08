@@ -134,7 +134,7 @@ class FsThumbnailService extends Notifier<FsThumbnailState> {
 
       final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
 
-      _logger.fine(
+      _logger.info(
         'fs_thumbnail: fetching $fullPath ${width}x$height from $ip:${device.port}',
       );
 
@@ -148,8 +148,8 @@ class FsThumbnailService extends Notifier<FsThumbnailState> {
       );
 
       state.cache.put(cacheKey, bytes);
-      _logger.fine(
-        'fs_thumbnail: cached ${bytes.length} bytes for $fullPath',
+      _logger.info(
+        'fs_thumbnail: OK ${bytes.length} bytes for $fullPath',
       );
       return bytes;
     } catch (e) {
