@@ -14,7 +14,19 @@
 //! dependency tree unchanged — the frameworks are linked via `#[link]`
 //! attributes, no crate is added.
 //!
-//! On non-macOS targets [`decode_heif`] always fails and the caller keeps
+//! On Windows the Windows Imaging Component (WIC) plays ImageIO's role
+//! (see [`wic::decode_via_wic`], raw COM FFI — same no-crate policy): a
+//! memory `IStream` feeds `IWICBitmapDecoder`, an optional
+//! `IWICBitmapScaler` caps the long edge before pixels are allocated, an
+//! `IWICFormatConverter` normalizes to 32bpp RGBA, and the EXIF
+//! orientation is read from the frame's metadata query reader and applied
+//! to the pixel buffer in Rust ([`apply_exif_orientation`]) — unlike
+//! ImageIO, Microsoft's HEIF decoder does not bake it into the pixels.
+//! Windows 11 ships the HEIF/HEVC codec; Windows 10 needs the "HEIF Image
+//! Extensions" (and HEVC support) from the Microsoft Store, which the
+//! error message says when the codec is missing.
+//!
+//! On other targets [`decode_heif`] always fails and the caller keeps
 //! the placeholder-icon behaviour.
 
 /// Detects a HEIF/AVIF container by ISO-BMFF magic bytes.
@@ -46,15 +58,19 @@ pub(crate) fn is_heif_container(bytes: &[u8]) -> bool {
 ///
 /// Errors carry a human-readable message; the caller turns them into a
 /// `400` like any other undecodable image.
-#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+#[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(unused_variables))]
 pub(crate) fn decode_heif(bytes: &[u8], max_dim: u32) -> Result<image::DynamicImage, String> {
     #[cfg(target_os = "macos")]
     {
         decode_via_imageio(bytes, max_dim)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
     {
-        Err("HEIF/AVIF decoding is only supported on macOS".into())
+        decode_via_wic(bytes, max_dim)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        Err("HEIF/AVIF decoding is only supported on macOS and Windows".into())
     }
 }
 
@@ -308,6 +324,555 @@ mod imageio {
 
 #[cfg(target_os = "macos")]
 use imageio::decode_via_imageio;
+#[cfg(target_os = "windows")]
+use wic::decode_via_wic;
+
+/// Applies the EXIF orientation (tag 274, values 1–8) to an RGBA buffer.
+///
+/// Each *output* pixel is filled from the *stored* pixel it originates
+/// from (`sample`); for the 90° rotations (5–8) the stored width/height
+/// are the pre-transform ones and swap in the output. macOS bakes the
+/// orientation into the pixels inside ImageIO
+/// (`kCGImageSourceCreateThumbnailWithTransform`), so this only runs on
+/// the Windows WIC path — plus unit tests everywhere.
+#[cfg(any(target_os = "windows", test))]
+fn apply_exif_orientation(img: image::RgbaImage, orientation: u16) -> image::RgbaImage {
+    let (sw, sh) = (img.width(), img.height());
+    // The arms return different closure types — coerce to fn pointers.
+    let (dw, dh, sample): (u32, u32, fn(u32, u32, u32, u32) -> (u32, u32)) = match orientation {
+        2 => (sw, sh, |x: u32, y: u32, w: u32, _: u32| (w - 1 - x, y)),
+        3 => (sw, sh, |x: u32, y: u32, w: u32, h: u32| (w - 1 - x, h - 1 - y)),
+        4 => (sw, sh, |x: u32, y: u32, _: u32, h: u32| (x, h - 1 - y)),
+        5 => (sh, sw, |x: u32, y: u32, _: u32, _: u32| (y, x)),
+        6 => (sh, sw, |x: u32, y: u32, _: u32, h: u32| (y, h - 1 - x)),
+        7 => (sh, sw, |x: u32, y: u32, w: u32, h: u32| (w - 1 - y, h - 1 - x)),
+        8 => (sh, sw, |x: u32, y: u32, w: u32, _: u32| (w - 1 - y, x)),
+        // 1 = identity; anything else is corrupt metadata → keep as stored.
+        _ => return img,
+    };
+    let raw = img.into_raw();
+    let mut out = vec![0u8; dw as usize * dh as usize * 4];
+    for y in 0..dh {
+        for x in 0..dw {
+            let (sx, sy) = sample(x, y, sw, sh);
+            let src = ((sy * sw + sx) * 4) as usize;
+            let dst = ((y * dw + x) * 4) as usize;
+            out[dst..dst + 4].copy_from_slice(&raw[src..src + 4]);
+        }
+    }
+    image::RgbaImage::from_raw(dw, dh, out).expect("orientation output buffer size mismatch")
+}
+
+/// Long-edge cap for the WIC path: integer ceil-scaling that never
+/// produces a zero edge and never upscales.
+#[cfg(any(target_os = "windows", test))]
+fn fit(width: u32, height: u32, max_dim: u32) -> (u32, u32) {
+    let long = width.max(height);
+    if long == 0 || max_dim == 0 || long <= max_dim {
+        return (width, height);
+    }
+    // ceil(v * max_dim / long) in integers — no float drift, no MSRV risk.
+    let scale = |v: u32| (((v as u64 * max_dim as u64) + long as u64 - 1) / long as u64) as u32;
+    (scale(width).max(1), scale(height).max(1))
+}
+
+/// Windows Imaging Component decoding, driven through raw COM FFI (the
+/// macOS approach: system framework, zero crate dependencies).
+///
+/// Every vtable slot index below was transcribed from `wincodec.h` (via
+/// the faithful winapi 0.3.9 RIDL macros) — a wrong slot calls a
+/// different method with different arguments and crashes, so positions
+/// are spelled out in comments. Slots we don't call are `usize`
+/// placeholders that exist only to keep the offsets right.
+#[cfg(target_os = "windows")]
+mod wic {
+    use super::{apply_exif_orientation, fit};
+    use std::os::raw::c_void;
+
+    type Hresult = i32;
+    type ReleaseFn = unsafe extern "system" fn(*mut c_void) -> u32;
+
+    const COINIT_MULTITHREADED: u32 = 0;
+    const S_OK: Hresult = 0;
+    const S_FALSE: Hresult = 1;
+    /// COM is already up with a different apartment model — WIC works in
+    /// both, so we just skip our own `CoUninitialize` in that case.
+    const RPC_E_CHANGED_MODE: Hresult = 0x8001_0106u32 as i32;
+    const CLSCTX_INPROC_SERVER: u32 = 1;
+    const GMEM_MOVEABLE: u32 = 0x0002;
+    const WIC_DECODE_METADATA_CACHE_ON_DEMAND: u32 = 0;
+    /// Enum order: NearestNeighbor=0, Linear=1, Cubic=2, **Fant=3**.
+    const WIC_BITMAP_INTERPOLATION_MODE_FANT: u32 = 3;
+    const WIC_BITMAP_DITHER_TYPE_NONE: u32 = 0;
+    const WIC_BITMAP_PALETTE_TYPE_CUSTOM: u32 = 0;
+    /// No codec claims this container — the "install HEIF extensions" case.
+    const WINCODEC_ERR_COMPONENTNOTFOUND: Hresult = 0x8898_2F07u32 as i32;
+    const VT_I2: u16 = 2;
+    const VT_I4: u16 = 3;
+    const VT_UI2: u16 = 18;
+    const VT_UI4: u16 = 19;
+
+    #[allow(dead_code)]
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Guid {
+        data1: u32,
+        data2: u16,
+        data3: u16,
+        data4: [u8; 8],
+    }
+
+    // GUIDs transcribed from wincodec.h. The non-"2" factory works from
+    // Windows 7 on; WICImagingFactory2 only adds Win8.1+ APIs we skip.
+    const CLSID_WIC_IMAGING_FACTORY: Guid = Guid {
+        data1: 0xcacaf262,
+        data2: 0x9370,
+        data3: 0x4615,
+        data4: [0xa1, 0x3b, 0x9f, 0x55, 0x39, 0xda, 0x4c, 0x0a],
+    };
+    const IID_WIC_IMAGING_FACTORY: Guid = Guid {
+        data1: 0xec5ec8a9,
+        data2: 0xc395,
+        data3: 0x4314,
+        data4: [0x9c, 0x77, 0x54, 0xd7, 0xa9, 0x35, 0xff, 0x70],
+    };
+    const GUID_WIC_PIXEL_FORMAT_32BPP_RGBA: Guid = Guid {
+        data1: 0xf5c7ad2d,
+        data2: 0x6a8d,
+        data3: 0x43dd,
+        data4: [0xa7, 0xa8, 0xa2, 0x99, 0x35, 0x26, 0x1a, 0xe9],
+    };
+
+    /// `PROPVARIANT` — only the scalar payload matters here
+    /// (`GetMetadataByName` on the EXIF orientation yields one of
+    /// VT_I2/I4/UI2/UI4); the layout is 24 bytes: vartype, 3 reserved
+    /// words, then the union.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct PropVariant {
+        vt: u16,
+        _reserved: [u16; 3],
+        value: [u8; 16],
+    }
+
+    /// The three `IUnknown` slots every COM vtable starts with. Slot 2 is
+    /// the only one we ever call — `Release` on the raw interface pointer.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct ComBase {
+        _query_interface: usize, // 0
+        _add_ref: usize,         // 1
+        release: ReleaseFn,      // 2
+    }
+
+    /// `IWICImagingFactory` (slots after the IUnknown base):
+    /// 3 CreateDecoderFromFilename, **4 CreateDecoderFromStream**,
+    /// 5 CreateDecoderFromFileHandle, 6 CreateComponentInfo,
+    /// 7 CreateDecoder, 8 CreateEncoder, 9 CreatePalette,
+    /// **10 CreateFormatConverter**, **11 CreateBitmapScaler**.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct FactoryVtbl {
+        base: ComBase,
+        _create_decoder_from_filename: usize, // 3
+        create_decoder_from_stream: unsafe extern "system" fn(
+            this: *mut c_void,
+            stream: *mut c_void,
+            vendor: *const Guid,
+            metadata_options: u32,
+            decoder: *mut *mut c_void,
+        ) -> Hresult, // 4
+        _create_decoder_from_file_handle: usize, // 5
+        _create_component_info: usize,           // 6
+        _create_decoder: usize,                  // 7
+        _create_encoder: usize,                  // 8
+        _create_palette: usize,                  // 9
+        create_format_converter:
+            unsafe extern "system" fn(this: *mut c_void, converter: *mut *mut c_void) -> Hresult, // 10
+        create_bitmap_scaler:
+            unsafe extern "system" fn(this: *mut c_void, scaler: *mut *mut c_void) -> Hresult, // 11
+    }
+
+    /// `IWICBitmapDecoder` — **`GetFrame` is the LAST method (slot 13)**,
+    /// after GetFrameCount (12); calling slot 8 here would invoke
+    /// GetMetadataQueryReader instead.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct DecoderVtbl {
+        base: ComBase,
+        _query_capability: usize,       // 3
+        _initialize: usize,             // 4
+        _get_container_format: usize,   // 5
+        _get_decoder_info: usize,       // 6
+        _copy_palette: usize,           // 7
+        _get_metadata_query_reader: usize, // 8
+        _get_preview: usize,            // 9
+        _get_color_contexts: usize,     // 10
+        _get_thumbnail: usize,          // 11
+        _get_frame_count: usize,        // 12
+        get_frame:
+            unsafe extern "system" fn(this: *mut c_void, index: u32, frame: *mut *mut c_void) -> Hresult, // 13
+    }
+
+    /// `IWICBitmapFrameDecode` — inherits `IWICBitmapSource` (3–7), then
+    /// GetMetadataQueryReader at 8.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct FrameDecodeVtbl {
+        base: ComBase,
+        get_size: unsafe extern "system" fn(this: *mut c_void, width: *mut u32, height: *mut u32) -> Hresult, // 3
+        _get_pixel_format: usize,           // 4
+        _get_resolution: usize,             // 5
+        _copy_palette: usize,               // 6
+        _copy_pixels: usize,                // 7
+        get_metadata_query_reader:
+            unsafe extern "system" fn(this: *mut c_void, reader: *mut *mut c_void) -> Hresult, // 8
+    }
+
+    /// `IWICBitmapScaler` — inherits 3–7, then
+    /// `Initialize(pISource, uiWidth, uiHeight, mode)` at 8.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct ScalerVtbl {
+        base: ComBase,
+        _get_size: usize,       // 3
+        _get_pixel_format: usize, // 4
+        _get_resolution: usize, // 5
+        _copy_palette: usize,   // 6
+        _copy_pixels: usize,    // 7
+        initialize: unsafe extern "system" fn(
+            this: *mut c_void,
+            source: *mut c_void,
+            width: u32,
+            height: u32,
+            mode: u32,
+        ) -> Hresult, // 8
+    }
+
+    /// `IWICFormatConverter` — inherits 3–7 (we call GetSize/CopyPixels on
+    /// the converter directly), then its own `Initialize` at 8.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct ConverterVtbl {
+        base: ComBase,
+        get_size: unsafe extern "system" fn(this: *mut c_void, width: *mut u32, height: *mut u32) -> Hresult, // 3
+        _get_pixel_format: usize, // 4
+        _get_resolution: usize,   // 5
+        _copy_palette: usize,     // 6
+        copy_pixels: unsafe extern "system" fn(
+            this: *mut c_void,
+            rect: *const c_void, // WICRect, NULL = whole image
+            stride: u32,
+            buffer_size: u32,
+            buffer: *mut u8,
+        ) -> Hresult, // 7
+        initialize: unsafe extern "system" fn(
+            this: *mut c_void,
+            source: *mut c_void,
+            dst_format: *const Guid,
+            dither: u32,
+            palette: *const c_void,
+            alpha_threshold_percent: f64,
+            palette_translate: u32,
+        ) -> Hresult, // 8
+    }
+
+    /// `IWICMetadataQueryReader` — 3 GetContainerFormat, 4 GetLocation,
+    /// **5 GetMetadataByName**, 6 GetEnumerator.
+    #[allow(dead_code)]
+    #[repr(C)]
+    struct QueryReaderVtbl {
+        base: ComBase,
+        _get_container_format: usize, // 3
+        _get_location: usize,         // 4
+        get_metadata_by_name:
+            unsafe extern "system" fn(this: *mut c_void, name: *const u16, value: *mut PropVariant) -> Hresult, // 5
+    }
+
+    #[link(name = "ole32")]
+    extern "system" {
+        fn CoInitializeEx(reserved: *mut c_void, model: u32) -> Hresult;
+        fn CoUninitialize();
+        fn CoCreateInstance(
+            clsid: *const Guid,
+            outer: *mut c_void,
+            cls_context: u32,
+            iid: *const Guid,
+            out: *mut *mut c_void,
+        ) -> Hresult;
+        fn PropVariantClear(value: *mut PropVariant) -> Hresult;
+        fn CreateStreamOnHGlobal(global: *mut c_void, delete_on_release: i32, out: *mut *mut c_void) -> Hresult;
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GlobalAlloc(flags: u32, bytes: usize) -> *mut c_void;
+        fn GlobalFree(block: *mut c_void) -> *mut c_void;
+        fn GlobalLock(block: *mut c_void) -> *mut c_void;
+        fn GlobalUnlock(block: *mut c_void) -> i32;
+    }
+
+    fn failed(hr: Hresult) -> bool {
+        hr < 0
+    }
+
+    fn describe(hr: Hresult, what: &str) -> String {
+        format!("{what} failed: 0x{hr:08X}")
+    }
+
+    fn wide(s: &str) -> Vec<u16> {
+        s.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    /// Balances a successful `CoInitializeEx` with `CoUninitialize`.
+    struct ComApartment {
+        owns_init: bool,
+    }
+
+    impl Drop for ComApartment {
+        fn drop(&mut self) {
+            if self.owns_init {
+                unsafe { CoUninitialize() }
+            }
+        }
+    }
+
+    /// Releases every COM object created during the decode, in reverse
+    /// order, on the single exit path. Objects are released through
+    /// vtable slot 2 (`IUnknown::Release`).
+    #[derive(Default)]
+    struct ComScope {
+        objs: Vec<*mut c_void>,
+    }
+
+    impl ComScope {
+        fn track(&mut self, obj: *mut c_void) {
+            if !obj.is_null() {
+                self.objs.push(obj);
+            }
+        }
+    }
+
+    impl Drop for ComScope {
+        fn drop(&mut self) {
+            for obj in self.objs.iter().rev() {
+                unsafe {
+                    let vtbl = &**(*obj as *mut *const ComBase);
+                    (vtbl.release)(*obj);
+                }
+            }
+        }
+    }
+
+    /// EXIF orientation (tag 274, 1–8) from the frame's metadata. Both
+    /// query-path spellings appear in the wild for HEIF containers. Any
+    /// miss degrades to `1` (sensor orientation) — a rotated thumbnail is
+    /// much better than a failed decode.
+    fn read_orientation(frame: *mut c_void) -> u16 {
+        unsafe {
+            let frame_vtbl = &**(frame as *mut *const FrameDecodeVtbl);
+            let mut reader = std::ptr::null_mut();
+            if failed((frame_vtbl.get_metadata_query_reader)(frame, &mut reader)) {
+                return 1;
+            }
+            let reader_vtbl = &**(reader as *mut *const QueryReaderVtbl);
+            let mut orientation = 0u16;
+            for path in ["/app1/ifd/exif/{ushort=274}", "/ifd/exif/{ushort=274}"] {
+                let mut value = PropVariant { vt: 0, _reserved: [0; 3], value: [0; 16] };
+                let hr = (reader_vtbl.get_metadata_by_name)(reader, wide(path).as_ptr(), &mut value);
+                if !failed(hr) {
+                    orientation = match value.vt {
+                        VT_I2 => i16::from_le_bytes([value.value[0], value.value[1]]).max(0) as u16,
+                        VT_I4 => i32::from_le_bytes(value.value[..4].try_into().unwrap()).max(0) as u16,
+                        VT_UI2 => u16::from_le_bytes([value.value[0], value.value[1]]),
+                        VT_UI4 => u32::from_le_bytes(value.value[..4].try_into().unwrap()).min(u16::MAX as u32) as u16,
+                        _ => 0,
+                    };
+                }
+                PropVariantClear(&mut value);
+                if orientation != 0 {
+                    break;
+                }
+            }
+            (reader_vtbl.base.release)(reader);
+            if (1..=8).contains(&orientation) { orientation } else { 1 }
+        }
+    }
+
+    /// Decode via WIC: `CoCreateInstance(factory)` → memory `IStream` →
+    /// decoder → frame → (scaler, when the long edge exceeds `max_dim`) →
+    /// format converter (32bpp RGBA) → `CopyPixels`, then the EXIF
+    /// orientation applied in Rust. Every created COM object is tracked
+    /// in one scope and released on the way out; the `HGLOBAL` backing
+    /// the stream is owned by the stream (`fDeleteOnRelease`).
+    pub(super) fn decode_via_wic(bytes: &[u8], max_dim: u32) -> Result<image::DynamicImage, String> {
+        if bytes.is_empty() {
+            return Err("empty HEIF payload".into());
+        }
+        if bytes.len() > i32::MAX as usize {
+            return Err("HEIF file too large".into());
+        }
+
+        let init_hr = unsafe { CoInitializeEx(std::ptr::null_mut(), COINIT_MULTITHREADED) };
+        if failed(init_hr) && init_hr != RPC_E_CHANGED_MODE {
+            return Err(describe(init_hr, "CoInitializeEx"));
+        }
+        let _apartment = ComApartment { owns_init: init_hr == S_OK || init_hr == S_FALSE };
+        let mut scope = ComScope::default();
+
+        unsafe {
+            let mut factory = std::ptr::null_mut();
+            let hr = CoCreateInstance(
+                &CLSID_WIC_IMAGING_FACTORY,
+                std::ptr::null_mut(),
+                CLSCTX_INPROC_SERVER,
+                &IID_WIC_IMAGING_FACTORY,
+                &mut factory,
+            );
+            if failed(hr) {
+                return Err(describe(hr, "CoCreateInstance(WICImagingFactory)"));
+            }
+            scope.track(factory);
+            let factory_vtbl = &**(factory as *mut *const FactoryVtbl);
+
+            // Copy the bytes into a moveable HGLOBAL; the IStream takes
+            // ownership of it (`fDeleteOnRelease = TRUE`), so failure
+            // paths before that point free it ourselves.
+            let global = GlobalAlloc(GMEM_MOVEABLE, bytes.len());
+            if global.is_null() {
+                return Err("GlobalAlloc failed".into());
+            }
+            let dst = GlobalLock(global);
+            if dst.is_null() {
+                GlobalFree(global);
+                return Err("GlobalLock failed".into());
+            }
+            std::ptr::copy_nonoverlapping(bytes.as_ptr(), dst as *mut u8, bytes.len());
+            GlobalUnlock(global);
+
+            let mut stream = std::ptr::null_mut();
+            let hr = CreateStreamOnHGlobal(global, 1, &mut stream);
+            if failed(hr) {
+                GlobalFree(global);
+                return Err(describe(hr, "CreateStreamOnHGlobal"));
+            }
+            scope.track(stream);
+
+            let mut decoder = std::ptr::null_mut();
+            let hr = (factory_vtbl.create_decoder_from_stream)(
+                factory,
+                stream,
+                std::ptr::null(),
+                WIC_DECODE_METADATA_CACHE_ON_DEMAND,
+                &mut decoder,
+            );
+            if hr == WINCODEC_ERR_COMPONENTNOTFOUND {
+                return Err(
+                    "no WIC codec for this HEIF/AVIF container — install \"HEIF Image Extensions\" and HEVC support from the Microsoft Store"
+                        .into(),
+                );
+            }
+            if failed(hr) {
+                return Err(describe(hr, "IWICImagingFactory::CreateDecoderFromStream"));
+            }
+            scope.track(decoder);
+            let decoder_vtbl = &**(decoder as *mut *const DecoderVtbl);
+
+            let mut frame = std::ptr::null_mut();
+            let hr = (decoder_vtbl.get_frame)(decoder, 0, &mut frame);
+            if failed(hr) {
+                return Err(describe(hr, "IWICBitmapDecoder::GetFrame"));
+            }
+            scope.track(frame);
+            let frame_vtbl = &**(frame as *mut *const FrameDecodeVtbl);
+
+            let (mut source_w, mut source_h) = (0u32, 0u32);
+            let hr = (frame_vtbl.get_size)(frame, &mut source_w, &mut source_h);
+            if failed(hr) {
+                return Err(describe(hr, "IWICBitmapFrameDecode::GetSize"));
+            }
+            if source_w == 0 || source_h == 0 || source_w > 100_000 || source_h > 100_000 {
+                return Err(format!("implausible HEIF dimensions: {source_w}x{source_h}"));
+            }
+
+            // Downscale through a scaler when the photo exceeds the cap —
+            // the scaler streams rows, so the full-size original is never
+            // allocated (mirrors ImageIO's maxPixelSize behaviour).
+            let mut source = frame;
+            let (target_w, target_h) = fit(source_w, source_h, max_dim);
+            if (target_w, target_h) != (source_w, source_h) {
+                let mut scaler = std::ptr::null_mut();
+                let hr = (factory_vtbl.create_bitmap_scaler)(factory, &mut scaler);
+                if failed(hr) {
+                    return Err(describe(hr, "IWICImagingFactory::CreateBitmapScaler"));
+                }
+                scope.track(scaler);
+                let scaler_vtbl = &**(scaler as *mut *const ScalerVtbl);
+                let hr = (scaler_vtbl.initialize)(scaler, frame, target_w, target_h, WIC_BITMAP_INTERPOLATION_MODE_FANT);
+                if failed(hr) {
+                    return Err(describe(hr, "IWICBitmapScaler::Initialize"));
+                }
+                source = scaler;
+            }
+
+            // WIC decodes to its native pixel format; the converter is
+            // the one step that actually touches pixels, normalizing to
+            // RGBA8 (alpha-threshold 0, no palette).
+            let mut converter = std::ptr::null_mut();
+            let hr = (factory_vtbl.create_format_converter)(factory, &mut converter);
+            if failed(hr) {
+                return Err(describe(hr, "IWICImagingFactory::CreateFormatConverter"));
+            }
+            scope.track(converter);
+            let converter_vtbl = &**(converter as *mut *const ConverterVtbl);
+            let hr = (converter_vtbl.initialize)(
+                converter,
+                source,
+                &GUID_WIC_PIXEL_FORMAT_32BPP_RGBA,
+                WIC_BITMAP_DITHER_TYPE_NONE,
+                std::ptr::null(),
+                0.0,
+                WIC_BITMAP_PALETTE_TYPE_CUSTOM,
+            );
+            if failed(hr) {
+                return Err(describe(hr, "IWICFormatConverter::Initialize"));
+            }
+
+            let (mut width, mut height) = (0u32, 0u32);
+            let hr = (converter_vtbl.get_size)(converter, &mut width, &mut height);
+            if failed(hr) {
+                return Err(describe(hr, "IWICFormatConverter::GetSize"));
+            }
+            if width == 0 || height == 0 {
+                return Err(format!("implausible HEIF dimensions: {width}x{height}"));
+            }
+            // fit() guarantees both edges ≤ max_dim; a converter that
+            // disagrees would make CopyPixels allocate unboundedly.
+            if max_dim > 0 && width as u64 * height as u64 > max_dim as u64 * max_dim as u64 {
+                return Err(format!("WIC produced {width}x{height}, exceeding the {max_dim}px thumbnail cap"));
+            }
+
+            let stride = width as usize * 4;
+            let mut pixels = vec![0u8; stride * height as usize];
+            let hr = (converter_vtbl.copy_pixels)(
+                converter,
+                std::ptr::null(),
+                stride as u32,
+                pixels.len() as u32,
+                pixels.as_mut_ptr(),
+            );
+            if failed(hr) {
+                return Err(describe(hr, "IWICBitmapSource::CopyPixels"));
+            }
+
+            let orientation = read_orientation(frame);
+
+            image::RgbaImage::from_raw(width, height, pixels)
+                .map(|img| image::DynamicImage::ImageRgba8(apply_exif_orientation(img, orientation)))
+                .ok_or_else(|| "HEIF pixel buffer size mismatch".into())
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -331,6 +896,57 @@ mod tests {
             return None;
         }
         Some(())
+    }
+
+    #[test]
+    fn exif_orientation_matches_exif_spec() {
+        // 2x3 stored buffer, every pixel unique: pixel = (x, y, 7, 255).
+        let mut pixels = Vec::new();
+        for y in 0..3u8 {
+            for x in 0..2u8 {
+                pixels.extend_from_slice(&[x, y, 7, 255]);
+            }
+        }
+        let img = image::RgbaImage::from_raw(2, 3, pixels).unwrap();
+        let pixel_at = |img: &image::RgbaImage, x: u32, y: u32| img.get_pixel(x, y).0;
+
+        // 6 = 90° CW: stored top-left ends up top-right, dims swap.
+        let out = apply_exif_orientation(img.clone(), 6);
+        assert_eq!(out.dimensions(), (3, 2));
+        assert_eq!(pixel_at(&out, 2, 0), [0, 0, 7, 255]); // stored (0, 0)
+        assert_eq!(pixel_at(&out, 2, 1), [1, 0, 7, 255]); // stored (1, 0)
+        assert_eq!(pixel_at(&out, 0, 0), [0, 2, 7, 255]); // stored (0, 2) — bottom-left → top-left
+
+        // 3 = 180°: mirrored both ways, dims kept.
+        let out = apply_exif_orientation(img.clone(), 3);
+        assert_eq!(out.dimensions(), (2, 3));
+        assert_eq!(pixel_at(&out, 1, 2), [0, 0, 7, 255]); // stored (0, 0)
+
+        // 5 = transpose: out(x, y) = stored(y, x).
+        let out = apply_exif_orientation(img.clone(), 5);
+        assert_eq!(out.dimensions(), (3, 2));
+        assert_eq!(pixel_at(&out, 2, 1), [1, 2, 7, 255]); // stored (1, 2)
+
+        // 2 = horizontal mirror.
+        let out = apply_exif_orientation(img.clone(), 2);
+        assert_eq!(out.dimensions(), (2, 3));
+        assert_eq!(pixel_at(&out, 1, 0), [0, 0, 7, 255]); // stored (0, 0)
+
+        // Identity and corrupt metadata keep the buffer untouched.
+        for orientation in [1u16, 0, 9] {
+            let out = apply_exif_orientation(img.clone(), orientation);
+            assert_eq!(out.dimensions(), (2, 3));
+            assert_eq!(out.as_raw(), img.as_raw(), "orientation {orientation} must be identity");
+        }
+    }
+
+    #[test]
+    fn thumbnail_fit_caps_long_edge() {
+        assert_eq!(fit(4032, 3024, 200), (200, 150)); // iPhone landscape, exact division
+        assert_eq!(fit(3024, 4032, 200), (150, 200)); // portrait
+        assert_eq!(fit(100, 100, 200), (100, 100)); // no upscale
+        assert_eq!(fit(50, 400, 8), (1, 8)); // ceil rounding, never a zero edge
+        assert_eq!(fit(0, 0, 200), (0, 0)); // guarded upstream, but must not divide by zero
     }
 
     #[test]

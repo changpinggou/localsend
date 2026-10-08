@@ -16,9 +16,10 @@
 //!
 //! HEIC/AVIF get a second chance: when the `image` crate decoder
 //! fails and the magic bytes are a HEIF container, the system
-//! ImageIO framework decodes them on macOS (see [`super::heif`]).
-//! Non-macOS targets — and genuinely undecodable formats like RAW —
-//! still return an error; clients fall back to the type icon.
+//! ImageIO framework decodes them on macOS and the Windows Imaging
+//! Component on Windows (see [`super::heif`]). Other targets — and
+//! genuinely undecodable formats like RAW — still return an error;
+//! clients fall back to the type icon.
 
 use std::path::PathBuf;
 
