@@ -25,7 +25,19 @@ function(apply_cargokit target manifest_dir lib_name any_symbol_name)
         set(CARGOKIT_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
         set(OUTPUT_LIB "${CMAKE_CURRENT_BINARY_DIR}/${CARGOKIT_LIB_FULL_NAME}")
     endif()
-    set(CARGOKIT_TEMP_DIR "${CMAKE_CURRENT_BINARY_DIR}/cargokit_build")
+    # Cargo + the inner CMake scratch paths grow very deep; combined with
+    # Flutter's plugin build directory this exceeds the Windows MAX_PATH limit
+    # (MSBuild FileTracker fails with FTK1011 even with long paths enabled).
+    # On Windows, host the temp dir near the top of the build tree instead of
+    # inside the plugin directory, and allow an explicit override through the
+    # CARGOKIT_TEMP_DIR environment variable.
+    if(DEFINED ENV{CARGOKIT_TEMP_DIR})
+        set(CARGOKIT_TEMP_DIR "$ENV{CARGOKIT_TEMP_DIR}")
+    elseif(WIN32)
+        set(CARGOKIT_TEMP_DIR "${CMAKE_BINARY_DIR}/cargokit_tmp")
+    else()
+        set(CARGOKIT_TEMP_DIR "${CMAKE_CURRENT_BINARY_DIR}/cargokit_build")
+    endif()
 
     if (FLUTTER_TARGET_PLATFORM)
         set(CARGOKIT_TARGET_PLATFORM "${FLUTTER_TARGET_PLATFORM}")

@@ -1,3 +1,9 @@
 [submodule "support/submodules/flutter"]
 	path = support/submodules/flutter
 	url = https://github.com/flutter/flutter.git
+[submodule "support/submodules/libde265"]
+	path = support/submodules/libde265
+	url = https://github.com/strukturag/libde265.git
+[submodule "support/submodules/libheif"]
+	path = support/submodules/libheif
+	url = https://github.com/strukturag/libheif.git

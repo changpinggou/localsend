@@ -14,17 +14,25 @@
 //! dependency tree unchanged — the frameworks are linked via `#[link]`
 //! attributes, no crate is added.
 //!
-//! On Windows the Windows Imaging Component (WIC) plays ImageIO's role
-//! (see [`wic::decode_via_wic`], raw COM FFI — same no-crate policy): a
-//! memory `IStream` feeds `IWICBitmapDecoder`, an optional
-//! `IWICBitmapScaler` caps the long edge before pixels are allocated, an
-//! `IWICFormatConverter` normalizes to 32bpp RGBA, and the EXIF
-//! orientation is read from the frame's metadata query reader and applied
-//! to the pixel buffer in Rust ([`apply_exif_orientation`]) — unlike
-//! ImageIO, Microsoft's HEIF decoder does not bake it into the pixels.
-//! Windows 11 ships the HEIF/HEVC codec; Windows 10 needs the "HEIF Image
-//! Extensions" (and HEVC support) from the Microsoft Store, which the
-//! error message says when the codec is missing.
+//! On Windows the bundled libheif + libde265 decode HEIC natively (see
+//! [`libheif::decode_via_libheif`], raw C FFI — same no-crate policy; the
+//! static libraries are compiled from the vendored `support/submodules/`
+//! checkouts by `build.rs`, so no Microsoft Store "HEIF Image Extensions"
+//! / HEVC codec is needed). It decodes the file's embedded thumbnail item
+//! — a single small HEVC frame instead of the full tile grid — and applies
+//! the container's `irot`/`imir` transformations itself, so portrait
+//! iPhone photos come out upright.
+//!
+//! Anything libheif cannot handle (AVIF without an AV1 decoder, or a
+//! corrupt container) falls back to the Windows Imaging Component (see
+//! [`wic::decode_via_wic`], raw COM FFI): a memory `IStream` feeds
+//! `IWICBitmapDecoder`, an optional `IWICBitmapScaler` caps the long edge
+//! before pixels are allocated, an `IWICFormatConverter` normalizes to
+//! 32bpp RGBA, and the EXIF orientation is read from the frame's metadata
+//! query reader and applied to the pixel buffer in Rust
+//! ([`apply_exif_orientation`]) — unlike ImageIO, Microsoft's HEIF decoder
+//! does not bake it into the pixels. That path still needs the store
+//! codecs; its error says so when they are missing.
 //!
 //! On other targets [`decode_heif`] always fails and the caller keeps
 //! the placeholder-icon behaviour.
@@ -66,7 +74,17 @@ pub(crate) fn decode_heif(bytes: &[u8], max_dim: u32) -> Result<image::DynamicIm
     }
     #[cfg(target_os = "windows")]
     {
-        decode_via_wic(bytes, max_dim)
+        // libheif/libde265 handles iPhone-style HEIC without any store
+        // codec; WIC stays as the fallback for what it cannot decode
+        // (AVIF, containers libheif rejects).
+        decode_via_libheif(bytes, max_dim).or_else(|libheif_error| {
+            tracing::debug!(
+                event = "fs.heif.libheif.fallback",
+                error = %libheif_error,
+                "libheif decode failed; falling back to WIC"
+            );
+            decode_via_wic(bytes, max_dim)
+        })
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
@@ -331,6 +349,8 @@ mod imageio {
 #[cfg(target_os = "macos")]
 use imageio::decode_via_imageio;
 #[cfg(target_os = "windows")]
+use libheif::decode_via_libheif;
+#[cfg(target_os = "windows")]
 use wic::decode_via_wic;
 
 /// Applies the EXIF orientation (tag 274, values 1–8) to an RGBA buffer.
@@ -382,6 +402,274 @@ fn fit(width: u32, height: u32, max_dim: u32) -> (u32, u32) {
     (scale(width).max(1), scale(height).max(1))
 }
 
+/// HEIC decoding via the bundled libheif + libde265, driven through raw C
+/// FFI (the `imageio` / `wic` approach: no Rust wrapper crate; the static
+/// libraries are compiled from the vendored `support/submodules/` checkouts
+/// by `build.rs`).
+///
+/// Decoding prefers the file's embedded thumbnail item (Apple's "reduced
+/// codec image": one small HEVC frame, decodes in ~10 ms, instead of the
+/// full 40+ tile grid of the primary image) and falls back to the primary
+/// image when there is no thumbnail or the thumbnail itself fails.
+/// `irot`/`imir` transformations are applied by libheif when the decode
+/// options are NULL, so portrait iPhone photos come out upright without
+/// manual EXIF handling — the WIC path's [`apply_exif_orientation`] is not
+/// needed here.
+#[cfg(target_os = "windows")]
+mod libheif {
+    use std::ffi::CStr;
+    use std::os::raw::{c_char, c_int, c_void};
+    use std::sync::OnceLock;
+
+    /// `heif_colorspace_RGB` — request an RGB-family output.
+    const HEIF_COLORSPACE_RGB: c_int = 1;
+    /// `heif_chroma_interleaved_RGBA` — packed 8-bit RGBA output.
+    const HEIF_CHROMA_INTERLEAVED_RGBA: c_int = 11;
+    /// `heif_channel_interleaved` — the single plane of an interleaved image.
+    const HEIF_CHANNEL_INTERLEAVED: c_int = 10;
+    const HEIF_ERROR_OK: c_int = 0;
+
+    /// Layout of libheif's `heif_error` return struct: an error code, a
+    /// sub code, and a NUL-terminated message pointing into libheif-owned
+    /// static storage (valid until the next call).
+    #[repr(C)]
+    struct HeifError {
+        code: c_int,
+        subcode: c_int,
+        message: *const c_char,
+    }
+
+    #[link(name = "heif")]
+    extern "C" {
+        fn heif_init(config: *const c_void) -> HeifError;
+        fn heif_context_alloc() -> *mut c_void;
+        fn heif_context_free(context: *mut c_void);
+        /// Keeps a reference into `mem` instead of copying — the buffer
+        /// must outlive the context, which [`decode_via_libheif`] honours
+        /// by freeing the context before its `&[u8]` borrow ends.
+        fn heif_context_read_from_memory_without_copy(
+            context: *mut c_void,
+            mem: *const c_void,
+            size: usize,
+            reading_options: *const c_void,
+        ) -> HeifError;
+        fn heif_context_get_primary_image_handle(context: *mut c_void, out: *mut *mut c_void) -> HeifError;
+        fn heif_image_handle_get_width(handle: *mut c_void) -> c_int;
+        fn heif_image_handle_get_height(handle: *mut c_void) -> c_int;
+        fn heif_image_handle_get_number_of_thumbnails(handle: *mut c_void) -> c_int;
+        /// Takes a caller-allocated array and returns how many item IDs
+        /// were written (not an index-based accessor).
+        fn heif_image_handle_get_list_of_thumbnail_IDs(handle: *mut c_void, ids: *mut u32, count: c_int) -> c_int;
+        /// Note: the second parameter is a thumbnail *item ID* from
+        /// [`heif_image_handle_get_list_of_thumbnail_IDs`], not an index.
+        fn heif_image_handle_get_thumbnail(main_image_handle: *mut c_void, thumbnail_id: u32, out: *mut *mut c_void) -> HeifError;
+        /// With `options = NULL`, container transformations (`irot` /
+        /// `imir`) are applied to the decoded pixels.
+        fn heif_decode_image(
+            in_handle: *mut c_void,
+            out_img: *mut *mut c_void,
+            colorspace: c_int,
+            chroma: c_int,
+            decoding_options: *const c_void,
+        ) -> HeifError;
+        fn heif_image_get_width(image: *mut c_void, channel: c_int) -> c_int;
+        fn heif_image_get_height(image: *mut c_void, channel: c_int) -> c_int;
+        fn heif_image_get_plane_readonly(image: *mut c_void, channel: c_int, out_stride: *mut c_int) -> *const u8;
+        fn heif_image_release(image: *mut c_void);
+        fn heif_image_handle_release(handle: *mut c_void);
+    }
+
+    /// Releases a `heif_image_handle` on every exit path.
+    struct HandleGuard(*mut c_void);
+
+    impl HandleGuard {
+        fn null() -> Self {
+            HandleGuard(std::ptr::null_mut())
+        }
+
+        /// Runs an FFI call that fills `out` with a new handle; the
+        /// handle is released when the guard drops, even on later errors.
+        fn acquire(
+            call: impl FnOnce(*mut *mut c_void) -> HeifError,
+            what: &str,
+        ) -> Result<Self, String> {
+            let mut handle = std::ptr::null_mut();
+            check(call(&mut handle), what)?;
+            Ok(HandleGuard(handle))
+        }
+    }
+
+    impl Drop for HandleGuard {
+        fn drop(&mut self) {
+            if !self.0.is_null() {
+                unsafe { heif_image_handle_release(self.0) }
+            }
+        }
+    }
+
+    /// Releases a `heif_image` on every exit path.
+    struct ImageGuard(*mut c_void);
+
+    impl ImageGuard {
+        fn null() -> Self {
+            ImageGuard(std::ptr::null_mut())
+        }
+    }
+
+    impl Drop for ImageGuard {
+        fn drop(&mut self) {
+            if !self.0.is_null() {
+                unsafe { heif_image_release(self.0) }
+            }
+        }
+    }
+
+    fn check(error: HeifError, what: &str) -> Result<(), String> {
+        if error.code == HEIF_ERROR_OK {
+            Ok(())
+        } else {
+            Err(message_of(&error, what))
+        }
+    }
+
+    fn message_of(error: &HeifError, what: &str) -> String {
+        let detail = if error.message.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(error.message).to_string_lossy().into_owned() }
+        };
+        if detail.is_empty() {
+            format!("{what} failed")
+        } else {
+            format!("{what}: {detail}")
+        }
+    }
+
+    /// `heif_init` ref-counts global decoder state; initialize it once per
+    /// process and keep it for the process lifetime — the server keeps
+    /// decoding thumbnails, so there is no point tearing it down.
+    fn ensure_init() -> Result<(), String> {
+        static INIT: OnceLock<Result<(), String>> = OnceLock::new();
+        INIT.get_or_init(|| check(unsafe { heif_init(std::ptr::null()) }, "heif_init"))
+            .clone()
+    }
+
+    /// Decode via libheif: context → bytes → primary handle → thumbnail
+    /// handle (preferred) → RGB/RGBA decode → tightly packed RGBA buffer.
+    pub(super) fn decode_via_libheif(bytes: &[u8], max_dim: u32) -> Result<image::DynamicImage, String> {
+        ensure_init()?;
+        if bytes.is_empty() {
+            return Err("empty HEIF payload".into());
+        }
+        if bytes.len() > i32::MAX as usize {
+            return Err("HEIF file too large".into());
+        }
+        tracing::debug!(
+            event = "fs.heif.libheif.entry",
+            len = bytes.len(),
+            max_dim,
+            "decoding HEIF via bundled libheif/libde265"
+        );
+
+        unsafe {
+            let context = heif_context_alloc();
+            if context.is_null() {
+                return Err("heif_context_alloc failed".into());
+            }
+            // Free the context before `bytes`' borrow ends — the context
+            // holds a reference into it (`*_without_copy`).
+            let result = decode_with_context(context, bytes);
+            heif_context_free(context);
+            result
+        }
+    }
+
+    /// The buffer behind `bytes` must outlive `context` (see
+    /// [`decode_via_libheif`]).
+    unsafe fn decode_with_context(context: *mut c_void, bytes: &[u8]) -> Result<image::DynamicImage, String> {
+        check(
+            heif_context_read_from_memory_without_copy(context, bytes.as_ptr().cast(), bytes.len(), std::ptr::null()),
+            "heif_context_read_from_memory_without_copy",
+        )?;
+
+        let primary = HandleGuard::acquire(
+            |out| heif_context_get_primary_image_handle(context, out),
+            "heif_context_get_primary_image_handle",
+        )?;
+        let (primary_width, primary_height) =
+            (heif_image_handle_get_width(primary.0), heif_image_handle_get_height(primary.0));
+
+        // Prefer the embedded thumbnail item: one small HEVC frame beats
+        // decoding the 48-megapixel tile grid and downscaling afterwards.
+        let mut thumbnail = HandleGuard::null();
+        if heif_image_handle_get_number_of_thumbnails(primary.0) > 0 {
+            let mut ids = [0u32; 4];
+            let count =
+                heif_image_handle_get_list_of_thumbnail_IDs(primary.0, ids.as_mut_ptr(), ids.len() as c_int).max(0) as usize;
+            if count > 0 {
+                // A broken thumbnail must not fail the whole decode —
+                // retry with the primary image below.
+                thumbnail = HandleGuard::acquire(
+                    |out| heif_image_handle_get_thumbnail(primary.0, ids[0], out),
+                    "heif_image_handle_get_thumbnail",
+                )
+                .inspect_err(|error| {
+                    tracing::warn!(
+                        event = "fs.heif.libheif.thumbnail",
+                        item_id = ids[0],
+                        error = %error,
+                        "thumbnail handle failed; decoding the primary image instead"
+                    );
+                })
+                .unwrap_or_else(|_| HandleGuard::null());
+            }
+        }
+
+        let target = if thumbnail.0.is_null() { &primary } else { &thumbnail };
+        let mut image = ImageGuard::null();
+        check(
+            heif_decode_image(
+                target.0,
+                &mut image.0,
+                HEIF_COLORSPACE_RGB,
+                HEIF_CHROMA_INTERLEAVED_RGBA,
+                std::ptr::null(),
+            ),
+            "heif_decode_image",
+        )?;
+
+        let width = heif_image_get_width(image.0, HEIF_CHANNEL_INTERLEAVED);
+        let height = heif_image_get_height(image.0, HEIF_CHANNEL_INTERLEAVED);
+        if width <= 0 || height <= 0 || width > 100_000 || height > 100_000 {
+            return Err(format!("implausible HEIF dimensions: {width}x{height}"));
+        }
+        let mut stride = 0;
+        let plane = heif_image_get_plane_readonly(image.0, HEIF_CHANNEL_INTERLEAVED, &mut stride);
+        if plane.is_null() || stride < width * 4 {
+            return Err("libheif returned an empty RGBA plane".into());
+        }
+
+        // Rows are stride-padded — repack them tightly for RgbaImage.
+        let mut pixels = Vec::with_capacity(width as usize * height as usize * 4);
+        for row in 0..height as usize {
+            let start = plane.add(row * stride as usize);
+            pixels.extend_from_slice(std::slice::from_raw_parts(start, width as usize * 4));
+        }
+        tracing::debug!(
+            event = "fs.heif.libheif.decoded",
+            primary_width,
+            primary_height,
+            width,
+            height,
+            embedded_thumbnail = !thumbnail.0.is_null(),
+            "libheif decode finished"
+        );
+        image::RgbaImage::from_raw(width as u32, height as u32, pixels)
+            .map(image::DynamicImage::ImageRgba8)
+            .ok_or_else(|| "HEIF pixel buffer size mismatch".into())
+    }
+}
+
 /// Windows Imaging Component decoding, driven through raw COM FFI (the
 /// macOS approach: system framework, zero crate dependencies).
 ///
@@ -413,6 +701,12 @@ mod wic {
     const WIC_BITMAP_PALETTE_TYPE_CUSTOM: u32 = 0;
     /// No codec claims this container — the "install HEIF extensions" case.
     const WINCODEC_ERR_COMPONENTNOTFOUND: Hresult = 0x8898_2F07u32 as i32;
+    /// WIC's HEVC/AV1 decoders are Media Foundation transcoders: decoder
+    /// *creation* succeeds even without the store codec, and the failure
+    /// only surfaces from `CopyPixels` with this Media Foundation
+    /// missing-codec code (observed on every HEIC request on a Windows
+    /// machine without "HEVC Video Extensions").
+    const MF_E_CODEC_MISSING: Hresult = 0xC00D_5212u32 as i32;
     const VT_I2: u16 = 2;
     const VT_I4: u16 = 3;
     const VT_UI2: u16 = 18;
@@ -895,6 +1189,12 @@ mod wic {
                 pixels.as_mut_ptr(),
             );
             if failed(hr) {
+                if hr == MF_E_CODEC_MISSING {
+                    return Err(
+                        "the codec for this HEIF/AVIF image (HEVC or AV1) is not installed — install \"HEIF Image Extensions\" and \"AV1 Video Extension\" from the Microsoft Store"
+                            .into(),
+                    );
+                }
                 return Err(describe(hr, "IWICBitmapSource::CopyPixels"));
             }
 

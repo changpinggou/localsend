@@ -56,6 +56,13 @@ libc = "0.2"
 # macOS / Linux builds don't pay for it.
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Ioctl", "Win32_System_Com"] }
 
+[build-dependencies]
+# Builds the vendored libheif + libde265 submodules (HEIC decoding without
+# the Microsoft Store HEVC codec) — see build.rs. build.rs runs for every
+# target and returns immediately on non-Windows, but build-dependencies
+# are resolved per *host* platform, so this cannot be target-gated.
+cmake = "0.1"
+
 [dev-dependencies]
 filetime = "0.2"
 
