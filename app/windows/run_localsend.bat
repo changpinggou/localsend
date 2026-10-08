@@ -6,3 +6,5 @@ set RUSTUP_HOME=C:\Users\Sterling\.rustup
 set PATH=%FLUTTER_ROOT%\bin;%CARGO_HOME%\bin;%PATH%
 cd /d "D:\localsend\src\app\windows"
 call "%FLUTTER_ROOT%\bin\flutter.bat" run -d windows
+
+pause
