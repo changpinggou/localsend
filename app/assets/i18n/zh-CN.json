@@ -1,5 +1,5 @@
 {
-  "appName": "LocalSend",
+  "appName": "LocalU",
   "general": {
     "accept": "接受",
     "accepted": "已接受",
@@ -91,6 +91,8 @@
     "roots": "驱动器",
     "breadcrumbRoot": "驱动器",
     "emptyFolder": "此文件夹为空",
+    "emptyRootsHint": "远端设备未配置可浏览的驱动器。\n请在远端设备上打开 设置 → 网络 → \"允许驱动器浏览\" 并添加目录。",
+    "emptyRootsHintWithDevice": "设备 \"{device}\" 未配置可浏览的驱动器。\n请在该设备上打开 设置 → 网络 → \"允许驱动器浏览\" 并添加目录。",
     "errorTitle": "无法加载文件",
     "errorGeneric": "发生错误，请重试。",
     "retry": "重试",
@@ -102,17 +104,39 @@
     "sortMtimeDesc": "最近修改",
     "viewList": "列表视图",
     "viewGrid": "网格视图",
-    "loadMore": "加载更多"
+    "loadMore": "加载更多",
+    "refresh": "刷新当前目录",
+    "syncPhotos": "同步相册",
+    "proLocked": "同步相册是 LocalU Pro 功能"
+  },
+  "sync": {
+    "title": "同步相册",
+    "scanningLocal": "正在扫描本地相册…",
+    "scanningRemote": "正在扫描远端目录…",
+    "comparing": "正在对比文件…",
+    "uploading": "正在上传…",
+    "scanned": "已扫描",
+    "uploaded": "已上传",
+    "skipped": "已跳过",
+    "failed": "失败",
+    "confirmTitle": "同步相册",
+    "confirmMessage": "将 %d 张本地照片同步到当前目录？\n其中 %d 张已存在于远端。",
+    "startSync": "开始同步",
+    "noPhotos": "相册中没有照片",
+    "upToDate": "所有照片已同步",
+    "syncComplete": "同步完成"
   },
   "fsBrowser": {
     "fsDisabledByPeerTitle": "该设备未开启驱动器浏览",
     "fsDisabledByPeerBody": "对端还没有开启驱动器共享。请让对方在 设置 → 网络 → 打开「允许其他设备浏览我的驱动器」。同时需要启用加密（HTTPS）。",
     "notFoundTitle": "找不到对应接口",
-    "notFoundBody": "对端没有响应文件浏览请求，可能是旧版本 LocalSend。",
+    "notFoundBody": "对端没有响应文件浏览请求，可能是旧版本 LocalU。",
     "timeoutTitle": "连接超时",
     "timeoutBody": "对端响应过慢。请确认双方在同一 Wi-Fi 下后重试。",
     "pathDeniedTitle": "路径未被共享",
     "pathDeniedBody": "该路径不在对端的共享驱动器内。请让对方将其加入白名单。",
+    "permissionDeniedTitle": "你没有权限访问当前系统卷",
+    "permissionDeniedBody": "对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalU 的 设置 → 共享文件夹 中添加要访问的文件夹。",
     "networkTitle": "无法连接设备",
     "networkBody": "对端无响应。可能已进入睡眠、断开了 Wi-Fi 或已关闭。",
     "rootsChangedAdded": "新增了一个驱动器",
@@ -128,6 +152,7 @@
     "cancelled": "已取消",
     "failedTitle": "下载失败",
     "galleryDenied": "未授权访问相册",
+    "alreadyInGallery": "相册中已存在，已跳过下载",
     "complete": "下载完成",
     "savedToGallery": "已保存到相册",
     "savedToFiles": "已保存到 {path}",
@@ -193,7 +218,7 @@
       "minimizeToTray": "关闭时最小化到系统托盘",
       "launchAtStartup": "登录系统后自动启动程序",
       "launchMinimized": "启动时最小化到任务栏",
-      "showInContextMenu": "在“发送到...”文件菜单中显示 LocalSend",
+      "showInContextMenu": "在“发送到...”文件菜单中显示 LocalU",
       "animations": "动画效果"
     },
     "receive": {
@@ -236,7 +261,12 @@
       "enableFs": "允许其他设备浏览我的驱动器",
       "enableFsSubtitle": "同一网络下的移动设备可以浏览文件夹并下载你所选驱动器中的文件。",
       "enableFsNoticeTitle": "已开启驱动器浏览",
-      "enableFsNoticeBody": "同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。"
+      "enableFsNoticeBody": "同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。",
+      "fsBookmarksTitle": "共享文件夹",
+      "fsBookmarksEmpty": "没有共享文件夹",
+      "fsBookmarksHint": "添加你想要与其他设备共享的文件夹。\n这些文件夹将对网络中的设备可见。",
+      "fsBookmarkDelete": "移除共享文件夹",
+      "fsBookmarkDeleteConfirm": "你确定要移除这个共享文件夹吗？其他设备将无法再访问它。"
     },
     "other": {
       "title": "其他",
@@ -268,7 +298,7 @@
   },
   "networkInterfacesPage": {
     "title": "网络接口",
-    "info": "默认情况下，LocalSend 使用所有可用的网络接口。您可以在此处排除不需要的网络接口。您需要重新启动服务器以应用更改。",
+    "info": "默认情况下，LocalU 使用所有可用的网络接口。您可以在此处排除不需要的网络接口。您需要重新启动服务器以应用更改。",
     "preview": "预览",
     "whitelist": "白名单",
     "blacklist": "黑名单"
@@ -329,7 +359,7 @@
   "receiveOptionsPage": {
     "title": "设置",
     "destination": "@:settingsTab.receive.destination",
-    "appDirectory": "(LocalSend 文件夹)",
+    "appDirectory": "(LocalU 文件夹)",
     "saveToGallery": "@:settingsTab.receive.saveToGallery",
     "saveToGalleryOff": "由于分享内容中存在文件夹，已自动关闭。"
   },
@@ -381,17 +411,17 @@
     "autoAccept": "自动接受请求",
     "requirePin": "启用 PIN 密码",
     "pinHint": "PIN 为 “{pin}”",
-    "encryptionHint": "LocalSend 使用自签名证书。您需要在浏览器中允许它。",
+    "encryptionHint": "LocalU 使用自签名证书。您需要在浏览器中允许它。",
     "pendingRequests": "待处理请求：{n}"
   },
   "webReceivePage": {
     "title": "通过链接接收"
   },
   "aboutPage": {
-    "title": "关于 LocalSend",
+    "title": "关于 LocalU",
     "description": [
-      "LocalSend 是一款免费的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
-      "本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。您可以在官方主页找到所有下载选项。"
+      "LocalU 是一款基于 LocalSend 的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
+      "本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。"
     ],
     "author": "作者",
     "contributors": "贡献者",
@@ -404,6 +434,26 @@
     "donate": "捐款 {amount}",
     "thanks": "非常感谢您的支持！",
     "restore": "恢复购买"
+  },
+  "proPage": {
+    "title": "LocalU Pro",
+    "subtitle": "相册同步及后续 Pro 功能，一次购买，永久解锁。",
+    "buy": "解锁（{price}）",
+    "purchased": "已购买",
+    "unlock": "解锁",
+    "unlocked": "已解锁",
+    "restore": "恢复购买",
+    "priceUnavailable": "价格获取失败",
+    "thanks": "感谢支持 LocalU！",
+    "unavailable": "此版本不支持应用内购买。",
+    "features": {
+      "oneTapTitle": "一键同步相册",
+      "oneTapDesc": "选好电脑，一键把整个相册同步过去，无需逐张挑选文件。",
+      "incrementalTitle": "增量更新",
+      "incrementalDesc": "首次全量同步后，之后只上传新增的照片，又快又省流量。",
+      "icloudTitle": "类似 iCloud 的便捷体验",
+      "icloudDesc": "手机里的照片，电脑上随时都在，设备之间自动保持一致。"
+    }
   },
   "changelogPage": {
     "title": "更新日志"
@@ -555,7 +605,7 @@
     },
     "localNetworkUnauthorized": {
       "title": "@:dialogs.noPermission.title",
-      "description": "LocalSend 在没有扫描本地网络的权限的情况下无法找到其他设备。请在设置中授予此权限。",
+      "description": "LocalU 在没有扫描本地网络的权限的情况下无法找到其他设备。请在设置中授予此权限。",
       "gotoSettings": "设置"
     },
     "messageInput": {
@@ -602,7 +652,7 @@
       "title": "发送模式",
       "single": "发送文件给一个接收者。已选择的文件在发送后会取消选择。",
       "multiple": "发送文件给多个接收者。已选择的文件在发送后不会取消选择。",
-      "link": "未安装 LocalSend 的接收者可以在浏览器中打开链接以下载选中的文件。"
+      "link": "未安装 LocalU 的接收者可以在浏览器中打开链接以下载选中的文件。"
     },
     "zoom": {
       "title": "URL"
@@ -615,7 +665,7 @@
   "tray": {
     "@info": "Apple Guidelines are very strict about the \"close\" wording.",
     "open": "@:general.open",
-    "close": "退出 LocalSend",
+    "close": "退出 LocalU",
     "closeWindows": "退出"
   },
   "web": {

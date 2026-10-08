@@ -7,7 +7,15 @@ class FsEmptyState extends StatelessWidget {
   final bool isRoots;
   final VoidCallback? onRetry;
 
-  const FsEmptyState({required this.isRoots, this.onRetry, super.key});
+  /// Optional device alias to show in the hint message.
+  final String? deviceAlias;
+
+  const FsEmptyState({
+    required this.isRoots,
+    this.onRetry,
+    this.deviceAlias,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +37,16 @@ class FsEmptyState extends StatelessWidget {
               style: theme.textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
+            if (isRoots) ...[
+              const SizedBox(height: 8),
+              Text(
+                deviceAlias != null ? t.remoteBrowser.emptyRootsHintWithDevice(device: deviceAlias!) : t.remoteBrowser.emptyRootsHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -87,6 +105,11 @@ class FsErrorState extends StatelessWidget {
         Icons.block,
         t.fsBrowser.pathDeniedTitle,
         t.fsBrowser.pathDeniedBody,
+      ),
+      FsErrorReason.permissionDenied => (
+        Icons.folder_off_outlined,
+        t.fsBrowser.permissionDeniedTitle,
+        t.fsBrowser.permissionDeniedBody,
       ),
       FsErrorReason.network => (
         Icons.cloud_off,
@@ -150,6 +173,15 @@ enum FsErrorReason {
 
   /// HTTP 403 — the path was outside the peer's whitelist (T-004).
   pathDenied,
+
+  /// HTTP 500 whose payload is an EPERM from the peer's `readdir` —
+  /// macOS TCC / privacy protection blocks reading system volumes
+  /// (e.g. a home directory) unless the folder was explicitly shared
+  /// via a security-scoped bookmark. Distinct from [pathDenied] (403,
+  /// the path simply isn't whitelisted) so the UI can tell the user
+  /// to configure shared folders on the peer instead of just
+  /// whitelisting.
+  permissionDenied,
 
   /// Network-level failure (DNS, refused connection, etc.).
   network,

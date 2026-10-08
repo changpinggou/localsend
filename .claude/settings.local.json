@@ -101,7 +101,28 @@
       "Bash(cargo test *)",
       "Bash(fvm dart *)",
       "Bash(cargo clippy *)",
-      "Bash(cargo build *)"
+      "Bash(cargo build *)",
+      "Read(//Users/changping/.pub-cache/bin/**)",
+      "Read(//Users/changping/flutter-sdk/**)",
+      "Read(//Users/changping/.pub-cache/global_packages/fvm/**)",
+      "Bash(PATH=/Users/changping/Documents/flutter/bin:/Users/changping/.pub-cache/bin:__TRACKED_VAR__ which fvm)",
+      "Bash(bash -n build.sh)",
+      "Bash(./build.sh rust *)",
+      "Bash(timeout 120 bash -c 'export PATH=\"$HOME/Documents/flutter/bin:$HOME/.pub-cache/bin:$PATH\"; fvm flutter pub get 2>&1 | tail -20; echo \"EXIT=$?\"')",
+      "Bash(bash -c 'export PATH=\"$HOME/Documents/flutter/bin:$HOME/.pub-cache/bin:$PATH\"; fvm flutter --version 2>&1 | tail -10; echo \"---EXIT=$?\"')",
+      "Bash(bash -c 'source build.sh 2>&1 | head -1; echo \"---\"; PATH=\"$HOME/Documents/flutter/bin:$HOME/.pub-cache/bin:$PATH\" bash -c \"fvm flutter pub get 2>&1 | tail -5\"')",
+      "Bash(bash build.sh macos)",
+      "Bash(bash build.sh rust)",
+      "Bash(bash -c '\nset -e\nexport PATH=\"$HOME/Documents/flutter/bin:$HOME/.pub-cache/bin:$PATH\"\nfvm flutter --version 2>&1 | head -2\necho \"---\"\ncd app\nfvm flutter pub get 2>&1 | tail -3\n' 2>&1)",
+      "Bash(bash -x build.sh ios)",
+      "Bash(security find-identity *)",
+      "Bash(curl -sI https://static.rust-lang.org/rustup/release-stable.toml)",
+      "Bash(rustup show *)",
+      "Bash(rustup --version)",
+      "Bash(rustup self *)",
+      "Bash(rustup toolchain *)",
+      "Bash(rustup default *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

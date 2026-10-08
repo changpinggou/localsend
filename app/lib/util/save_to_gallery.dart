@@ -1,8 +1,10 @@
-import 'dart:io' show Platform;
+import 'dart:io' show File, Platform;
+
 import 'package:gal/gal.dart';
 import 'package:localsend_app/util/native/platform_check.dart';
 import 'package:logging/logging.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 final _logger = Logger('SaveToGallery');
 
@@ -20,8 +22,15 @@ final _logger = Logger('SaveToGallery');
 /// picker — `gal` is the only file-format-handling dependency the
 /// project already declared, and adding a custom intent would re-
 /// duplicate that work.
-Future<bool> saveFileToGallery(String localPath, {required bool isImage}) async {
-  _logger.info('saveFileToGallery called: path=$localPath, isImage=$isImage');
+///
+/// [filename] is the title the asset gets in the gallery. Without it,
+/// `gal` keeps the file's basename — for downloaded files that is a
+/// cache name like `fs-<session>-IMG_0001.JPG`, which would litter the
+/// library with mangled titles (same class of bug as T-027 §10.2, one
+/// level up). Only images honour it (`gal` has no name parameter for
+/// videos).
+Future<bool> saveFileToGallery(String localPath, {required bool isImage, String? filename}) async {
+  _logger.info('saveFileToGallery called: path=$localPath, isImage=$isImage, filename=$filename');
 
   if (!checkPlatformWithGallery()) {
     _logger.info('Platform does not support gallery');
@@ -73,7 +82,14 @@ Future<bool> saveFileToGallery(String localPath, {required bool isImage}) async 
 
     _logger.info('Saving ${isImage ? "image" : "video"} to gallery: $localPath');
     if (isImage) {
-      await Gal.putImage(localPath);
+      if (filename != null) {
+        // Save the bytes under the real title — `putImage(path)` would
+        // inherit the cache basename as the asset's originalFilename.
+        final bytes = await File(localPath).readAsBytes();
+        await Gal.putImageBytes(bytes, name: filename);
+      } else {
+        await Gal.putImage(localPath);
+      }
     } else {
       await Gal.putVideo(localPath);
     }
@@ -81,6 +97,75 @@ Future<bool> saveFileToGallery(String localPath, {required bool isImage}) async 
     return true;
   } catch (e, st) {
     _logger.warning('Failed to save file to gallery: $e', null, st);
+    return false;
+  }
+}
+
+/// Returns `true` when the photo library already contains an asset with
+/// [filename] as its title and a file size of exactly [sizeBytes] bytes.
+///
+/// Same matching rule as the photo-sync diff (T-027 §10.1: same name +
+/// same size → duplicate). Best effort: returns `false` when the
+/// platform has no gallery or photo access is denied, so callers fall
+/// back to the plain save flow.
+///
+/// The scan mirrors [PhotoSyncService]'s local scan: albums overlap on
+/// iOS ("Recents" contains everything), so assets are deduped by id.
+/// Titles are cheap metadata; the file is only opened for title matches
+/// (an `originFile` can trigger an iCloud download otherwise).
+Future<bool> isFileInGallery({required String filename, required int sizeBytes}) async {
+  if (!checkPlatformWithGallery()) {
+    return false;
+  }
+
+  try {
+    final granted = await PhotoManager.requestPermissionExtend();
+    if (!granted.isAuth) {
+      _logger.info('isFileInGallery: photo permission not granted, skipping dedupe check');
+      return false;
+    }
+
+    final seenAssetIds = <String>{};
+    const pageSize = 300;
+
+    final paths = await PhotoManager.getAssetPathList(type: RequestType.common);
+    for (final path in paths) {
+      int page = 0;
+      while (true) {
+        final List<AssetEntity> assets;
+        try {
+          assets = await path.getAssetListPaged(page: page, size: pageSize);
+        } catch (e) {
+          _logger.warning('isFileInGallery: failed to page album "${path.name}": $e');
+          break;
+        }
+        if (assets.isEmpty) break;
+
+        for (final asset in assets) {
+          if (!seenAssetIds.add(asset.id)) continue;
+          // Cheap check first: only touch the file (potentially an iCloud
+          // download) when the title already matches.
+          if (await asset.titleAsync != filename) continue;
+          try {
+            final file = await asset.originFile;
+            if (file != null && await file.length() == sizeBytes) {
+              _logger.info('isFileInGallery: found duplicate "$filename" ($sizeBytes B) as asset ${asset.id}');
+              return true;
+            }
+          } catch (e) {
+            _logger.warning('isFileInGallery: failed to read asset ${asset.id}: $e');
+          }
+        }
+        page++;
+      }
+    }
+
+    _logger.info('isFileInGallery: no duplicate "$filename" ($sizeBytes B) in ${paths.length} album(s)');
+    return false;
+  } catch (e, st) {
+    // Best effort — the save flow must not break because the dedupe
+    // check failed (e.g. plugin channel error).
+    _logger.warning('isFileInGallery: check failed: $e', null, st);
     return false;
   }
 }

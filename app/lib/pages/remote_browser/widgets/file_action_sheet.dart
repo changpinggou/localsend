@@ -64,6 +64,11 @@ Future<FsFileAction?> showFileActionSheet(
 
 /// Performs the actual download + post-download action. Lives next
 /// to the sheet so the action sheet can stay declarative.
+///
+/// For [FsFileAction.saveToGallery] the gallery is checked first:
+/// a photo already present (same name + same size, the photo-sync diff
+/// rule) is neither downloaded nor saved, so repeated saves don't pile
+/// up duplicate assets.
 Future<FsFileActionResult> performFileAction({
   required FsDownloadService downloadService,
   required Device device,
@@ -71,6 +76,13 @@ Future<FsFileActionResult> performFileAction({
   required String fullPath,
   required FsFileAction action,
 }) async {
+  if (action == FsFileAction.saveToGallery) {
+    final exists = await isFileInGallery(filename: entry.name, sizeBytes: entry.size.toInt());
+    if (exists) {
+      return FsFileActionResult(action: action, savedPath: null, failed: false, skipped: true);
+    }
+  }
+
   final cachedPath = await downloadService.downloadToCache(
     device: device,
     entry: entry,
@@ -82,7 +94,7 @@ Future<FsFileActionResult> performFileAction({
 
   switch (action) {
     case FsFileAction.saveToGallery:
-      final ok = await saveFileToGallery(cachedPath, isImage: true);
+      final ok = await saveFileToGallery(cachedPath, isImage: true, filename: entry.name);
       return FsFileActionResult(action: action, savedPath: cachedPath, failed: !ok);
     case FsFileAction.saveToFiles:
       final dest = await saveFileToDownloads(localPath: cachedPath, filename: entry.name);
@@ -95,8 +107,12 @@ Future<FsFileActionResult> performFileAction({
 class FsFileActionResult {
   final FsFileAction action;
   final String? savedPath;
+
+  /// True when the action was not executed because the file already
+  /// exists in the gallery (dedupe hit). Not a failure.
+  final bool skipped;
   final bool failed;
-  const FsFileActionResult({required this.action, required this.savedPath, required this.failed});
+  const FsFileActionResult({required this.action, required this.savedPath, this.skipped = false, required this.failed});
 }
 
 bool _looksLikeImage(String name) {

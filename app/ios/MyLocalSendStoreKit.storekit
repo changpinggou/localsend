@@ -20,8 +20,8 @@
       "internalID" : "6472594578",
       "localizations" : [
         {
-          "description" : "LocalSend Donation",
-          "displayName" : "LocalSend Donation",
+          "description" : "LocalU Donation",
+          "displayName" : "LocalU Donation",
           "locale" : "en_US"
         }
       ],
@@ -35,8 +35,8 @@
       "internalID" : "6472594779",
       "localizations" : [
         {
-          "description" : "LocalSend Donation",
-          "displayName" : "LocalSend Donation",
+          "description" : "LocalU Donation",
+          "displayName" : "LocalU Donation",
           "locale" : "en_US"
         }
       ],
@@ -50,8 +50,8 @@
       "internalID" : "6472594819",
       "localizations" : [
         {
-          "description" : "LocalSend Donation",
-          "displayName" : "LocalSend Donation",
+          "description" : "LocalU Donation",
+          "displayName" : "LocalU Donation",
           "locale" : "en_US"
         }
       ],
@@ -65,13 +65,33 @@
       "internalID" : "6472595571",
       "localizations" : [
         {
-          "description" : "LocalSend Donation",
-          "displayName" : "LocalSend Donation",
+          "description" : "LocalU Donation",
+          "displayName" : "LocalU Donation",
           "locale" : "en_US"
         }
       ],
       "productID" : "localsend_ios_donate_50",
       "referenceName" : "LocalSend Donation (50)",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "6472600001",
+      "localizations" : [
+        {
+          "description" : "Sync photos and future Pro features",
+          "displayName" : "LocalU Pro",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "解锁相册同步及后续 Pro 功能（一次性买断）",
+          "displayName" : "LocalU Pro",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "localu_pro",
+      "referenceName" : "LocalU Pro",
       "type" : "NonConsumable"
     }
   ],

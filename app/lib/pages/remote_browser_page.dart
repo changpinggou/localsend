@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/pages/media_preview/image_preview_page.dart';
+import 'package:localsend_app/pages/pro/pro_page.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/breadcrumb.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/context_menu.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/delete_confirm_dialog.dart';
@@ -14,6 +17,7 @@ import 'package:localsend_app/pages/remote_browser/widgets/multi_select_bar.dart
 import 'package:localsend_app/pages/remote_browser/widgets/rename_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/selection_list_view.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/sort_menu.dart';
+import 'package:localsend_app/pages/remote_browser/widgets/sync_progress_dialog.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/upload_action_sheet.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/upload_queue_bar.dart';
 import 'package:localsend_app/pages/remote_browser/widgets/view_mode_toggle.dart';
@@ -23,7 +27,9 @@ import 'package:localsend_app/provider/network/fs/fs_list_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_mutation_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_roots_provider.dart';
 import 'package:localsend_app/provider/network/fs/fs_upload_provider.dart';
+import 'package:localsend_app/provider/network/fs/photo_sync_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
+import 'package:localsend_app/provider/pro_gate_provider.dart';
 import 'package:localsend_app/provider/security_provider.dart';
 import 'package:localsend_app/util/native/pick_for_upload.dart';
 import 'package:localsend_app/util/ui/snackbar.dart';
@@ -31,6 +37,7 @@ import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/rust/api/http.dart' as rust_http;
 import 'package:localsend_isolates/rust/api/model.dart' as rust;
 import 'package:refena_flutter/refena_flutter.dart';
+import 'package:routerino/routerino.dart';
 
 /// T-008: remote filesystem browser page.
 ///
@@ -166,6 +173,9 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
 
     // T-016: 多选模式时显示不同的 AppBar
     final isMultiSelect = mutationState.isMultiSelectMode;
+    // T-028: 相册同步是 LocalU Pro 功能 — gate at tap time, keep the
+    // button visible for discoverability (badge marks the locked state).
+    final isPro = ref.watch(isProProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -185,6 +195,25 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
                 ),
               ]
             : [
+                IconButton(
+                  // Folder + up-arrow: "push the album into this folder".
+                  // Icons.sync reads as bidirectional (and looks like the
+                  // refresh icon); the album sync is one-way backup.
+                  icon: Badge(
+                    isLabelVisible: !isPro,
+                    alignment: AlignmentDirectional.bottomStart,
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    label: const Icon(Icons.lock, size: 8, color: Colors.white),
+                    child: const Icon(Icons.drive_folder_upload),
+                  ),
+                  tooltip: isPro ? t.remoteBrowser.syncPhotos : t.remoteBrowser.proLocked,
+                  onPressed: () => _onSyncPhotos(device, fsState),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: t.remoteBrowser.refresh,
+                  onPressed: () => ref.notifier(fsListProvider).refresh(device),
+                ),
                 FsSortMenu(
                   current: fsState.sort,
                   onChanged: (s) => ref.notifier(fsListProvider).changeSort(device: device, sort: s),
@@ -238,8 +267,84 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     }
   }
 
+  /// T-027: 同步相册到当前远端目录
+  Future<void> _onSyncPhotos(Device device, FsListState state) async {
+    // T-028: 未购时先进入 Pro 解锁页，不执行同步。
+    // 点击时 gate（按钮不隐藏），已购则直接走原流程。
+    if (!ref.read(isProProvider)) {
+      if (!mounted) return;
+      await context.push(() => const ProPage());
+      return;
+    }
+
+    // 必须在非根目录
+    if (state.currentPath.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('请先选择一个目录')),
+      );
+      return;
+    }
+
+    // 显示确认对话框
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.sync.confirmTitle),
+        content: Text('将同步本地所有照片到当前目录\n${state.currentPath}\n\n已存在的文件会被跳过（同名同大小），不同的文件会覆盖。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t.general.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t.sync.startSync),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // 显示进度对话框
+    if (!mounted) return;
+    unawaited(
+      SyncProgressDialog.show(
+        context: context,
+        localCount: 0,
+        remoteCount: 0,
+        toUploadCount: 0,
+      ),
+    );
+
+    try {
+      await ref
+          .notifier(photoSyncProvider)
+          .startSync(
+            device: device,
+            remoteDir: state.currentPath,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('同步失败：$e')),
+      );
+    }
+
+    // 关闭进度对话框
+    if (mounted) Navigator.of(context).pop();
+
+    // 刷新当前目录
+    ref.notifier(fsListProvider).refresh(device);
+  }
+
   Widget _buildBody(Device device, FsListState state, FsMutationData mutationState) {
-    if (state.error != null && state.entries.isEmpty && state.roots.isEmpty) {
+    // The roots list is preserved when browsing a directory, so
+    // requiring `roots.isEmpty` here would skip the error card for
+    // every failed directory listing (e.g. a peer volume the OS
+    // refuses to read) and fall through to the empty-folder view.
+    if (state.error != null && state.entries.isEmpty && !state.loading) {
       return FsErrorState(
         message: state.error,
         reason: state.errorReason,
@@ -261,6 +366,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
       if (state.roots.isEmpty) {
         return FsEmptyState(
           isRoots: true,
+          deviceAlias: device.alias,
           onRetry: () => ref.notifier(fsListProvider).enterRoots(device),
         );
       }
@@ -353,7 +459,7 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     } else {
       // Async file action sheet + download + save flow. Outcome is
       // surfaced via a snackbar from inside `_handleFileTap`.
-      _handleFileTap(device, entry);
+      unawaited(_handleFileTap(device, entry));
     }
   }
 
@@ -390,7 +496,12 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
     if (!mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
     final msg = switch (result.action) {
-      FsFileAction.saveToGallery => result.failed ? t.fsDownload.galleryDenied : t.fsDownload.savedToGallery,
+      FsFileAction.saveToGallery =>
+        result.skipped
+            ? t.fsDownload.alreadyInGallery
+            : result.failed
+            ? t.fsDownload.galleryDenied
+            : t.fsDownload.savedToGallery,
       FsFileAction.saveToFiles => result.failed ? t.fsDownload.failedTitle : t.fsDownload.savedToFiles(path: result.savedPath ?? ''),
       FsFileAction.preview => t.fsDownload.complete,
     };
@@ -433,6 +544,13 @@ class _RemoteBrowserPageState extends State<RemoteBrowserPage> with Refena {
         break;
       case FsUploadAction.newFolder:
         await _handleMkdir(device, currentPath);
+        break;
+      case FsUploadAction.syncPhotos:
+        // T-027: sync the local album into the current directory.
+        // The sheet can only be opened when a directory is open (the
+        // FAB is hidden at the roots view), but `_onSyncPhotos` still
+        // guards the empty path itself.
+        await _onSyncPhotos(device, ref.read(fsListProvider));
         break;
     }
   }

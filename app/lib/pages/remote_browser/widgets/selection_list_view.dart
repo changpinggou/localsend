@@ -29,9 +29,7 @@ class FsSelectableListRow extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-              : null,
+          color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.1) : null,
           border: isLast
               ? null
               : Border(
@@ -169,9 +167,7 @@ class _FsSelectableListBodyState extends State<FsSelectableListBody> {
   }
 
   String _fullPath(rust.FsEntry entry) {
-    return widget.currentPath.isEmpty
-        ? entry.name
-        : '${widget.currentPath}/${entry.name}';
+    return widget.currentPath.isEmpty ? entry.name : '${widget.currentPath}/${entry.name}';
   }
 
   @override

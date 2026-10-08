@@ -96,6 +96,7 @@ const _createChecksums = 'ls_create_checksums';
 const _verifyChecksums = 'ls_verify_checksums';
 const _advancedSettingsKey = 'ls_advanced_settings';
 const _whatsNewKey = 'ls_whats_new';
+const _proCached = 'ls_pro_cached'; // T-028: LocalU Pro buyout is cached locally (only written, never cleared)
 
 final persistenceProvider = Provider<PersistenceService>((ref) {
   throw Exception('persistenceProvider not initialized');
@@ -575,6 +576,17 @@ class PersistenceService {
 
   Future<void> setEnableFs(bool enableFs) async {
     await _prefs.setBool(_enableFs, enableFs);
+  }
+
+  /// T-028: whether the LocalU Pro buyout has been seen on this device.
+  /// The purchase is non-expiring and there is no server to revoke it,
+  /// so the cache is only written and never cleared (except by tests).
+  bool getProCached() {
+    return _prefs.getBool(_proCached) ?? false;
+  }
+
+  Future<void> setProCached(bool proCached) async {
+    await _prefs.setBool(_proCached, proCached);
   }
 
   DeviceType? getDeviceType() {

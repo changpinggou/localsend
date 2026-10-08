@@ -8,9 +8,12 @@ import 'package:localsend_app/model/persistence/color_mode.dart';
 import 'package:localsend_app/pages/about/about_page.dart';
 import 'package:localsend_app/pages/changelog_page.dart';
 import 'package:localsend_app/pages/donation/donation_page.dart';
+import 'package:localsend_app/pages/pro/pro_page.dart';
+import 'package:localsend_app/pages/settings/fs_bookmarks_page.dart';
 import 'package:localsend_app/pages/settings/network_interfaces_page.dart';
 import 'package:localsend_app/pages/tabs/settings_tab_controller.dart';
 import 'package:localsend_app/provider/network/server/server_provider.dart';
+import 'package:localsend_app/provider/pro_gate_provider.dart';
 import 'package:localsend_app/provider/settings_provider.dart';
 import 'package:localsend_app/provider/version_provider.dart';
 import 'package:localsend_app/util/alias_generator.dart';
@@ -516,24 +519,35 @@ class SettingsTab extends StatelessWidget {
                     ),
                   ),
                 ),
-                _BooleanEntry(
-                  label: t.settingsTab.network.enableFs,
-                  description: t.settingsTab.network.enableFsSubtitle,
-                  value: vm.settings.enableFs,
-                  onChanged: (b) async {
-                    final wasEnabled = vm.settings.enableFs;
-                    await ref.notifier(settingsProvider).setEnableFs(b);
-                    if (!wasEnabled && b && context.mounted) {
-                      await EnableFsNotice.open(context);
-                    }
-                    // The capability is announced by the discovery multicast
-                    // thread; restart the server so the next announcement
-                    // carries the updated set.
-                    if (ref.read(serverProvider) != null) {
-                      await ref.notifier(serverProvider).restartServerFromSettings();
-                    }
-                  },
-                ),
+                // Drive sharing is a desktop-only feature: mobile devices
+                // are the browsing clients, not shared sources.
+                if (checkPlatformIsDesktop())
+                  _BooleanEntry(
+                    label: t.settingsTab.network.enableFs,
+                    description: t.settingsTab.network.enableFsSubtitle,
+                    value: vm.settings.enableFs,
+                    onChanged: (b) async {
+                      final wasEnabled = vm.settings.enableFs;
+                      await ref.notifier(settingsProvider).setEnableFs(b);
+                      if (!wasEnabled && b && context.mounted) {
+                        await EnableFsNotice.open(context);
+                      }
+                      // The capability is announced by the discovery multicast
+                      // thread; restart the server so the next announcement
+                      // carries the updated set.
+                      if (ref.read(serverProvider) != null) {
+                        await ref.notifier(serverProvider).restartServerFromSettings();
+                      }
+                    },
+                  ),
+                if (checkPlatformIsDesktop())
+                  _ButtonEntry(
+                    label: t.settingsTab.network.fsBookmarksTitle,
+                    buttonLabel: t.general.open,
+                    onTap: () async {
+                      await context.push(() => const FsBookmarksPage());
+                    },
+                  ),
               ],
             ),
             _SettingsSection(
@@ -554,6 +568,17 @@ class SettingsTab extends StatelessWidget {
                     await context.push(() => const DonationPage());
                   },
                 ),
+                // T-028: LocalU Pro entry next to the donation entry.
+                // Desktop is free (no gate), so the entry only shows on
+                // Android + iOS.
+                if (checkProGatePlatform())
+                  _ButtonEntry(
+                    label: t.proPage.title,
+                    buttonLabel: ref.watch(isProProvider) ? t.proPage.unlocked : t.proPage.unlock,
+                    onTap: () async {
+                      await context.push(() => const ProPage());
+                    },
+                  ),
                 _ButtonEntry(
                   label: t.settingsTab.other.privacyPolicy,
                   buttonLabel: t.general.open,
@@ -605,7 +630,7 @@ class SettingsTab extends StatelessWidget {
                   orElse: () => Container(),
                 ),
             Text(
-              '© ${DateTime.now().year} Tien Do Nam',
+              '© ${DateTime.now().year} Apple Chang',
               textAlign: TextAlign.center,
             ),
             Center(

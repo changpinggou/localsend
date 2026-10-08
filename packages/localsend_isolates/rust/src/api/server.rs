@@ -877,3 +877,28 @@ pub enum _SessionEndReasonV2 {
     Finished,
     Cancelled,
 }
+
+// =====================================================================
+// Additional roots management (T-002 bookmark support)
+// =====================================================================
+
+/// Add a path to the additional roots list. These paths are merged with
+/// the auto-detected mount points in [`FsMount::list`].
+///
+/// Called when the user picks a folder via NSOpenPanel on macOS.
+#[frb(sync)]
+pub fn add_fs_root(path: String) {
+    localsend::fs::mount::add_additional_root(path);
+}
+
+/// Remove a path from the additional roots list.
+#[frb(sync)]
+pub fn remove_fs_root(path: String) {
+    localsend::fs::mount::remove_additional_root(&path);
+}
+
+/// Get all additional root paths.
+#[frb(sync)]
+pub fn get_fs_roots() -> Vec<String> {
+    localsend::fs::mount::get_additional_roots()
+}

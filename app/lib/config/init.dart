@@ -14,6 +14,7 @@ import 'package:localsend_app/pages/whats_new_page.dart';
 import 'package:localsend_app/provider/animation_provider.dart';
 import 'package:localsend_app/provider/app_arguments_provider.dart';
 import 'package:localsend_app/provider/device_info_provider.dart';
+import 'package:localsend_app/provider/fs_bookmark_provider.dart';
 import 'package:localsend_app/provider/network/nearby_devices_provider.dart';
 import 'package:localsend_app/provider/network/server/server_provider.dart';
 import 'package:localsend_app/provider/network/webrtc/signaling_provider.dart';
@@ -151,6 +152,14 @@ Future<RefenaContainer> preInit(List<String> args) async {
 
   // compatibility for Routerino. TODO: Remove Routerino
   Routerino.navigatorKey = container.read(navigationProvider).key;
+
+  // Restore shared-folder bookmarks eagerly. The provider is lazy: without
+  // this read nothing calls `addFsRoot` until the settings page is opened,
+  // so after an app restart the server's whitelist snapshot missed the
+  // user's shared folders and peers saw them as unavailable. Persistence
+  // is initialized above, so the async load completes before the server
+  // starts in postInit; the MountWatcher's 5 s poll is the backstop.
+  container.read(fsBookmarkProvider);
 
   // initialize multi-threading
   await container.set(
@@ -315,6 +324,15 @@ Future<void> postInit(BuildContext context, Ref ref, bool appStart) async {
   if (checkPlatformSupportPayment()) {
     // ignore: unawaited_futures
     ref.redux(purchaseProvider).dispatchAsync(InitPurchaseStream());
+  }
+  // T-028: silently restore purchases on Android so the Pro buyout is
+  // re-confirmed at startup (Google Play answers without any dialog).
+  // iOS must not do this — restorePurchases() pops the system login
+  // dialog there, so iOS relies on the local cache + the manual restore
+  // button in the Pro page.
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    // ignore: unawaited_futures
+    ref.redux(purchaseProvider).dispatchAsync(PurchaseRestoreAction());
   }
   // [FOSS_REMOVE_END]
 }

@@ -1,0 +1,480 @@
+<title>localU 图标预览</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: single-column spec sheet, max 1080px; hero = logo panel + wordmark column;
+     sections follow the sign-off reading order: design -> family -> sizes -> context -> color -> manifest -> build */
+  :root {
+    --bg: #F4F7FA;
+    --surface: #FFFFFF;
+    --surface-2: #EAF0F6;
+    --fg: #18242F;
+    --muted: #5B7182;
+    --line: #D8E2EB;
+    --accent: #1B82D6;
+    --accent-soft: #E1EFFB;
+    --sel: #1B82D6;
+    /* fixed-content swatches (simulated surfaces, constant across page themes) */
+    --sw-light: #FAFCFD;
+    --sw-dark: #11171E;
+    --sw-blue: #1B82D6;
+    --ink-light: #1B2731;
+    --ink-dark: #E8EEF4;
+    --ink-blue: #FFFFFF;
+    --font-display: "Bricolage Grotesque", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-body: "IBM Plex Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F151C;
+      --surface: #151D26;
+      --surface-2: #1A2430;
+      --fg: #E6EDF3;
+      --muted: #8CA1B3;
+      --line: #273341;
+      --accent: #4AA3EF;
+      --accent-soft: #12293E;
+      --sel: #4AA3EF;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F151C;
+    --surface: #151D26;
+    --surface-2: #1A2430;
+    --fg: #E6EDF3;
+    --muted: #8CA1B3;
+    --line: #273341;
+    --accent: #4AA3EF;
+    --accent-soft: #12293E;
+    --sel: #4AA3EF;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.75;
+  }
+  .wrap { max-width: 1080px; margin-inline: auto; padding-inline: 20px; padding-block: 40px 88px; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: 4px 0 0;
+  }
+  .sec { margin-top: 72px; }
+  .sec > p { color: var(--muted); max-width: 62ch; margin: 8px 0 0; }
+  .mono { font-family: var(--font-mono); }
+
+  /* ---- hero ---- */
+  .hero { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; margin-top: 36px; }
+  .hero-stage {
+    position: relative;
+    width: min(340px, 78vw);
+    aspect-ratio: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    flex: none;
+  }
+  .hero-stage img, .hero-stage svg.construct-svg {
+    position: absolute; inset: 8%;
+    width: 84%; height: 84%;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(36px, 6vw, 48px);
+    letter-spacing: -.015em;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .lead { color: var(--muted); max-width: 46ch; margin: 14px 0 0; }
+  .hero-tools { margin-top: 20px; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 13px;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .15s ease;
+  }
+  .toggle:hover { border-color: var(--accent); }
+  .toggle input { accent-color: var(--accent); margin: 0; }
+
+  .spec-strip {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 26px;
+  }
+  .spec-strip span {
+    font-family: var(--font-mono); font-size: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 10px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .spec-strip span b { color: var(--fg); font-weight: 500; }
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 18px; }
+  .note {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+    font-size: 13.5px; line-height: 1.65; color: var(--muted);
+  }
+  .note b { color: var(--fg); font-weight: 600; display: block; margin-bottom: 2px; }
+
+  /* ---- family ---- */
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 24px; }
+  .duo figure {
+    margin: 0; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 26px 20px 18px; text-align: center;
+  }
+  .duo img { width: 150px; height: 150px; }
+  .duo figcaption { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .duo figcaption b { display: block; color: var(--fg); font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+
+  /* ---- size ladder ---- */
+  .ladder {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 26px;
+    margin-top: 28px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 26px;
+  }
+  .rung { margin: 0; text-align: center; }
+  .rung img { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .rung figcaption {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted);
+    margin-top: 8px; font-variant-numeric: tabular-nums;
+  }
+  .chain-note { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); margin-top: 14px; }
+  .chain-note b { color: var(--fg); font-weight: 500; }
+
+  /* ---- context tiles ---- */
+  .ctx { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 24px; }
+  .ctx figure { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+  .ctx .stage { display: flex; align-items: center; gap: 10px; padding: 26px 20px; min-height: 118px; }
+  .ctx figcaption {
+    font-family: var(--font-mono); font-size: 11.5px;
+    padding: 9px 14px; color: var(--muted);
+    background: var(--surface); border-top: 1px solid var(--line);
+  }
+  .ctx .st-light { background: var(--sw-light); color: var(--ink-light); }
+  .ctx .st-dark { background: var(--sw-dark); color: var(--ink-dark); }
+  .ctx .st-blue { background: var(--sw-blue); color: var(--ink-blue); }
+  .ctx .st-blue { flex-direction: column; gap: 8px; text-align: center; }
+  .ctx .st-blue img { width: 84px; height: 84px; }
+  .ctx .appname { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+  .ctx .ver { font-family: var(--font-mono); font-size: 12px; opacity: .85; }
+  .ctx .divider { width: 1px; align-self: stretch; background: currentColor; opacity: .18; }
+
+  /* ---- colorways ---- */
+  .cw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 24px; }
+  .cw {
+    appearance: none; font: inherit; color: inherit; text-align: center;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 24px 16px 18px; cursor: pointer;
+    transition: border-color .15s ease;
+  }
+  .cw:hover { border-color: var(--accent); }
+  .cw[aria-pressed="true"] { outline: 2px solid var(--sel); outline-offset: 2px; }
+  .cw img { width: 118px; height: 118px; }
+  .cw .cw-name { display: block; font-weight: 600; font-size: 14px; margin-top: 12px; }
+  .cw .cw-hex { display: block; font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .cw-hint { font-size: 13px; color: var(--muted); margin-top: 12px; }
+
+  /* ---- manifest ---- */
+  .table-scroll { overflow-x: auto; margin-top: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    background: var(--surface-2);
+  }
+  tr:last-child td { border-bottom: none; }
+  td.fname { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+  td.fsize { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  td.fuse { color: var(--muted); min-width: 0; }
+  td.fthumb { width: 44px; }
+  td.fthumb img { width: 28px; height: 28px; display: block; }
+
+  /* ---- build ---- */
+  .code-scroll { overflow-x: auto; margin-top: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  pre {
+    margin: 0; padding: 18px 20px;
+    font-family: var(--font-mono); font-size: 13px; line-height: 1.8;
+  }
+  pre .c { color: var(--muted); }
+  footer {
+    margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+  }
+
+  :is(a, button, input, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+  <!-- ============ hero / design ============ -->
+  <section>
+    <span class="eyebrow">Design</span>
+    <div class="hero">
+      <div class="hero-stage">
+        <img id="hero-img" src="@@SVG@@" alt="localU 主 Logo（USB 蓝）" width="512" height="512">
+        <svg class="construct-svg" id="construct" hidden viewBox="0 0 512 512" aria-hidden="true">
+          <circle cx="256" cy="256" r="170" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 7" opacity=".6"/>
+          <circle cx="256" cy="256" r="189" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="3 8" opacity=".45"/>
+          <path d="M186 181 L186 261 A70 70 0 0 0 326 261 L326 181" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 7" opacity=".6"/>
+          <line x1="256" y1="242" x2="256" y2="270" stroke="var(--fg)" stroke-width="1.6" opacity=".6"/>
+          <line x1="242" y1="256" x2="270" y2="256" stroke="var(--fg)" stroke-width="1.6" opacity=".6"/>
+          <text x="396" y="128" font-size="19" fill="var(--muted)" font-family="var(--font-mono)">R 170</text>
+          <text x="404" y="332" font-size="19" fill="var(--muted)" font-family="var(--font-mono)">R 189</text>
+          <text x="82" y="158" font-size="19" fill="var(--muted)" font-family="var(--font-mono)">s 46</text>
+        </svg>
+      </div>
+      <div class="hero-copy">
+        <h1>localU</h1>
+        <p class="lead">8 瓣涟漪环继承 LocalSend 的无线传输基因；中心换成厚重的圆角 <b>U</b> —— U 盘，也是承接同步文件的容器。</p>
+        <div class="hero-tools">
+          <label class="toggle">
+            <input type="checkbox" id="construct-toggle">
+            结构线
+          </label>
+        </div>
+        <div class="spec-strip">
+          <span><b>PETALS</b> 8</span>
+          <span><b>RING_R</b> 170</span>
+          <span><b>SPAN</b> 26°</span>
+          <span><b>HW</b> 12→19</span>
+          <span><b>U_A</b> 70</span>
+          <span><b>U_S</b> 23</span>
+          <span><b>TOP</b> 181</span>
+          <span><b>BOWL</b> 261</span>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><b>同构血缘</b>花瓣的锥形收窄与圆帽和 LocalSend 完全一致 —— 摆在一起，一眼就能认出是同一家族。</div>
+      <div class="note"><b>中心层级</b>U 描边 46px，花瓣峰值宽度 38px：中心符号比环更重一档，视线先落在 U 上。</div>
+      <div class="note"><b>主色刻意区分</b>USB 蓝 #1B82D6 替换 LocalSend 青 #17868C —— 两个相关产品不能在通知栏里被认混。</div>
+    </div>
+  </section>
+
+  <!-- ============ family ============ -->
+  <section class="sec">
+    <span class="eyebrow">Family</span>
+    <h2>与 LocalSend 的血缘</h2>
+    <p>环不变，换芯换色：实心圆点 → 圆角 U，青 → USB 蓝。</p>
+    <div class="duo">
+      <figure>
+        <img src="@@LS512@@" alt="LocalSend 原版 Logo：青色 8 瓣环 + 中心实心圆点" width="512" height="512">
+        <figcaption><b>LocalSend</b>8 瓣涟漪环 · 中心实心圆点 · 青 #17868C</figcaption>
+      </figure>
+      <figure>
+        <img src="@@LOGO256@@" alt="localU Logo：蓝色 8 瓣环 + 中心圆角 U" width="512" height="512">
+        <figcaption><b>localU</b>8 瓣涟漪环 · 中心圆角 U · USB 蓝 #1B82D6</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ sizes ============ -->
+  <section class="sec">
+    <span class="eyebrow">Sizes</span>
+    <h2>尺寸阶梯</h2>
+    <p>光栅从 3072² 超采样母版逐级面积均值下采样，小尺寸不手调像素。下面是 <span class="mono">logo.ico</span> 内嵌的全部 6 档真实尺寸，即 Windows 实际渲染的内容：</p>
+    <div class="ladder">
+      <figure class="rung"><img src="@@ICO256@@" width="128" height="128" alt="256px 渲染"><figcaption>256</figcaption></figure>
+      <figure class="rung"><img src="@@ICO128@@" width="96" height="96" alt="128px 渲染"><figcaption>128</figcaption></figure>
+      <figure class="rung"><img src="@@ICO64@@" width="64" height="64" alt="64px 渲染"><figcaption>64</figcaption></figure>
+      <figure class="rung"><img src="@@ICO48@@" width="48" height="48" alt="48px 渲染"><figcaption>48</figcaption></figure>
+      <figure class="rung"><img src="@@ICO32@@" width="32" height="32" alt="32px 渲染"><figcaption>32</figcaption></figure>
+      <figure class="rung"><img src="@@ICO16@@" width="16" height="16" alt="16px 渲染"><figcaption>16</figcaption></figure>
+    </div>
+    <p class="chain-note">降采样链：<b>3072 → 512 → 256 → 128 → 64 → 32 → 16</b>（整倍率盒滤波；48px 用浮点窗口）</p>
+  </section>
+
+  <!-- ============ context ============ -->
+  <section class="sec">
+    <span class="eyebrow">Context</span>
+    <h2>落位场景</h2>
+    <p>托盘与深色表面各用一张专用资源，不靠运行时反色。</p>
+    <div class="ctx">
+      <figure>
+        <div class="stage st-light">
+          <img src="@@LOGO32B@@" width="32" height="32" alt="浅色托盘图标">
+          <span class="appname">localU</span>
+          <span class="divider"></span>
+          <span class="mono" style="font-size:12px">已就绪 · 2 台设备</span>
+        </div>
+        <figcaption>浅色托盘 · logo-32-black</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-dark">
+          <img src="@@LOGO32W@@" width="32" height="32" alt="深色托盘图标">
+          <span class="appname">localU</span>
+          <span class="divider"></span>
+          <span class="mono" style="font-size:12px">同步中…</span>
+        </div>
+        <figcaption>深色托盘 · logo-32-white</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-blue">
+          <img src="@@LOGO512W@@" width="512" height="512" alt="深色表面上的白色 Logo">
+          <span class="ver">localU · v2.1.0</span>
+        </div>
+        <figcaption>深色表面 · logo-512-white（品牌蓝底）</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ colorways ============ -->
+  <section class="sec">
+    <span class="eyebrow">Color</span>
+    <h2>配色方案</h2>
+    <p>主配色已定稿：<b>USB 蓝 #1B82D6</b>。以下备选仅存档于 <span class="mono">alt/</span>，点击任意方案可预览切换顶部大图。</p>
+    <div class="cw-grid" role="group" aria-label="配色方案切换">
+      <button class="cw" type="button" data-img="@@SVG@@" data-name="USB 蓝" aria-pressed="true">
+        <img src="@@LOGO256@@" alt="USB 蓝配色" width="512" height="512">
+        <span class="cw-name">USB 蓝 · 主推</span>
+        <span class="cw-hex">#1B82D6</span>
+      </button>
+      <button class="cw" type="button" data-img="@@ALT_TEAL@@" data-name="LocalSend 青" aria-pressed="false">
+        <img src="@@ALT_TEAL@@" alt="LocalSend 青配色" width="512" height="512">
+        <span class="cw-name">LocalSend 青 · 家族</span>
+        <span class="cw-hex">#17868C</span>
+      </button>
+      <button class="cw" type="button" data-img="@@ALT_BLACK@@" data-name="墨黑" aria-pressed="false">
+        <img src="@@ALT_BLACK@@" alt="墨黑配色" width="512" height="512">
+        <span class="cw-name">墨黑 · 单色场景</span>
+        <span class="cw-hex">#000000</span>
+      </button>
+    </div>
+    <p class="cw-hint">备选方案仅存档于 <span class="mono">alt/</span>，不随主资源集发布；整套资源（含启动图标）由 <span class="mono">--color</span> 一键重出。</p>
+  </section>
+
+  <!-- ============ launchers ============ -->
+  <section class="sec">
+    <span class="eyebrow">Launchers</span>
+    <h2>平台启动图标</h2>
+    <p>由 <span class="mono">make_launchers.py</span> 从同一几何生成，逐项复刻 LocalSend 启动图标的版式（比例实测自仓库 PNG）。输出在 <span class="mono">launchers/</span>，路径与仓库一致，可直接平移。</p>
+    <div class="ctx">
+      <figure>
+        <div class="stage st-dark">
+          <img src="@@LA_LEGACY@@" width="84" height="84" alt="Android 旧版启动图标">
+          <span class="mono" style="font-size:12px">ic_launcher · _round</span>
+        </div>
+        <figcaption>Android 旧版 mipmap · 白圆 Ø0.917 + 字形 0.703</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-light">
+          <img src="@@LA_FG@@" width="84" height="84" alt="Android 自适应前景">
+          <span class="mono" style="font-size:12px">108dp 网格</span>
+        </div>
+        <figcaption>Android 自适应前景 · 字形 0.512（含单色层）</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-dark">
+          <img src="@@LA_MONO@@" width="84" height="84" alt="Android 单色层">
+          <span class="mono" style="font-size:12px">mono / quicktile</span>
+        </div>
+        <figcaption>单色层与快捷磁贴 · 白字形 0.512 / 0.611</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-light">
+          <img src="@@LA_IOS@@" width="84" height="84" alt="iOS AppIcon">
+          <span class="mono" style="font-size:12px">AppIcon · 15 档</span>
+        </div>
+        <figcaption>iOS 白底满铺 + 字形 0.762</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-dark">
+          <img src="@@LA_MAC@@" width="84" height="84" alt="macOS 图标">
+          <span class="mono" style="font-size:12px">icns 16–1024</span>
+        </div>
+        <figcaption>macOS 透明底 + 字形 0.805（iconutil 出 .icns）</figcaption>
+      </figure>
+      <figure>
+        <div class="stage st-light">
+          <img src="@@LA_MASK@@" width="84" height="84" alt="PWA maskable 图标">
+          <span class="mono" style="font-size:12px">Icon-maskable</span>
+        </div>
+        <figcaption>PWA · any 0.62 / maskable 0.55（安全区 80%）</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ manifest ============ -->
+  <section class="sec">
+    <span class="eyebrow">Manifest</span>
+    <h2>文件清单</h2>
+    <p>与 <span class="mono">app/assets/img/</span> 的资源清单一一对应，可直接平移替换。</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>文件</th><th>大小</th><th>用途</th><th></th></tr>
+        </thead>
+        <tbody>
+@@MANIFEST@@
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ build ============ -->
+  <section class="sec">
+    <span class="eyebrow">Build</span>
+    <h2>再生成</h2>
+    <p>全部资源由 <span class="mono">generate.py</span>（品牌资源）与 <span class="mono">make_launchers.py</span>（启动图标）从同一份胶囊链几何生成，PNG / SVG / ICO 像素级一致（QA 差异仅 0.27%，且全部落在 1px 抗锯齿边缘内）。</p>
+    <div class="code-scroll">
+      <pre><span class="c"># 在 design/localu-icons/ 下</span>
+python3 generate.py                    <span class="c"># 主配色 USB 蓝，品牌资源整套输出</span>
+python3 make_launchers.py              <span class="c"># 平台启动图标（Android/iOS/macOS/Windows/web）</span>
+python3 make_launchers.py --color teal <span class="c"># 备选配色一键重出整套</span></pre>
+    </div>
+  </section>
+
+  <footer>
+    <span>localU icon set · design/localu-icons</span>
+    <span>单一几何源：PETALS / RING_R（环） + U_A / U_S / U_TOP_Y / U_BOWL_Y（U）</span>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var hero = document.getElementById('hero-img');
+    var tiles = Array.prototype.slice.call(document.querySelectorAll('.cw'));
+    tiles.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        tiles.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+        btn.setAttribute('aria-pressed', 'true');
+        hero.src = btn.dataset.img;
+        hero.alt = 'localU 主 Logo（' + btn.dataset.name + '）';
+      });
+    });
+    var toggle = document.getElementById('construct-toggle');
+    var overlay = document.getElementById('construct');
+    toggle.addEventListener('change', function () {
+      overlay.hidden = !toggle.checked;
+    });
+  })();
+</script>

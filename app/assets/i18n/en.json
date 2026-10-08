@@ -1,5 +1,5 @@
 {
-  "appName": "LocalSend",
+  "appName": "LocalU",
   "general": {
     "accept": "Accept",
     "accepted": "Accepted",
@@ -91,6 +91,8 @@
     "roots": "Drives",
     "breadcrumbRoot": "Drives",
     "emptyFolder": "This folder is empty",
+    "emptyRootsHint": "The remote device has no drives configured for browsing.\nPlease open Settings → Network → \"Allow drive browsing\" on the remote device and add directories.",
+    "emptyRootsHintWithDevice": "The device \"{device}\" has no drives configured for browsing.\nPlease open Settings → Network → \"Allow drive browsing\" on that device and add directories.",
     "errorTitle": "Could not load files",
     "errorGeneric": "An error occurred. Please try again.",
     "retry": "Retry",
@@ -102,17 +104,39 @@
     "sortMtimeDesc": "Recently modified",
     "viewList": "List view",
     "viewGrid": "Grid view",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "refresh": "Refresh directory",
+    "syncPhotos": "Sync photos",
+    "proLocked": "Photo sync is a LocalU Pro feature"
+  },
+  "sync": {
+    "title": "Sync Photos",
+    "scanningLocal": "Scanning local library…",
+    "scanningRemote": "Scanning remote directory…",
+    "comparing": "Comparing files…",
+    "uploading": "Uploading…",
+    "scanned": "Scanned",
+    "uploaded": "Uploaded",
+    "skipped": "Skipped",
+    "failed": "Failed",
+    "confirmTitle": "Sync Photos",
+    "confirmMessage": "Sync %d local photos to current directory?\n%d already exist on remote.",
+    "startSync": "Start Sync",
+    "noPhotos": "No photos found in library",
+    "upToDate": "All photos are already synced",
+    "syncComplete": "Sync complete"
   },
   "fsBrowser": {
     "fsDisabledByPeerTitle": "Drive browsing is off",
     "fsDisabledByPeerBody": "This device hasn't enabled drive browsing yet. Ask the owner to open Settings → Network → \"Allow other devices to browse my drives\". The connection also needs to be encrypted (HTTPS).",
     "notFoundTitle": "Endpoint not found",
-    "notFoundBody": "The peer did not respond to the file-browsing request. It may be running an older LocalSend version.",
+    "notFoundBody": "The peer did not respond to the file-browsing request. It may be running an older LocalU version.",
     "timeoutTitle": "Connection timed out",
     "timeoutBody": "The peer took too long to respond. Check that you're on the same Wi-Fi network and try again.",
     "pathDeniedTitle": "Path not shared",
     "pathDeniedBody": "This path is outside the peer's shared drives. Ask the owner to whitelist it.",
+    "permissionDeniedTitle": "No permission to access this volume",
+    "permissionDeniedBody": "The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalU → Settings → Shared Folders on the peer device.",
     "networkTitle": "Can't reach the device",
     "networkBody": "The peer didn't respond. It may have gone to sleep, lost Wi-Fi, or shut down.",
     "rootsChangedAdded": "New drive available",
@@ -128,6 +152,7 @@
     "cancelled": "Cancelled",
     "failedTitle": "Download failed",
     "galleryDenied": "Gallery permission denied",
+    "alreadyInGallery": "Already in Photos, skipped download",
     "complete": "Download complete",
     "savedToGallery": "Saved to Photos",
     "savedToFiles": "Saved to {path}",
@@ -193,7 +218,7 @@
       "minimizeToTray": "Minimize to the System Tray/Menu Bar when closing",
       "launchAtStartup": "Autostart after login",
       "launchMinimized": "Autostart: Start hidden",
-      "showInContextMenu": "Show LocalSend in context menu",
+      "showInContextMenu": "Show LocalU in context menu",
       "animations": "Animations"
     },
     "receive": {
@@ -236,11 +261,16 @@
       "enableFs": "Allow other devices to browse my drives",
       "enableFsSubtitle": "Mobile devices on the same network can browse folders and download files from selected drives.",
       "enableFsNoticeTitle": "Browsing drives is enabled",
-      "enableFsNoticeBody": "Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates."
+      "enableFsNoticeBody": "Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.",
+      "fsBookmarksTitle": "Shared Folders",
+      "fsBookmarksEmpty": "No shared folders",
+      "fsBookmarksHint": "Add folders you want to share with other devices.\nThese folders will be visible to devices on your network.",
+      "fsBookmarkDelete": "Remove Shared Folder",
+      "fsBookmarkDeleteConfirm": "Are you sure you want to remove this shared folder? Other devices will no longer be able to access it."
     },
     "other": {
       "title": "Other",
-      "support": "Support LocalSend",
+      "support": "Support LocalU",
       "donate": "Donate",
       "privacyPolicy": "Privacy Policy",
       "termsOfUse": "Terms of Use"
@@ -268,7 +298,7 @@
   },
   "networkInterfacesPage": {
     "title": "Network Interfaces",
-    "info": "By default, LocalSend uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.",
+    "info": "By default, LocalU uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.",
     "preview": "Preview",
     "whitelist": "Whitelist",
     "blacklist": "Blacklist"
@@ -329,7 +359,7 @@
   "receiveOptionsPage": {
     "title": "Options",
     "destination": "@:settingsTab.receive.destination",
-    "appDirectory": "(LocalSend folder)",
+    "appDirectory": "(LocalU folder)",
     "saveToGallery": "@:settingsTab.receive.saveToGallery",
     "saveToGalleryOff": "Turned off automatically because there are folders."
   },
@@ -381,17 +411,17 @@
     "autoAccept": "Automatically accept requests",
     "requirePin": "Require PIN",
     "pinHint": "The PIN is \"{pin}\"",
-    "encryptionHint": "LocalSend uses a self-signed certificate. You need to accept it in your browser.",
+    "encryptionHint": "LocalU uses a self-signed certificate. You need to accept it in your browser.",
     "pendingRequests": "Pending requests: {n}"
   },
   "webReceivePage": {
     "title": "Receive via link"
   },
   "aboutPage": {
-    "title": "About LocalSend",
+    "title": "About LocalU",
     "description": [
-      "LocalSend is a free, open-source app that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
-      "This app is available on Android, iOS, macOS, Windows and Linux. You can find all download options on the official homepage."
+      "LocalU is an open-source app based on LocalSend that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
+      "This app is available on Android, iOS, macOS, Windows and Linux."
     ],
     "author": "Author",
     "contributors": "Contributors",
@@ -400,10 +430,30 @@
   },
   "donationPage": {
     "title": "Donate",
-    "info": "LocalSend is free, open-source and without any ads. If you like the app, you can support the development with a donation.",
+    "info": "LocalU is free, open-source and without any ads. If you like the app, you can support the development with a donation.",
     "donate": "Donate {amount}",
     "thanks": "Thank you very much!",
     "restore": "Restore purchase"
+  },
+  "proPage": {
+    "title": "LocalU Pro",
+    "subtitle": "Photo sync and future Pro features. One-time purchase, yours forever.",
+    "buy": "Unlock for {price}",
+    "purchased": "Purchased",
+    "unlock": "Unlock",
+    "unlocked": "Unlocked",
+    "restore": "Restore purchase",
+    "priceUnavailable": "Price unavailable",
+    "thanks": "Thank you for supporting LocalU!",
+    "unavailable": "In-app purchases are not available in this build.",
+    "features": {
+      "oneTapTitle": "One-tap album sync",
+      "oneTapDesc": "Pick your computer, tap once, and your entire photo library syncs over — no manual file picking.",
+      "incrementalTitle": "Incremental updates",
+      "incrementalDesc": "After the first full sync, only new photos are uploaded — fast and data-friendly.",
+      "icloudTitle": "iCloud-like convenience",
+      "icloudDesc": "Photos from your phone are always there on your computer. Devices stay in sync automatically."
+    }
   },
   "changelogPage": {
     "title": "Changelog"
@@ -556,7 +606,7 @@
     },
     "localNetworkUnauthorized": {
       "title": "@:dialogs.noPermission.title",
-      "description": "LocalSend can't find other devices without having the permission to scan the local network. Please grant this permission in the settings.",
+      "description": "LocalU can't find other devices without having the permission to scan the local network. Please grant this permission in the settings.",
       "gotoSettings": "Settings"
     },
     "messageInput": {
@@ -603,7 +653,7 @@
       "title": "Send modes",
       "single": "Sends files to one recipient. Selection will be cleared after finished files transfer.",
       "multiple": "Sends files to multiple recipients. Selection will not be cleared after finished files transfer.",
-      "link": "Recipients who do not have LocalSend installed can download the selected files by opening the link in their browser."
+      "link": "Recipients who do not have LocalU installed can download the selected files by opening the link in their browser."
     },
     "zoom": {
       "title": "URL"
@@ -616,7 +666,7 @@
   "tray": {
     "@info": "Apple Guidelines are very strict about the \"close\" wording.",
     "open": "@:general.open",
-    "close": "Quit LocalSend",
+    "close": "Quit LocalU",
     "closeWindows": "Exit"
   },
   "web": {

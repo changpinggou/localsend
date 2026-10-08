@@ -36,12 +36,14 @@ mod audit;
 mod config;
 mod events;
 pub(crate) mod hotplug;
-mod mount;
+pub mod mount;
 mod move_delete;
 mod path;
 mod recycle;
 mod rest;
 mod stat;
+#[cfg(feature = "fs-thumb")]
+mod heif;
 #[cfg(feature = "fs-thumb")]
 mod thumbnail;
 pub(crate) mod upload;

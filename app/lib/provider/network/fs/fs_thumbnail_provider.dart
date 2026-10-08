@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
 
@@ -52,6 +53,7 @@ final fsThumbnailProvider = NotifierProvider<FsThumbnailService, FsThumbnailStat
 
 class FsThumbnailState {
   final FsThumbnailCache cache;
+
   /// Tracks in-flight requests to avoid duplicate fetches for the same key.
   final Map<String, Future<Uint8List?>> pendingRequests = {};
 
@@ -103,7 +105,7 @@ class FsThumbnailService extends Notifier<FsThumbnailState> {
       final result = await future;
       return result;
     } finally {
-      state.pendingRequests.remove(cacheKey);
+      unawaited(state.pendingRequests.remove(cacheKey));
     }
   }
 
@@ -130,8 +132,7 @@ class FsThumbnailService extends Notifier<FsThumbnailState> {
         return null;
       }
 
-      final protocol =
-          device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
+      final protocol = device.https ? rust_model.ProtocolType.https : rust_model.ProtocolType.http;
 
       _logger.fine(
         'fs_thumbnail: fetching $fullPath ${width}x$height from $ip:${device.port}',

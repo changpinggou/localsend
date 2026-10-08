@@ -45,6 +45,17 @@ FsErrorReason classifyFsError(String message) {
       case '504':
       case '524':
         return FsErrorReason.timeout;
+      case '500':
+        // The peer's server replies 500 when `readdir` itself fails.
+        // On macOS, TCC / privacy protection denies reads of system
+        // volumes ("io error: Operation not permitted (os error 1)")
+        // unless the folder was explicitly shared, so surface that
+        // signature as a permission problem — the fix is a shared
+        // folder on the peer, not a retry.
+        if (message.contains('Operation not permitted')) {
+          return FsErrorReason.permissionDenied;
+        }
+        return FsErrorReason.notFound;
       default:
         return FsErrorReason.notFound;
     }

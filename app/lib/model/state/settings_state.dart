@@ -45,6 +45,11 @@ class SettingsState with SettingsStateMappable {
   /// user-facing toggle.
   final bool enableFs;
 
+  /// T-028: whether the LocalU Pro buyout has been seen on this device
+  /// (persisted fallback for the runtime purchase state). Buyout never
+  /// expires, so this is only written and never cleared.
+  final bool proCached;
+
   const SettingsState({
     required this.showToken,
     required this.alias,
@@ -77,5 +82,6 @@ class SettingsState with SettingsStateMappable {
     required this.discoveryTimeout,
     required this.advancedSettings,
     this.enableFs = false,
+    this.proCached = false,
   });
 }

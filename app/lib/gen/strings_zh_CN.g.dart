@@ -40,7 +40,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 
   // Translations
   @override
-  String get appName => 'LocalSend';
+  String get appName => 'LocalU';
   @override
   late final Translations$general$zh_CN general = Translations$general$zh_CN.internal(_root);
   @override
@@ -49,6 +49,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   late final Translations$sendTab$zh_CN sendTab = Translations$sendTab$zh_CN.internal(_root);
   @override
   late final Translations$remoteBrowser$zh_CN remoteBrowser = Translations$remoteBrowser$zh_CN.internal(_root);
+  @override
+  late final Translations$sync$zh_CN sync = Translations$sync$zh_CN.internal(_root);
   @override
   late final Translations$fsBrowser$zh_CN fsBrowser = Translations$fsBrowser$zh_CN.internal(_root);
   @override
@@ -87,6 +89,8 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
   late final Translations$aboutPage$zh_CN aboutPage = Translations$aboutPage$zh_CN.internal(_root);
   @override
   late final Translations$donationPage$zh_CN donationPage = Translations$donationPage$zh_CN.internal(_root);
+  @override
+  late final Translations$proPage$zh_CN proPage = Translations$proPage$zh_CN.internal(_root);
   @override
   late final Translations$changelogPage$zh_CN changelogPage = Translations$changelogPage$zh_CN.internal(_root);
   @override
@@ -262,6 +266,10 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   @override
   String get emptyFolder => '此文件夹为空';
   @override
+  String get emptyRootsHint => '远端设备未配置可浏览的驱动器。\n请在远端设备上打开 设置 → 网络 → "允许驱动器浏览" 并添加目录。';
+  @override
+  String emptyRootsHintWithDevice({required Object device}) => '设备 "${device}" 未配置可浏览的驱动器。\n请在该设备上打开 设置 → 网络 → "允许驱动器浏览" 并添加目录。';
+  @override
   String get errorTitle => '无法加载文件';
   @override
   String get errorGeneric => '发生错误，请重试。';
@@ -285,6 +293,51 @@ class Translations$remoteBrowser$zh_CN extends Translations$remoteBrowser$en {
   String get viewGrid => '网格视图';
   @override
   String get loadMore => '加载更多';
+  @override
+  String get refresh => '刷新当前目录';
+  @override
+  String get syncPhotos => '同步相册';
+  @override
+  String get proLocked => '同步相册是 LocalU Pro 功能';
+}
+
+// Path: sync
+class Translations$sync$zh_CN extends Translations$sync$en {
+  Translations$sync$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => '同步相册';
+  @override
+  String get scanningLocal => '正在扫描本地相册…';
+  @override
+  String get scanningRemote => '正在扫描远端目录…';
+  @override
+  String get comparing => '正在对比文件…';
+  @override
+  String get uploading => '正在上传…';
+  @override
+  String get scanned => '已扫描';
+  @override
+  String get uploaded => '已上传';
+  @override
+  String get skipped => '已跳过';
+  @override
+  String get failed => '失败';
+  @override
+  String get confirmTitle => '同步相册';
+  @override
+  String get confirmMessage => '将 %d 张本地照片同步到当前目录？\n其中 %d 张已存在于远端。';
+  @override
+  String get startSync => '开始同步';
+  @override
+  String get noPhotos => '相册中没有照片';
+  @override
+  String get upToDate => '所有照片已同步';
+  @override
+  String get syncComplete => '同步完成';
 }
 
 // Path: fsBrowser
@@ -301,7 +354,7 @@ class Translations$fsBrowser$zh_CN extends Translations$fsBrowser$en {
   @override
   String get notFoundTitle => '找不到对应接口';
   @override
-  String get notFoundBody => '对端没有响应文件浏览请求，可能是旧版本 LocalSend。';
+  String get notFoundBody => '对端没有响应文件浏览请求，可能是旧版本 LocalU。';
   @override
   String get timeoutTitle => '连接超时';
   @override
@@ -310,6 +363,10 @@ class Translations$fsBrowser$zh_CN extends Translations$fsBrowser$en {
   String get pathDeniedTitle => '路径未被共享';
   @override
   String get pathDeniedBody => '该路径不在对端的共享驱动器内。请让对方将其加入白名单。';
+  @override
+  String get permissionDeniedTitle => '你没有权限访问当前系统卷';
+  @override
+  String get permissionDeniedBody => '对端系统拒绝读取该路径（macOS 隐私保护）。请引导对方在对端 LocalU 的 设置 → 共享文件夹 中添加要访问的文件夹。';
   @override
   String get networkTitle => '无法连接设备';
   @override
@@ -345,6 +402,8 @@ class Translations$fsDownload$zh_CN extends Translations$fsDownload$en {
   String get failedTitle => '下载失败';
   @override
   String get galleryDenied => '未授权访问相册';
+  @override
+  String get alreadyInGallery => '相册中已存在，已跳过下载';
   @override
   String get complete => '下载完成';
   @override
@@ -486,7 +545,7 @@ class Translations$networkInterfacesPage$zh_CN extends Translations$networkInter
   @override
   String get title => '网络接口';
   @override
-  String get info => '默认情况下，LocalSend 使用所有可用的网络接口。您可以在此处排除不需要的网络接口。您需要重新启动服务器以应用更改。';
+  String get info => '默认情况下，LocalU 使用所有可用的网络接口。您可以在此处排除不需要的网络接口。您需要重新启动服务器以应用更改。';
   @override
   String get preview => '预览';
   @override
@@ -611,7 +670,7 @@ class Translations$receiveOptionsPage$zh_CN extends Translations$receiveOptionsP
   @override
   String get destination => _root.settingsTab.receive.destination;
   @override
-  String get appDirectory => '(LocalSend 文件夹)';
+  String get appDirectory => '(LocalU 文件夹)';
   @override
   String get saveToGallery => _root.settingsTab.receive.saveToGallery;
   @override
@@ -690,7 +749,7 @@ class Translations$webSharePage$zh_CN extends Translations$webSharePage$en {
   @override
   String pinHint({required Object pin}) => 'PIN 为 “${pin}”';
   @override
-  String get encryptionHint => 'LocalSend 使用自签名证书。您需要在浏览器中允许它。';
+  String get encryptionHint => 'LocalU 使用自签名证书。您需要在浏览器中允许它。';
   @override
   String pendingRequests({required Object n}) => '待处理请求：${n}';
 }
@@ -714,11 +773,11 @@ class Translations$aboutPage$zh_CN extends Translations$aboutPage$en {
 
   // Translations
   @override
-  String get title => '关于 LocalSend';
+  String get title => '关于 LocalU';
   @override
   List<String> get description => [
-    'LocalSend 是一款免费的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。',
-    '本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。您可以在官方主页找到所有下载选项。',
+    'LocalU 是一款基于 LocalSend 的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。',
+    '本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。',
   ];
   @override
   String get author => '作者';
@@ -747,6 +806,37 @@ class Translations$donationPage$zh_CN extends Translations$donationPage$en {
   String get thanks => '非常感谢您的支持！';
   @override
   String get restore => '恢复购买';
+}
+
+// Path: proPage
+class Translations$proPage$zh_CN extends Translations$proPage$en {
+  Translations$proPage$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => 'LocalU Pro';
+  @override
+  String get subtitle => '相册同步及后续 Pro 功能，一次购买，永久解锁。';
+  @override
+  String buy({required Object price}) => '解锁（${price}）';
+  @override
+  String get purchased => '已购买';
+  @override
+  String get unlock => '解锁';
+  @override
+  String get unlocked => '已解锁';
+  @override
+  String get restore => '恢复购买';
+  @override
+  String get priceUnavailable => '价格获取失败';
+  @override
+  String get thanks => '感谢支持 LocalU！';
+  @override
+  String get unavailable => '此版本不支持应用内购买。';
+  @override
+  late final Translations$proPage$features$zh_CN features = Translations$proPage$features$zh_CN.internal(_root);
 }
 
 // Path: changelogPage
@@ -941,7 +1031,7 @@ class Translations$tray$zh_CN extends Translations$tray$en {
   @override
   String get open => _root.general.open;
   @override
-  String get close => '退出 LocalSend';
+  String get close => '退出 LocalU';
   @override
   String get closeWindows => '退出';
 }
@@ -1152,7 +1242,7 @@ class Translations$settingsTab$general$zh_CN extends Translations$settingsTab$ge
   @override
   String get launchMinimized => '启动时最小化到任务栏';
   @override
-  String get showInContextMenu => '在“发送到...”文件菜单中显示 LocalSend';
+  String get showInContextMenu => '在“发送到...”文件菜单中显示 LocalU';
   @override
   String get animations => '动画效果';
 }
@@ -1250,6 +1340,16 @@ class Translations$settingsTab$network$zh_CN extends Translations$settingsTab$ne
   String get enableFsNoticeTitle => '已开启驱动器浏览';
   @override
   String get enableFsNoticeBody => '同一网络下的设备现在可以列出你选择的驱动器中的文件。文件以只读方式经 TLS 通道提供，并要求客户端证书。';
+  @override
+  String get fsBookmarksTitle => '共享文件夹';
+  @override
+  String get fsBookmarksEmpty => '没有共享文件夹';
+  @override
+  String get fsBookmarksHint => '添加你想要与其他设备共享的文件夹。\n这些文件夹将对网络中的设备可见。';
+  @override
+  String get fsBookmarkDelete => '移除共享文件夹';
+  @override
+  String get fsBookmarkDeleteConfirm => '你确定要移除这个共享文件夹吗？其他设备将无法再访问它。';
 }
 
 // Path: settingsTab.other
@@ -1402,6 +1502,27 @@ class Translations$progressPage$remainingTime$zh_CN extends Translations$progres
   @override
   String hours({required num h, required num m}) =>
       '${_root.progressPage.remainingTime.hoursUnit(h: h)} ${_root.progressPage.remainingTime.minutesUnit(m: m)}';
+}
+
+// Path: proPage.features
+class Translations$proPage$features$zh_CN extends Translations$proPage$features$en {
+  Translations$proPage$features$zh_CN.internal(TranslationsZhCn root) : this._root = root, super.internal(root);
+
+  final TranslationsZhCn _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get oneTapTitle => '一键同步相册';
+  @override
+  String get oneTapDesc => '选好电脑，一键把整个相册同步过去，无需逐张挑选文件。';
+  @override
+  String get incrementalTitle => '增量更新';
+  @override
+  String get incrementalDesc => '首次全量同步后，之后只上传新增的照片，又快又省流量。';
+  @override
+  String get icloudTitle => '类似 iCloud 的便捷体验';
+  @override
+  String get icloudDesc => '手机里的照片，电脑上随时都在，设备之间自动保持一致。';
 }
 
 // Path: whatsNewPage.changes
@@ -1610,7 +1731,7 @@ class Translations$dialogs$localNetworkUnauthorized$zh_CN extends Translations$d
   @override
   String get title => _root.dialogs.noPermission.title;
   @override
-  String get description => 'LocalSend 在没有扫描本地网络的权限的情况下无法找到其他设备。请在设置中授予此权限。';
+  String get description => 'LocalU 在没有扫描本地网络的权限的情况下无法找到其他设备。请在设置中授予此权限。';
   @override
   String get gotoSettings => '设置';
 }
@@ -1752,7 +1873,7 @@ class Translations$dialogs$sendModeHelp$zh_CN extends Translations$dialogs$sendM
   @override
   String get multiple => '发送文件给多个接收者。已选择的文件在发送后不会取消选择。';
   @override
-  String get link => '未安装 LocalSend 的接收者可以在浏览器中打开链接以下载选中的文件。';
+  String get link => '未安装 LocalU 的接收者可以在浏览器中打开链接以下载选中的文件。';
 }
 
 // Path: dialogs.zoom

@@ -43,13 +43,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
   // Translations
 
-  /// en: 'LocalSend'
-  String get appName => 'LocalSend';
+  /// en: 'LocalU'
+  String get appName => 'LocalU';
 
   late final Translations$general$en general = Translations$general$en.internal(_root);
   late final Translations$receiveTab$en receiveTab = Translations$receiveTab$en.internal(_root);
   late final Translations$sendTab$en sendTab = Translations$sendTab$en.internal(_root);
   late final Translations$remoteBrowser$en remoteBrowser = Translations$remoteBrowser$en.internal(_root);
+  late final Translations$sync$en sync = Translations$sync$en.internal(_root);
   late final Translations$fsBrowser$en fsBrowser = Translations$fsBrowser$en.internal(_root);
   late final Translations$fsDownload$en fsDownload = Translations$fsDownload$en.internal(_root);
   late final Translations$fsUpload$en fsUpload = Translations$fsUpload$en.internal(_root);
@@ -69,6 +70,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$webReceivePage$en webReceivePage = Translations$webReceivePage$en.internal(_root);
   late final Translations$aboutPage$en aboutPage = Translations$aboutPage$en.internal(_root);
   late final Translations$donationPage$en donationPage = Translations$donationPage$en.internal(_root);
+  late final Translations$proPage$en proPage = Translations$proPage$en.internal(_root);
   late final Translations$changelogPage$en changelogPage = Translations$changelogPage$en.internal(_root);
   late final Translations$whatsNewPage$en whatsNewPage = Translations$whatsNewPage$en.internal(_root);
   late final Translations$aliasGenerator$en aliasGenerator = Translations$aliasGenerator$en.internal(_root);
@@ -290,6 +292,14 @@ class Translations$remoteBrowser$en {
   /// en: 'This folder is empty'
   String get emptyFolder => 'This folder is empty';
 
+  /// en: 'The remote device has no drives configured for browsing. Please open Settings → Network → "Allow drive browsing" on the remote device and add directories.'
+  String get emptyRootsHint =>
+      'The remote device has no drives configured for browsing.\nPlease open Settings → Network → "Allow drive browsing" on the remote device and add directories.';
+
+  /// en: 'The device "{device}" has no drives configured for browsing. Please open Settings → Network → "Allow drive browsing" on that device and add directories.'
+  String emptyRootsHintWithDevice({required Object device}) =>
+      'The device "${device}" has no drives configured for browsing.\nPlease open Settings → Network → "Allow drive browsing" on that device and add directories.';
+
   /// en: 'Could not load files'
   String get errorTitle => 'Could not load files';
 
@@ -325,6 +335,69 @@ class Translations$remoteBrowser$en {
 
   /// en: 'Load more'
   String get loadMore => 'Load more';
+
+  /// en: 'Refresh directory'
+  String get refresh => 'Refresh directory';
+
+  /// en: 'Sync photos'
+  String get syncPhotos => 'Sync photos';
+
+  /// en: 'Photo sync is a LocalU Pro feature'
+  String get proLocked => 'Photo sync is a LocalU Pro feature';
+}
+
+// Path: sync
+class Translations$sync$en {
+  Translations$sync$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Sync Photos'
+  String get title => 'Sync Photos';
+
+  /// en: 'Scanning local library…'
+  String get scanningLocal => 'Scanning local library…';
+
+  /// en: 'Scanning remote directory…'
+  String get scanningRemote => 'Scanning remote directory…';
+
+  /// en: 'Comparing files…'
+  String get comparing => 'Comparing files…';
+
+  /// en: 'Uploading…'
+  String get uploading => 'Uploading…';
+
+  /// en: 'Scanned'
+  String get scanned => 'Scanned';
+
+  /// en: 'Uploaded'
+  String get uploaded => 'Uploaded';
+
+  /// en: 'Skipped'
+  String get skipped => 'Skipped';
+
+  /// en: 'Failed'
+  String get failed => 'Failed';
+
+  /// en: 'Sync Photos'
+  String get confirmTitle => 'Sync Photos';
+
+  /// en: 'Sync %d local photos to current directory? %d already exist on remote.'
+  String get confirmMessage => 'Sync %d local photos to current directory?\n%d already exist on remote.';
+
+  /// en: 'Start Sync'
+  String get startSync => 'Start Sync';
+
+  /// en: 'No photos found in library'
+  String get noPhotos => 'No photos found in library';
+
+  /// en: 'All photos are already synced'
+  String get upToDate => 'All photos are already synced';
+
+  /// en: 'Sync complete'
+  String get syncComplete => 'Sync complete';
 }
 
 // Path: fsBrowser
@@ -345,8 +418,8 @@ class Translations$fsBrowser$en {
   /// en: 'Endpoint not found'
   String get notFoundTitle => 'Endpoint not found';
 
-  /// en: 'The peer did not respond to the file-browsing request. It may be running an older LocalSend version.'
-  String get notFoundBody => 'The peer did not respond to the file-browsing request. It may be running an older LocalSend version.';
+  /// en: 'The peer did not respond to the file-browsing request. It may be running an older LocalU version.'
+  String get notFoundBody => 'The peer did not respond to the file-browsing request. It may be running an older LocalU version.';
 
   /// en: 'Connection timed out'
   String get timeoutTitle => 'Connection timed out';
@@ -359,6 +432,13 @@ class Translations$fsBrowser$en {
 
   /// en: 'This path is outside the peer's shared drives. Ask the owner to whitelist it.'
   String get pathDeniedBody => 'This path is outside the peer\'s shared drives. Ask the owner to whitelist it.';
+
+  /// en: 'No permission to access this volume'
+  String get permissionDeniedTitle => 'No permission to access this volume';
+
+  /// en: 'The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalU → Settings → Shared Folders on the peer device.'
+  String get permissionDeniedBody =>
+      'The peer system refused to read this path (macOS privacy protection). Ask the owner to add the folder under LocalU → Settings → Shared Folders on the peer device.';
 
   /// en: 'Can't reach the device'
   String get networkTitle => 'Can\'t reach the device';
@@ -407,6 +487,9 @@ class Translations$fsDownload$en {
 
   /// en: 'Gallery permission denied'
   String get galleryDenied => 'Gallery permission denied';
+
+  /// en: 'Already in Photos, skipped download'
+  String get alreadyInGallery => 'Already in Photos, skipped download';
 
   /// en: 'Download complete'
   String get complete => 'Download complete';
@@ -586,9 +669,9 @@ class Translations$networkInterfacesPage$en {
   /// en: 'Network Interfaces'
   String get title => 'Network Interfaces';
 
-  /// en: 'By default, LocalSend uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.'
+  /// en: 'By default, LocalU uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.'
   String get info =>
-      'By default, LocalSend uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.';
+      'By default, LocalU uses all available network interfaces. You can exclude unwanted networks here. You need to restart the server to apply the changes.';
 
   /// en: 'Preview'
   String get preview => 'Preview';
@@ -737,8 +820,8 @@ class Translations$receiveOptionsPage$en {
   /// en: 'Save to folder'
   String get destination => _root.settingsTab.receive.destination;
 
-  /// en: '(LocalSend folder)'
-  String get appDirectory => '(LocalSend folder)';
+  /// en: '(LocalU folder)'
+  String get appDirectory => '(LocalU folder)';
 
   /// en: 'Save media to gallery'
   String get saveToGallery => _root.settingsTab.receive.saveToGallery;
@@ -837,8 +920,8 @@ class Translations$webSharePage$en {
   /// en: 'The PIN is "{pin}"'
   String pinHint({required Object pin}) => 'The PIN is "${pin}"';
 
-  /// en: 'LocalSend uses a self-signed certificate. You need to accept it in your browser.'
-  String get encryptionHint => 'LocalSend uses a self-signed certificate. You need to accept it in your browser.';
+  /// en: 'LocalU uses a self-signed certificate. You need to accept it in your browser.'
+  String get encryptionHint => 'LocalU uses a self-signed certificate. You need to accept it in your browser.';
 
   /// en: 'Pending requests: {n}'
   String pendingRequests({required Object n}) => 'Pending requests: ${n}';
@@ -864,12 +947,12 @@ class Translations$aboutPage$en {
 
   // Translations
 
-  /// en: 'About LocalSend'
-  String get title => 'About LocalSend';
+  /// en: 'About LocalU'
+  String get title => 'About LocalU';
 
   List<String> get description => [
-    'LocalSend is a free, open-source app that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.',
-    'This app is available on Android, iOS, macOS, Windows and Linux. You can find all download options on the official homepage.',
+    'LocalU is an open-source app based on LocalSend that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.',
+    'This app is available on Android, iOS, macOS, Windows and Linux.',
   ];
 
   /// en: 'Author'
@@ -896,8 +979,8 @@ class Translations$donationPage$en {
   /// en: 'Donate'
   String get title => 'Donate';
 
-  /// en: 'LocalSend is free, open-source and without any ads. If you like the app, you can support the development with a donation.'
-  String get info => 'LocalSend is free, open-source and without any ads. If you like the app, you can support the development with a donation.';
+  /// en: 'LocalU is free, open-source and without any ads. If you like the app, you can support the development with a donation.'
+  String get info => 'LocalU is free, open-source and without any ads. If you like the app, you can support the development with a donation.';
 
   /// en: 'Donate {amount}'
   String donate({required Object amount}) => 'Donate ${amount}';
@@ -907,6 +990,47 @@ class Translations$donationPage$en {
 
   /// en: 'Restore purchase'
   String get restore => 'Restore purchase';
+}
+
+// Path: proPage
+class Translations$proPage$en {
+  Translations$proPage$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'LocalU Pro'
+  String get title => 'LocalU Pro';
+
+  /// en: 'Photo sync and future Pro features. One-time purchase, yours forever.'
+  String get subtitle => 'Photo sync and future Pro features. One-time purchase, yours forever.';
+
+  /// en: 'Unlock for {price}'
+  String buy({required Object price}) => 'Unlock for ${price}';
+
+  /// en: 'Purchased'
+  String get purchased => 'Purchased';
+
+  /// en: 'Unlock'
+  String get unlock => 'Unlock';
+
+  /// en: 'Unlocked'
+  String get unlocked => 'Unlocked';
+
+  /// en: 'Restore purchase'
+  String get restore => 'Restore purchase';
+
+  /// en: 'Price unavailable'
+  String get priceUnavailable => 'Price unavailable';
+
+  /// en: 'Thank you for supporting LocalU!'
+  String get thanks => 'Thank you for supporting LocalU!';
+
+  /// en: 'In-app purchases are not available in this build.'
+  String get unavailable => 'In-app purchases are not available in this build.';
+
+  late final Translations$proPage$features$en features = Translations$proPage$features$en.internal(_root);
 }
 
 // Path: changelogPage
@@ -1082,8 +1206,8 @@ class Translations$tray$en {
   /// en: 'Open'
   String get open => _root.general.open;
 
-  /// en: 'Quit LocalSend'
-  String get close => 'Quit LocalSend';
+  /// en: 'Quit LocalU'
+  String get close => 'Quit LocalU';
 
   /// en: 'Exit'
   String get closeWindows => 'Exit';
@@ -1360,8 +1484,8 @@ class Translations$settingsTab$general$en {
   /// en: 'Autostart: Start hidden'
   String get launchMinimized => 'Autostart: Start hidden';
 
-  /// en: 'Show LocalSend in context menu'
-  String get showInContextMenu => 'Show LocalSend in context menu';
+  /// en: 'Show LocalU in context menu'
+  String get showInContextMenu => 'Show LocalU in context menu';
 
   /// en: 'Animations'
   String get animations => 'Animations';
@@ -1493,6 +1617,21 @@ class Translations$settingsTab$network$en {
   /// en: 'Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.'
   String get enableFsNoticeBody =>
       'Devices on the same network can now list files from the drives you select. Files are served read-only over TLS with mandatory client certificates.';
+
+  /// en: 'Shared Folders'
+  String get fsBookmarksTitle => 'Shared Folders';
+
+  /// en: 'No shared folders'
+  String get fsBookmarksEmpty => 'No shared folders';
+
+  /// en: 'Add folders you want to share with other devices. These folders will be visible to devices on your network.'
+  String get fsBookmarksHint => 'Add folders you want to share with other devices.\nThese folders will be visible to devices on your network.';
+
+  /// en: 'Remove Shared Folder'
+  String get fsBookmarkDelete => 'Remove Shared Folder';
+
+  /// en: 'Are you sure you want to remove this shared folder? Other devices will no longer be able to access it.'
+  String get fsBookmarkDeleteConfirm => 'Are you sure you want to remove this shared folder? Other devices will no longer be able to access it.';
 }
 
 // Path: settingsTab.other
@@ -1506,8 +1645,8 @@ class Translations$settingsTab$other$en {
   /// en: 'Other'
   String get title => 'Other';
 
-  /// en: 'Support LocalSend'
-  String get support => 'Support LocalSend';
+  /// en: 'Support LocalU'
+  String get support => 'Support LocalU';
 
   /// en: 'Donate'
   String get donate => 'Donate';
@@ -1678,6 +1817,33 @@ class Translations$progressPage$remainingTime$en {
   /// en: '(other) {{h}h} (other) {{m}m}'
   String hours({required num h, required num m}) =>
       '${_root.progressPage.remainingTime.hoursUnit(h: h)} ${_root.progressPage.remainingTime.minutesUnit(m: m)}';
+}
+
+// Path: proPage.features
+class Translations$proPage$features$en {
+  Translations$proPage$features$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'One-tap album sync'
+  String get oneTapTitle => 'One-tap album sync';
+
+  /// en: 'Pick your computer, tap once, and your entire photo library syncs over — no manual file picking.'
+  String get oneTapDesc => 'Pick your computer, tap once, and your entire photo library syncs over — no manual file picking.';
+
+  /// en: 'Incremental updates'
+  String get incrementalTitle => 'Incremental updates';
+
+  /// en: 'After the first full sync, only new photos are uploaded — fast and data-friendly.'
+  String get incrementalDesc => 'After the first full sync, only new photos are uploaded — fast and data-friendly.';
+
+  /// en: 'iCloud-like convenience'
+  String get icloudTitle => 'iCloud-like convenience';
+
+  /// en: 'Photos from your phone are always there on your computer. Devices stay in sync automatically.'
+  String get icloudDesc => 'Photos from your phone are always there on your computer. Devices stay in sync automatically.';
 }
 
 // Path: whatsNewPage.changes
@@ -1920,9 +2086,9 @@ class Translations$dialogs$localNetworkUnauthorized$en {
   /// en: 'No permission'
   String get title => _root.dialogs.noPermission.title;
 
-  /// en: 'LocalSend can't find other devices without having the permission to scan the local network. Please grant this permission in the settings.'
+  /// en: 'LocalU can't find other devices without having the permission to scan the local network. Please grant this permission in the settings.'
   String get description =>
-      'LocalSend can\'t find other devices without having the permission to scan the local network. Please grant this permission in the settings.';
+      'LocalU can\'t find other devices without having the permission to scan the local network. Please grant this permission in the settings.';
 
   /// en: 'Settings'
   String get gotoSettings => 'Settings';
@@ -2087,8 +2253,8 @@ class Translations$dialogs$sendModeHelp$en {
   /// en: 'Sends files to multiple recipients. Selection will not be cleared after finished files transfer.'
   String get multiple => 'Sends files to multiple recipients. Selection will not be cleared after finished files transfer.';
 
-  /// en: 'Recipients who do not have LocalSend installed can download the selected files by opening the link in their browser.'
-  String get link => 'Recipients who do not have LocalSend installed can download the selected files by opening the link in their browser.';
+  /// en: 'Recipients who do not have LocalU installed can download the selected files by opening the link in their browser.'
+  String get link => 'Recipients who do not have LocalU installed can download the selected files by opening the link in their browser.';
 }
 
 // Path: dialogs.zoom

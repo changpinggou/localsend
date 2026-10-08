@@ -20,8 +20,19 @@ class FsUploadQueueBar extends StatelessWidget {
         }
 
         final active = state.activeCount;
-        final total = state.tasks.length;
+        final pending = state.pendingCount;
         final progress = state.totalBytes > 0 ? state.transferredBytes / state.totalBytes : 0.0;
+
+        // Count only work that can still change — the historical task count
+        // made the title grow with every batch ("Uploading 12 file(s)" long
+        // after everything finished). Once everything reached a terminal
+        // state the bar briefly shows a summary before the auto-clear
+        // removes it.
+        final title = pending > 0
+            ? t.fsUpload.uploadingFiles(count: pending)
+            : state.failedCount > 0
+            ? t.fsUpload.uploadFailed
+            : t.fsUpload.uploadComplete;
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -36,7 +47,7 @@ class FsUploadQueueBar extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        t.fsUpload.uploadingFiles(count: total),
+                        title,
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),

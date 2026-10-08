@@ -341,25 +341,85 @@ where
     let size = size.min(state.config.max_list_page_size as usize);
 
     let abs = state.guard.check(&path)?;
-    let meta = tokio::fs::metadata(&abs).await.map_err(io_to_fs)?;
-    if !meta.is_dir() {
-        return Err(FsError::BadRequest(format!("not a directory: {}", path)));
+
+    tracing::info!(
+        event = "fs.list.resolved",
+        abs = %abs.display(),
+        "handle_list: resolved path for listing"
+    );
+
+    // macOS sandbox diagnostic: try std::fs::metadata directly on the
+    // current thread first. If this also fails with EPERM, the sandbox
+    // entitlement is not effective and no threading workaround will help.
+    #[cfg(target_os = "macos")]
+    {
+        match std::fs::metadata(&abs) {
+            Ok(_) => tracing::info!(
+                event = "fs.list.sandbox_check",
+                abs = %abs.display(),
+                "std::fs::metadata OK on current thread — sandbox allows access"
+            ),
+            Err(e) => tracing::error!(
+                event = "fs.list.sandbox_check",
+                abs = %abs.display(),
+                err = %e,
+                "std::fs::metadata FAILED on current thread — sandbox blocks access; \
+                 check entitlements with: codesign -d --entitlements - <app>.app"
+            ),
+        }
     }
 
-    let mut entries = Vec::new();
-    let mut rd = tokio::fs::read_dir(&abs).await.map_err(io_to_fs)?;
-    while let Some(e) = rd.next_entry().await.map_err(io_to_fs)? {
-        let Ok(emeta) = e.metadata().await else { continue };
-        let name = e.file_name().to_string_lossy().to_string();
-        let mtime = emeta
-            .modified()
-            .ok()
-            .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
-            .map(|d| d.as_secs() as i64)
-            .unwrap_or(0);
-        let mime = if emeta.is_dir() { None } else { Some(guess_mime(&name).to_string()) };
-        entries.push(FsEntry { name, is_dir: emeta.is_dir(), size: emeta.len(), mtime, mime });
-    }
+    // Use spawn_blocking + std::fs to avoid tokio's thread-pool sandbox
+    // issues on macOS. `tokio::fs::metadata` has been observed to fail
+    // with EPERM inside a sandboxed app even when the path is allowed
+    // (the blocking worker thread may not inherit the sandbox context).
+    let list_result = tokio::task::spawn_blocking(move || {
+        let meta = std::fs::metadata(&abs).map_err(|e| {
+            tracing::error!(
+                event = "fs.list.metadata_error",
+                abs = %abs.display(),
+                err = %e,
+                "metadata failed"
+            );
+            e
+        })?;
+        if !meta.is_dir() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("not a directory: {}", path),
+            ));
+        }
+
+        let mut entries = Vec::new();
+        let rd = std::fs::read_dir(&abs).map_err(|e| {
+            tracing::error!(
+                event = "fs.list.read_dir_error",
+                abs = %abs.display(),
+                err = %e,
+                "read_dir failed"
+            );
+            e
+        })?;
+        for entry in rd {
+            let entry = entry?;
+            let Ok(emeta) = entry.metadata() else { continue };
+            let name = entry.file_name().to_string_lossy().to_string();
+            let mtime = emeta
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
+            let mime = if emeta.is_dir() { None } else { Some(guess_mime(&name).to_string()) };
+            entries.push(FsEntry { name, is_dir: emeta.is_dir(), size: emeta.len(), mtime, mime });
+        }
+        Ok(entries)
+    })
+    .await
+    .map_err(|e| io_to_fs(std::io::Error::new(std::io::ErrorKind::Other, format!("spawn_blocking panicked: {e}"))))?
+    .map_err(io_to_fs)?;
+
+    let mut entries = list_result;
 
     // Sort
     match sort.as_str() {
@@ -581,6 +641,12 @@ pub(crate) fn guess_mime(filename: &str) -> &'static str {
         "gif" => "image/gif",
         "webp" => "image/webp",
         "svg" => "image/svg+xml",
+        // HEIF family: clients gate thumbnail requests on the `image/`
+        // prefix (grid_view checks `mime.startsWith('image/')`), so a
+        // missing entry here silently disables thumbnails for these.
+        "heic" => "image/heic",
+        "heif" => "image/heif",
+        "avif" => "image/avif",
         "pdf" => "application/pdf",
         "zip" => "application/zip",
         "mp4" => "video/mp4",
@@ -975,6 +1041,9 @@ mod tests {
     fn guess_mime_known_extensions() {
         assert_eq!(guess_mime("a.png"), "image/png");
         assert_eq!(guess_mime("a.JPG"), "image/jpeg");
+        assert_eq!(guess_mime("a.heic"), "image/heic");
+        assert_eq!(guess_mime("a.HEIF"), "image/heif");
+        assert_eq!(guess_mime("a.AvIf"), "image/avif");
         assert_eq!(guess_mime("a.txt"), "text/plain; charset=utf-8");
         assert_eq!(guess_mime("a"), "application/octet-stream");
         assert_eq!(guess_mime("a.unknownext"), "application/octet-stream");
