@@ -421,6 +421,7 @@
     "title": "关于 LocalU",
     "description": [
       "LocalU 是一款基于 LocalSend 的开源应用程序，可让您通过本地网络与附近的设备安全地分享文件和信息，而无需互联网连接。",
+      "支持文件夹同步与相册同步，让文件和照片在多台设备间自动保持一致。",
       "本程序可在 Android、iOS、macOS、Windows 和 Linux 上使用。"
     ],
     "author": "作者",

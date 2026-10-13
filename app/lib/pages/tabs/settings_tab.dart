@@ -7,7 +7,6 @@ import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/model/persistence/color_mode.dart';
 import 'package:localsend_app/pages/about/about_page.dart';
 import 'package:localsend_app/pages/changelog_page.dart';
-import 'package:localsend_app/pages/donation/donation_page.dart';
 import 'package:localsend_app/pages/pro/pro_page.dart';
 import 'package:localsend_app/pages/settings/fs_bookmarks_page.dart';
 import 'package:localsend_app/pages/settings/network_interfaces_page.dart';
@@ -38,7 +37,6 @@ import 'package:localsend_isolates/constants.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 import 'package:routerino/routerino.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SettingsTab extends StatelessWidget {
   const SettingsTab();
@@ -562,13 +560,6 @@ class SettingsTab extends StatelessWidget {
                     await context.push(() => const AboutPage());
                   },
                 ),
-                _ButtonEntry(
-                  label: t.settingsTab.other.support,
-                  buttonLabel: t.settingsTab.other.donate,
-                  onTap: () async {
-                    await context.push(() => const DonationPage());
-                  },
-                ),
                 // T-028: LocalU Pro entry next to the donation entry.
                 // Desktop is free (no gate), so the entry only shows on
                 // Android + iOS.
@@ -587,17 +578,6 @@ class SettingsTab extends StatelessWidget {
                     await context.push(() => const PrivacyPolicyPage());
                   },
                 ),
-                if (checkPlatform([TargetPlatform.iOS, TargetPlatform.macOS]))
-                  _ButtonEntry(
-                    label: t.settingsTab.other.termsOfUse,
-                    buttonLabel: t.general.open,
-                    onTap: () async {
-                      await launchUrl(
-                        Uri.parse('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
-                  ),
               ],
             ),
             Row(

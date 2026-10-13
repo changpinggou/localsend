@@ -421,6 +421,7 @@
     "title": "About LocalU",
     "description": [
       "LocalU is an open-source app based on LocalSend that allows you to securely share files and messages with nearby devices over your local network without needing an internet connection.",
+      "It supports folder sync and photo library sync, keeping your files and photos automatically up to date across devices.",
       "This app is available on Android, iOS, macOS, Windows and Linux."
     ],
     "author": "Author",
